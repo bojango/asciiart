@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#080d15">
+<title>PELAGIC / An ASCII Lifeform</title>
+<style>
+  :root{color-scheme:dark;--bg:#080d15;--panel:#0b121d;--border:#263445;--muted:#8496aa;--text:#e6f2f7;--accent:#6de5ec;--soft:#b89cff;--codebg:#090f19}
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;-webkit-font-smoothing:antialiased}
+  body:before{content:"";pointer-events:none;position:fixed;inset:0;background:radial-gradient(ellipse at 49% -12%,rgba(45,117,153,.085),transparent 53%);z-index:-1}
+  .shell{max-width:1152px;margin:auto;padding:0 32px 50px}
+  header{height:74px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #203043;gap:14px}
+  .brand{font-weight:800;letter-spacing:.24em;font-size:13px;color:#e5f7ff;white-space:nowrap}
+  .brand span{color:#68dfde}
+  .headright{display:flex;align-items:center;gap:23px;color:#899cad;letter-spacing:.12em;text-transform:uppercase;font-size:10px}
+  .running{display:flex;align-items:center;gap:8px;color:#a3f1d9}
+  .pulse{width:6px;height:6px;display:block;background:#71deb9;border-radius:50%;box-shadow:0 0 9px #71deb9;animation:blink 3s infinite}
+  @keyframes blink{50%{opacity:.35}}
+  .intro{padding:34px 0 25px;display:flex;justify-content:space-between;align-items:end;gap:20px}
+  .eyebrow{font-size:10px;text-transform:uppercase;letter-spacing:.2em;color:#6d9fba;margin-bottom:13px}
+  h1{font-size:clamp(25px,3.8vw,40px);line-height:1.07;letter-spacing:-.07em;margin:0;font-weight:550;font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+  h1 em{font-style:normal;color:#8bdded}
+  .subtitle{max-width:360px;color:var(--muted);font-size:12px;line-height:1.65;text-align:right;margin:0}
+  .stage{position:relative;height:485px;border:1px solid #294050;border-radius:5px;overflow:hidden;background:radial-gradient(ellipse at 51% 46%,rgba(20,42,69,.72) 0%,rgba(8,17,30,.73) 42%,#070d16 80%)}
+  .stage:before{position:absolute;content:"";inset:0;pointer-events:none;background:linear-gradient(rgba(255,255,255,.015) 1px,transparent 1px);background-size:100% 4px;opacity:.26;z-index:2}
+  .stage:after{position:absolute;content:"";inset:11px;border:1px solid rgba(152,197,220,.07);pointer-events:none;z-index:2}
+  canvas{width:100%;height:100%;display:block}
+  .stage-tag{position:absolute;top:25px;left:27px;z-index:3;pointer-events:none}
+  .stage-tag .small{font-size:10px;color:#75b8cc;letter-spacing:.17em;display:block;margin-bottom:8px}
+  .stage-tag strong{font-size:13px;letter-spacing:.08em;font-weight:600;color:#c9edf2}
+  .stage-right{position:absolute;right:27px;top:27px;z-index:3;text-align:right;font-size:10px;line-height:2.1;color:#55778e;letter-spacing:.08em;pointer-events:none}
+  .stage-right span{color:#9dcbd6}
+  .stage-bottom{position:absolute;bottom:24px;left:27px;right:27px;display:flex;justify-content:space-between;color:#648599;font-size:10px;letter-spacing:.1em;z-index:3;pointer-events:none}
+  .stage-bottom b{font-weight:400;color:#9fd8e5}
+  .gridcorner{position:absolute;width:10px;height:10px;border-top:1px solid #65a1b5;border-left:1px solid #65a1b5;top:17px;left:17px;opacity:.45;z-index:3}
+  .gridcorner.end{top:auto;left:auto;bottom:17px;right:17px;transform:rotate(180deg)}
+  .code-panel{border:1px solid #25384a;border-top:0;border-radius:0 0 5px 5px;background:var(--codebg);overflow:hidden}
+  .code-toolbar{height:38px;display:flex;align-items:center;justify-content:space-between;padding:0 19px;background:#0e1825;border-bottom:1px solid #253449;font-size:10px;letter-spacing:.07em}
+  .file{display:flex;align-items:center;gap:10px;color:#b7d4e2}
+  .file .square{width:8px;height:8px;border-radius:2px;background:#4dbabb;box-shadow:0 0 11px #276d79}
+  .code-state{color:#5e8f9d;display:flex;align-items:center;gap:14px}
+  .code-state i{font-style:normal;color:#96bece}
+  .code-viewport{height:190px;overflow:hidden;position:relative;mask-image:linear-gradient(to bottom,transparent 0%,black 16%,black 84%,transparent 100%)}
+  .code-scroll{will-change:transform}
+  .code-line{display:flex;align-items:baseline;min-height:21px;line-height:21px;white-space:pre;font-size:11px}
+  .lineno{width:61px;flex:none;text-align:right;padding-right:25px;color:#405870;user-select:none}
+  .linecode{color:#aec4d2}
+  .keyword{color:#cd93e8}.number{color:#e6a77c}.comment{color:#557b8b}.function{color:#75c8e7}.string{color:#a9d89d}
+  .toolbar{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:22px 2px 19px;border-bottom:1px solid #1c3040;flex-wrap:wrap}
+  .controls{display:flex;align-items:center;flex-wrap:wrap;gap:19px}
+  .control-group{display:flex;align-items:center;gap:11px}
+  .ctl-label{color:#7792a3;letter-spacing:.1em;font-size:10px;text-transform:uppercase;white-space:nowrap}
+  .swatches{display:flex;gap:6px;align-items:center}
+  .swatch{border:1px solid #334758;background:#142130;width:27px;height:27px;padding:4px;border-radius:4px;cursor:pointer;display:grid;place-items:center;transition:border .2s,background .2s}
+  .swatch>i{width:14px;height:14px;border-radius:2px;display:block}
+  .swatch[data-palette="abyss"]>i{background:linear-gradient(135deg,#64e1eb,#8568e6)}
+  .swatch[data-palette="aurora"]>i{background:linear-gradient(135deg,#84f6b8,#269dc4)}
+  .swatch[data-palette="sunset"]>i{background:linear-gradient(135deg,#fad07b,#e277bd)}
+  .swatch[data-palette="ghost"]>i{background:linear-gradient(135deg,#eefbff,#667eaa)}
+  .swatch[aria-pressed="true"]{border-color:#9fe9ed;background:#1c3747;box-shadow:0 0 0 1px #4e8394}
+  input[type=range]{width:91px;accent-color:#71d6df;cursor:pointer;height:3px}
+  .range-value{color:#b0d9e3;font-size:10px;min-width:32px}
+  .actions{display:flex;gap:8px}
+  button.action{background:#122131;color:#acc9d7;border:1px solid #2d4858;padding:10px 13px;letter-spacing:.08em;text-transform:uppercase;font:inherit;font-size:10px;border-radius:4px;cursor:pointer;transition:.2s}
+  button.action:hover,.swatch:hover{border-color:#72bccb;background:#1a3444}
+  button.action:focus-visible,.swatch:focus-visible,input:focus-visible{outline:2px solid #9cefff;outline-offset:3px}
+  .foot{display:flex;justify-content:space-between;gap:20px;padding-top:16px;color:#6a8495;line-height:1.8;font-size:10px;letter-spacing:.06em}
+  .foot b{font-weight:400;color:#97b8c8}
+  @media(max-width:750px){.shell{padding:0 15px 30px}header{height:60px}.headright{gap:10px}.headright .edition{display:none}.intro{display:block;padding:27px 2px 21px}.subtitle{text-align:left;margin-top:12px;max-width:100%}.stage{height:480px}.stage-tag{top:22px;left:22px}.stage-right{right:21px;top:22px}.stage-bottom{left:20px;right:20px;bottom:20px}.code-viewport{height:165px}.code-line{font-size:10px}.lineno{width:38px;padding-right:12px}.toolbar{gap:18px}.controls{gap:16px}.foot{display:block}.foot span:last-child{display:block;margin-top:2px}}
+  @media(max-width:420px){.stage{height:425px}.stage-right{font-size:9px;top:24px}.stage-bottom{font-size:9px}.stage-tag strong{font-size:12px}.controls{width:100%}.control-group{gap:9px}.ctl-label{font-size:9px}.toolbar{padding-top:17px}.actions{width:100%}.actions .action{flex:1}}
+</style>
+</head>
+<body>
+<div class="shell">
+ <header>
+  <div class="brand">PELAGIC <span>/</span> ASCII LAB</div>
+  <div class="headright"><span class="edition">GENERATIVE STUDIES &nbsp; / &nbsp; 001</span><span class="running"><i class="pulse"></i><span id="runState">LIVE RENDER</span></span></div>
+ </header>
+ <div class="intro"><div><div class="eyebrow">An experiment in procedural motion</div><h1>A creature made <em>of characters.</em></h1></div><p class="subtitle">A living ASCII study. No image files, no keyframes. Just a few equations finding their way through the deep.</p></div>
+ <main>
+  <div class="stage" id="stage" aria-label="Animated, colourful jellyfish constructed entirely from text characters">
+   <canvas id="ocean" role="img" aria-label="Generative ASCII jellyfish, with moving bell and flowing tendrils"></canvas>
+   <div class="gridcorner"></div><div class="gridcorner end"></div>
+   <div class="stage-tag"><span class="small">SPECIMEN / 001</span><strong>MEDUSA ASTRALIS</strong></div>
+   <div class="stage-right">DEPTH <span>2,480 M</span><br>RENDER <span id="fps">30 FPS</span><br>MODE <span>PROCEDURAL</span></div>
+   <div class="stage-bottom"><span>FIG 01 <b>/</b> BIOLUMINESCENCE</span><span>GLYPH MATRIX <b>ACTIVE</b></span></div>
+  </div>
+  <section class="code-panel" aria-label="Scrolling animation source code">
+   <div class="code-toolbar"><span class="file"><i class="square"></i> <span>medusa.js</span> <span style="color:#56738b">/ animation engine</span></span><span class="code-state">SOURCE TRACE <i id="traceStatus">● AUTO SCROLL</i></span></div>
+   <div class="code-viewport" id="codeViewport"><div class="code-scroll" id="codeScroll"></div></div>
+  </section>
+  <div class="toolbar">
+   <div class="controls">
+    <div class="control-group"><span class="ctl-label">Colour</span><div class="swatches" role="group" aria-label="Jellyfish colour palette"><button class="swatch" data-palette="abyss" aria-label="Abyss blue purple" aria-pressed="true" title="Abyss"><i></i></button><button class="swatch" data-palette="aurora" aria-label="Aurora green teal" aria-pressed="false" title="Aurora"><i></i></button><button class="swatch" data-palette="sunset" aria-label="Sunset orange rose" aria-pressed="false" title="Sunset"><i></i></button><button class="swatch" data-palette="ghost" aria-label="Ghost white blue" aria-pressed="false" title="Ghost"><i></i></button></div></div>
+    <label class="control-group"><span class="ctl-label">Speed</span><input id="speed" type="range" min="0.2" max="2.2" step="0.1" value="1" aria-label="Animation speed"><span class="range-value" id="speedValue">1.0×</span></label>
+    <label class="control-group"><span class="ctl-label">Detail</span><input id="detail" type="range" min="0.55" max="1.55" step="0.1" value="1.05" aria-label="ASCII detail level"><span class="range-value" id="detailValue">105%</span></label>
+   </div>
+   <div class="actions"><button class="action" id="play">Ⅱ &nbsp; PAUSE</button><button class="action" id="save">↓ &nbsp; SAVE FRAME</button><button class="action" id="full">⤢ &nbsp; EXPAND</button></div>
+  </div>
+ </main>
+ <footer class="foot"><span>GENERATED IN REAL TIME <b>·</b> EVERY CHARACTER HAS A COORDINATE</span><span>001 / AN EXPERIMENT IN DIGITAL LIFE</span></footer>
+</div>
+<script>
+(()=>{'use strict';
+  const canvas=document.getElementById('ocean'),ctx=canvas.getContext('2d',{alpha:false}),stage=document.getElementById('stage');
+  const source=document.getElementById('codeScroll'),view=document.getElementById('codeViewport');
+  const P={abyss:{head:183,tail:271,sat:91},aurora:{head:157,tail:213,sat:88},sunset:{head:42,tail:-34,sat:92},ghost:{head:190,tail:237,sat:31}};
+  let palette='abyss', speed=1, detail=1.05, paused=false, time=0, last=0, acc=0, frames=0, fpsTime=0, w=900,h=480,ratio=1,scrollPos=0,cycleHeight=0;
+  const TWO_PI=Math.PI*2;
+  const rng=(n)=>{let a=Math.sin(n*127.1+78.233)*43758.5453123;return a-Math.floor(a)};
+  const stars=Array.from({length:130},(_,i)=>({x:rng(i*5+1),y:rng(i*5+2),size:rng(i*5+3),twinkle:rng(i*5+4)*TWO_PI,rate:.4+rng(i*5+5)}));
+  const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
+  const lerp=(a,b,p)=>a+(b-a)*p;
+  const hue=(p)=>{const pal=P[palette];return lerp(pal.head,pal.tail,clamp(p,0,1))};
+  const ink=(p,light,alpha=1)=>`hsla(${(hue(p)+360)%360},${P[palette].sat}%,${light}%,${clamp(alpha,0,1)})`;
+  function resize(){const rect=stage.getBoundingClientRect();w=Math.max(250,rect.width);h=Math.max(300,rect.height);ratio=Math.min(window.devicePixelRatio||1,2);canvas.width=Math.round(w*ratio);canvas.height=Math.round(h*ratio);ctx.setTransform(ratio,0,0,ratio,0,0);}
+  window.addEventListener('resize',resize,{passive:true});resize();
+  function textAt(ch,x,y,col,size=12,glow=0){if(x<-20||x>w+20||y<-20||y>h+20)return;ctx.font=`${size}px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace`;ctx.fillStyle=col;ctx.shadowColor=col;ctx.shadowBlur=glow;ctx.fillText(ch,x,y);ctx.shadowBlur=0;}
+  function paintBackground(t){
+    ctx.fillStyle='#070e19';ctx.fillRect(0,0,w,h);
+    const aura=ctx.createRadialGradient(w*.5,h*.43,14,w*.5,h*.43,Math.min(w*.55,h*.82));aura.addColorStop(0,ink(.20,17,.29));aura.addColorStop(.55,ink(.70,15,.13));aura.addColorStop(1,'rgba(7,14,25,0)');ctx.fillStyle=aura;ctx.fillRect(0,0,w,h);
+    for(let i=0;i<stars.length;i++){
+      const s=stars[i];let x=s.x*w+Math.sin(t*.12+s.twinkle)*11,y=((s.y*h+t*(2+s.rate*3))%(h+15));
+      let a=(.055+.23*s.size)*(.65+.35*Math.sin(t*s.rate+s.twinkle));
+      textAt(s.size>.96?'+':s.size>.79?':':'.',x,y,ink(.12+s.size*.72,68,a),s.size>.75?10:9,s.size>.96?4:0);
+    }
+    ctx.strokeStyle='rgba(80,140,164,.045)';ctx.lineWidth=1;
+    const cx=w/2;ctx.beginPath();ctx.moveTo(cx-11,Math.round(h*.46));ctx.lineTo(cx+11,Math.round(h*.46));ctx.moveTo(cx,Math.round(h*.46)-11);ctx.lineTo(cx,Math.round(h*.46)+11);ctx.stroke();
+  }
+  // A ribbon moves through a field of delayed sine waves.
+  function filament(i,count,t,cx,cy,R,front=false){
+    const f=(i+.5)/count;
+    const offset=(f-.5)*2;
+    const rootX=offset*R*(front?.34:.92);
+    const rootY=front?R*.05:R*.075;
+    const length=R*(front?(1.35+.36*rng(i*11+2)):(1.40+.75*rng(i*9+1)));
+    const total=Math.floor(length/(front?7.4:9.3)*detail);
+    const phase=i*.73;
+    for(let j=0;j<=total;j++){
+      const u=j/total;
+      const n=Math.sin(u*7.5-t*.72+phase)*Math.pow(u,1.4);
+      const d=Math.sin(t*.43+i*.85)*u*u;
+      const fold=front?(27+R*.14)*n+23*d:(12+R*.08)*n+29*d;
+      const x=cx+rootX+fold+Math.sin(phase*1.5+u*11-t*.6)*u*u*9;
+      const y=cy+rootY+u*length+Math.sin(u*10+t*.9+phase)*u*4;
+      const ch=front?('/|\\:;'.charAt((Math.floor(u*19+i*3)%5))):('|/\\:'.charAt((Math.floor(u*11+i)%4)));
+      const alpha=(front?.75:.39)*Math.pow(1-u,.24)*(0.83+.17*Math.sin(u*8+t+i));
+      textAt(ch,x,y,ink(.49+.41*u,front?73:58,alpha),front?12:11,front&&u<.3?3:0);
+      if(front&&i%2===0&&j%3===0)textAt('.',x+8+5*Math.sin(u*5+t),y,ink(.45+.4*u,62,alpha*.28),10);
+    }
+  }
+  function bell(t,cx,cy,R){
+    const surface=new Map();
+    const fontSize=clamp(R*.069,9.3,12.7);
+    const charW=fontSize*.61,charH=fontSize*.94;
+    const rowCount=Math.round(20*detail),thetaCount=Math.round(108*detail);
+    const pump=1+.065*Math.sin(t*1.28);
+    const lean=Math.sin(t*.2)*.11;
+    const ang=t*.21;
+    const cosA=Math.cos(ang),sinA=Math.sin(ang);
+    for(let r=0;r<=rowCount;r++){
+      const v=r/rowCount,phi=v*Math.PI*.5;
+      const radial=Math.sin(phi),height=Math.cos(phi);
+      for(let k=0;k<thetaCount;k++){
+        const a=k/thetaCount*TWO_PI;
+        const ripple=(.013*Math.sin(a*13-t*1.8)+.009*Math.cos(a*21+t*1.25))*v*v;
+        const xb=(radial+ripple)*R*Math.cos(a)*pump;
+        const zb=(radial+ripple)*R*.54*Math.sin(a)*pump;
+        const x3=xb*cosA-zb*sinA,z3=xb*sinA+zb*cosA;
+        const lipLift=12*Math.sin(a*8-t*1.7)*Math.pow(v,9);
+        const x=cx+x3+z3*lean;
+        const y=cy-R*.87*height+z3*.22+lipLift+Math.sin(t*.8)*2;
+        const gx=Math.round(x/charW),gy=Math.round(y/charH),key=gx+gy*10000;
+        const front=clamp(.5+z3/R,0,1);
+        const rim=Math.pow(v,8);
+        const lit=clamp(.27+front*.42+(1-v)*.28+rim*.2,0,1);
+        const level=Math.floor(lit*9);
+        const glyph='.,:;!iIYV%#@'[level+1]||'@';
+        const p=clamp(v*.65+front*.24,0,1);
+        const point={x:gx*charW,y:gy*charH,ch:glyph,p,light:57+lit*22,alpha:clamp((.36+front*.36+rim*.18)*(.8+.2*Math.sin(t+a*5)),.13,1),depth:z3,glow:rim>0.9&&front>.35?2.3:0};
+        const old=surface.get(key);if(!old||point.depth>old.depth)surface.set(key,point);
+      }
+    }
+    // Draw from surface samples into a stable monospaced cell lattice.
+    ctx.textBaseline='alphabetic';
+    for(const p of surface.values())textAt(p.ch,p.x,p.y,ink(p.p,p.light,p.alpha),fontSize,p.glow);
+    // An undulating fringe traces the lower edge of the bell.
+    for(let k=0;k<84;k++){
+      const a=k/84*TWO_PI;
+      const x=cx+R*Math.cos(a)*pump,y=cy+R*.116*Math.sin(a)+12*Math.sin(8*a-t*1.7);
+      const front=.5+.5*Math.sin(a);
+      textAt(k%4===0?'*':k%3===0?':':'~',x,y,ink(.63+.18*front,78,.30+.47*front),fontSize,front>.85?5:0);
+    }
+  }
+  function draw(t){
+    paintBackground(t);
+    const R=Math.min(w*.305,h*.32,192),cx=w*.50+Math.sin(t*.40)*Math.min(15,w*.027),cy=h*.40+Math.sin(t*.76)*13;
+    // Far filaments sit behind the cap; near ribbons come forward.
+    for(let i=0;i<21;i++)filament(i,21,t,cx,cy,R,false);
+    bell(t,cx,cy,R);
+    for(let i=0;i<8;i++)filament(i,8,t+.5,cx,cy,R,true);
+    // Bioluminescent motes peel away from the tentacles.
+    for(let i=0;i<23;i++){
+      const p=rng(i*7+1),a=t*(.18+rng(i*4)*.08)+i*2.4;
+      const x=cx+Math.cos(a)*R*(.28+p*.98),y=cy+R*.15+(rng(i*7+2)*R*1.8+t*(3+rng(i*3))* (i%2?1:-1))%(R*1.9);
+      textAt(i%5===0?'+':'.',x,y,ink(p,.67*100,.13+.25*(1-p)),10);
+    }
+  }
+  const codeLines=[
+    '// PELAGIC / procedural ASCII lifeform',
+    'const TWO_PI = Math.PI * 2;',
+    'const motion = { speed: 1, detail: 1.05 };',
+    '',
+    'function sampleBell(t, angle, v, radius) {',
+    '  const phi = v * Math.PI / 2;',
+    '  const pulse = 1 + 0.065 * Math.sin(t * 1.28);',
+    '  const ripple = 0.013 * Math.sin(angle * 13 - t * 1.8);',
+    '  const r = Math.sin(phi) * radius * pulse;',
+    '  const x = r * Math.cos(angle);',
+    '  const z = r * 0.54 * Math.sin(angle);',
+    '  const y = -radius * 0.87 * Math.cos(phi);',
+    '  return { x, y, z, ripple };',
+    '}',
+    '',
+    '// Each point is snapped to an ASCII character cell.',
+    'function glyphAt(brightness) {',
+    '  const ramp = ".,:;!iIYV%#@";',
+    '  const index = Math.floor(brightness * 11);',
+    '  return ramp[Math.min(index, ramp.length - 1)];',
+    '}',
+    '',
+    '// Tentacles are delayed waves, not stored frames.',
+    'function filament(u, index, time) {',
+    '  const phase = index * 0.73;',
+    '  const wave = Math.sin(u * 7.5 - time * .72 + phase);',
+    '  const sway = Math.pow(u, 1.4) * wave;',
+    '  const drift = Math.sin(time * .43 + index * .85);',
+    '  return sway * 27 + drift * u * u * 23;',
+    '}',
+    '',
+    '// Light emerges from colour, depth and distance.',
+    'function luminousInk(depth, progress, alpha) {',
+    '  const hue = 183 + progress * 88;',
+    '  const light = 57 + depth * 22;',
+    '  return `hsla(${hue}, 91%, ${light}%, ${alpha})`;',
+    '}',
+    '',
+    'function animate(now) {',
+    '  time += delta * motion.speed;',
+    '  sampleSurface(time);',
+    '  drawFilaments(time);',
+    '  requestAnimationFrame(animate);',
+    '}',
+    '',
+    '// The shape never repeats exactly. The rules do.',
+  ];
+  function escaped(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+  function highlight(s){
+    let out='',pos=0;
+    const regex=/(\/\/.*$|`[^`]*`|"[^"\n]*"|'[^'\n]*'|\b(?:const|let|return|function|for|if|else|new)\b|\b\d*\.?\d+\b|\b(?:Math|sin|cos|pow|floor|min|requestAnimationFrame|sampleBell|glyphAt|filament|luminousInk|animate|sampleSurface|drawFilaments)\b)/g;
+    for(const m of s.matchAll(regex)){
+      out+=escaped(s.slice(pos,m.index));const x=m[0];let klass=x.startsWith('//')?'comment':x.startsWith('"')||x.startsWith("'")||x.startsWith('`')?'string':/^\d/.test(x)?'number':/^(const|let|return|function|for|if|else|new)$/.test(x)?'keyword':'function';out+=`<span class="${klass}">${escaped(x)}</span>`;pos=m.index+x.length;
+    }return out+escaped(s.slice(pos));
+  }
+  let codeHTML='';for(let rep=0;rep<2;rep++)for(let i=0;i<codeLines.length;i++){codeHTML+=`<div class="code-line"><span class="lineno">${String(i+1).padStart(3,'0')}</span><span class="linecode">${highlight(codeLines[i])||'&nbsp;'}</span></div>`}
+  source.innerHTML=codeHTML;cycleHeight=codeLines.length*21;
+  function frame(now){
+    if(!last)last=now;const delta=Math.min((now-last)/1000,.08);last=now;
+    if(!paused){time+=delta*speed;scrollPos=(scrollPos+delta*(16+speed*12))%cycleHeight;source.style.transform=`translateY(${-scrollPos}px)`;}
+    acc+=delta;
+    if(acc>1/32){draw(time);acc=0;frames++;fpsTime+=delta;if(fpsTime>1.2){document.getElementById('fps').textContent=Math.round(frames/fpsTime)+' FPS';fpsTime=0;frames=0}}
+    requestAnimationFrame(frame);
+  }
+  document.querySelectorAll('.swatch').forEach(btn=>btn.addEventListener('click',()=>{palette=btn.dataset.palette;document.querySelectorAll('.swatch').forEach(b=>b.setAttribute('aria-pressed',String(b===btn)))}));
+  document.getElementById('speed').addEventListener('input',e=>{speed=Number(e.target.value);document.getElementById('speedValue').textContent=speed.toFixed(1)+'×'});
+  document.getElementById('detail').addEventListener('input',e=>{detail=Number(e.target.value);document.getElementById('detailValue').textContent=Math.round(detail*100)+'%'});
+  document.getElementById('play').addEventListener('click',e=>{paused=!paused;e.currentTarget.textContent=paused?'▶  RESUME':'Ⅱ   PAUSE';document.getElementById('runState').textContent=paused?'PAUSED':'LIVE RENDER';document.getElementById('traceStatus').textContent=paused?'● PAUSED':'● AUTO SCROLL'});
+  document.getElementById('save').addEventListener('click',()=>{const a=document.createElement('a');a.download='pelagic-ascii-frame.png';a.href=canvas.toDataURL('image/png');a.click()});
+  document.getElementById('full').addEventListener('click',()=>{if(document.fullscreenElement)document.exitFullscreen();else if(stage.requestFullscreen)stage.requestFullscreen()});
+  document.addEventListener('fullscreenchange',()=>{document.getElementById('full').textContent=document.fullscreenElement?'⊟  EXIT FULLSCREEN':'⤢  EXPAND';setTimeout(resize,50)});
+  if(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches){document.getElementById('play').click()}
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
