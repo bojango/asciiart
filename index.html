@@ -32,13 +32,12 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
 .actions button:hover { color:#e2f5ff; background:#132137; }
 .actions button:focus-visible { outline:2px solid #8bc8ea; outline-offset:-3px; }
 .swatch { width:10px; height:10px; flex:none; display:inline-block; border-radius:50%; background:linear-gradient(125deg,#b7faff,#7075ee); box-shadow:0 0 8px rgba(111,150,252,.35); }
-.code { position:relative; min-height:0; overflow:hidden; background:#060b14; }
-.code:after { content:""; position:absolute; pointer-events:none; inset:0; background:linear-gradient(to bottom,rgba(6,11,20,.23),transparent 15%,transparent 87%,rgba(6,11,20,.28)); }
-.code-inner { will-change:transform; }
-.line { display:flex; white-space:pre; align-items:baseline; min-height:19px; line-height:19px; font-size:11px; }
-.ln { display:inline-block; flex:0 0 47px; text-align:right; padding-right:17px; color:#3d4b62; user-select:none; }
-.src { color:#bdc9d8; white-space:pre; }
-.kw {color:#c993dc}.fn {color:#7cb4ec}.num {color:#dea779}.str {color:#add3ac}.com {color:#697a92}.op {color:#b5bdd7}
+.code { position:relative; min-height:0; overflow:hidden; background:#050d0a; }
+.code:after { content:""; position:absolute; pointer-events:none; inset:0; background:repeating-linear-gradient(to bottom,transparent 0,transparent 3px,rgba(79,175,129,.018) 4px),linear-gradient(to bottom,rgba(5,13,10,.3),transparent 15%,transparent 87%,rgba(5,13,10,.3)); }
+.code-inner { will-change:transform; font-family:"Courier New",Courier,monospace; font-variant-ligatures:none; font-weight:400; text-shadow:0 0 5px rgba(102,219,152,.09); }
+.line { display:flex; white-space:pre; align-items:baseline; min-height:19px; line-height:19px; font-size:12px; font-weight:400; color:#9bd6ac; letter-spacing:0; }
+.ln { display:inline-block; flex:0 0 47px; text-align:right; padding-right:17px; color:inherit; opacity:.43; user-select:none; }
+.src { color:inherit; white-space:pre; }
 @media(max-width:480px){ .app{grid-template-rows:minmax(0,2fr) 35px minmax(0,1fr)}.hud{font-size:9px}.hud.top-left{top:14px;left:13px}.hud.top-right{top:14px;right:13px}.hud.bottom-left{left:13px;bottom:10px}.hud.bottom-right{right:13px;bottom:10px}.bar{padding:0 6px 0 11px}.identity{font-size:10px;gap:7px}.identity em{display:none}.actions button{height:33px;min-width:36px;padding:0 7px;font-size:10px}.line{font-size:10px;line-height:18px;min-height:18px}.ln{flex-basis:36px;padding-right:12px} }
 @media(max-width:340px){.hud.bottom-right{display:none}.identity{letter-spacing:0}.actions button{padding:0 5px;min-width:32px}.actions button .word{display:none}}
 @media(prefers-reduced-motion:reduce){.led{box-shadow:none}}
@@ -75,6 +74,16 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
   const codeBox=document.getElementById('code');
   const PI=Math.PI,TAU=PI*2;
   const rand=(n)=>{let x=Math.sin(n*127.1+78.23)*43758.5453;return x-Math.floor(x)};
+  // Smooth seeded noise gives the animal an unpredictable path without any sudden jumps.
+  function smoothNoise(position,seed){
+    const i=Math.floor(position),u=position-i,fade=u*u*(3-2*u);
+    const a=rand(i*61.33+seed*13.7)*2-1;
+    const b=rand((i+1)*61.33+seed*13.7)*2-1;
+    return a+(b-a)*fade;
+  }
+  function drift(time,seed){
+    return clamp(.79*smoothNoise(time*.145,seed)+.30*smoothNoise(time*.36,seed+17),-1,1);
+  }
   const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
   const palettes=[
     {name:'ABYSS',top:190,base:256,edge:275,sat:88,swatch:'linear-gradient(125deg,#b7faff,#7075ee)'},
@@ -98,7 +107,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     dpr=Math.min(window.devicePixelRatio||1,width<500?1.5:2);
     canvas.width=Math.round(width*dpr);canvas.height=Math.round(height*dpr);
     ctx.setTransform(dpr,0,0,dpr,0,0);
-    radius=Math.min(width*.43,height*.345,260);
+    radius=Math.min(width*.34,height*.255,220);
     font=clamp(radius*(highRes?.060:.082),highRes?8.2:11,highRes?12.5:16);
     letter=font*.614;row=font*1.08;
     document.getElementById('detailStat').textContent=`${Math.round(width/letter)} × ${Math.round(height/row)}`;
@@ -114,7 +123,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
   };
   function drawBackground(time){
     ctx.fillStyle='#03060b';ctx.fillRect(0,0,width,height);
-    const mist=ctx.createRadialGradient(width*.5,height*.38,10,width*.5,height*.38,Math.max(radius*1.85,height*.75));
+    const mist=ctx.createRadialGradient(centerX,centerY-radius*.25,10,centerX,centerY-radius*.25,Math.max(radius*2.4,height*.68));
     mist.addColorStop(0,colour(.26,24,.11));mist.addColorStop(.55,colour(.7,17,.047));mist.addColorStop(1,'rgba(0,0,0,0)');
     ctx.fillStyle=mist;ctx.fillRect(0,0,width,height);
     setFont(font);
@@ -277,34 +286,37 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     }
   }
   function render(time){
-    centerX=width*.5+Math.sin(time*.33)*Math.min(13,width*.03);
-    centerY=height*.38+Math.sin(time*.7)*9;
+    // Roam within the viewport. Long trailing filaments remain mostly visible.
+    const xRange=Math.max(0,width*.5-radius*1.05-18);
+    const topLimit=radius*1.03+24;
+    const bottomLimit=height-radius*1.94-16;
+    const baseY=clamp(height*.39,topLimit,Math.max(topLimit,bottomLimit));
+    const yRange=Math.max(0,Math.min(baseY-topLimit,bottomLimit-baseY));
+    centerX=width*.5+xRange*clamp(1.22*drift(time,4)+.16*Math.sin(time*.61),-.97,.97);
+    centerY=baseY+yRange*clamp(1.26*drift(time*.93,12)+.18*Math.sin(time*.4+1.3),-.98,.98);
     drawBackground(time);
     for(let i=0;i<4;i++)drawMini(time,i);
+    // The body gently banks as it changes direction; arms follow its orientation.
+    const lean=.085*drift(time*.7+2,28)+.028*Math.sin(time*.69);
+    ctx.save();ctx.translate(centerX,centerY);ctx.rotate(lean);ctx.translate(-centerX,-centerY);
     setFont(font);
     for(let i=0;i<27;i++)drawFilament(time,i,27,false);
     drawBell(time);
     for(let i=0;i<5;i++)drawOralArm(time,i);
     for(let i=0;i<9;i++)drawFilament(time+.2,i,9,true);
     drawMotes(time);
+    ctx.restore();
   }
   const escapeHTML=(s)=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  function highlight(s){
-    let html='',prev=0;
-    const rx=/(\/\/.*$|\/\*.*\*\/|`[^`]*`|"[^"\n]*"|'[^'\n]*'|\b(?:const|let|return|function|for|if|else|new|while|continue|Math|Array)\b|\b(?:Math\.|ctx\.|PI|TAU|radius|font|print|drawBell|drawFilament|drawOralArm|drawBackground|drawMini|render|sin|cos|pow|sqrt|floor|min|max|clamp|rand|colour|setFont|requestAnimationFrame)\b|\b\d*\.?\d+\b)/g;
-    for(const m of s.matchAll(rx)){
-      html+=escapeHTML(s.slice(prev,m.index));const v=m[0];let type=v.startsWith('//')||v.startsWith('/*')?'com':v[0]==='"'||v[0]==="'"||v[0]==='`'?'str':/^\d/.test(v)?'num':/^(const|let|return|function|for|if|else|new|while|continue)$/.test(v)?'kw':'fn';
-      html+=`<span class="${type}">${escapeHTML(v)}</span>`;prev=m.index+v.length;
-    }
-    return html+escapeHTML(s.slice(prev));
-  }
   function buildSource(){
     // The panel displays real function bodies from the running animation engine.
     const chunks=[
       '// PELAGIC / live generative source',
-      '// Surface, currents and bioluminescence are recalculated every frame.',
+       '// The creature follows a wandering, seeded current through the viewport.',
       'const PI = Math.PI, TAU = PI * 2;',
       '',
+       smoothNoise.toString(),'',
+       drift.toString(),'',
       colour.toString(),'',
       drawBell.toString(),'',
       drawFilament.toString(),'',
@@ -318,7 +330,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     const lines=chunks.join('\n').split('\n');
     const lineHeight=window.innerWidth<=480?18:19;
     sourceHeight=lines.length*lineHeight;
-    const once=lines.map((line,i)=>`<div class="line"><span class="ln">${String(i+1).padStart(3,'0')}</span><span class="src">${highlight(line)||'&nbsp;'}</span></div>`).join('');
+    const once=lines.map((line,i)=>`<div class="line"><span class="ln">${String(i+1).padStart(3,'0')}</span><span class="src">${escapeHTML(line)||'&nbsp;'}</span></div>`).join('');
     codeInner.innerHTML=once+once;
   }
   function changePalette(){
