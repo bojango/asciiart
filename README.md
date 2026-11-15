@@ -2,7 +2,7 @@
 
 An experimental, responsive ASCII-art animation rendered in real time with vanilla HTML, CSS and JavaScript.
 
-The current concept features a procedurally animated jellyfish which roams around the scene using smooth seeded drift, gentle banking, flowing tentacles, drifting ASCII sea life and particles, colour palettes, and a monochrome retro-terminal source panel.
+The latest version uses pulsed propulsion, steerable multi-directional swimming, full inversions, a yaw/pitch-projected 3D ASCII bell, and flexible travelling-wave tentacles. A single-size, 9px monochrome Courier source panel scrolls the real rendering code.
 
 ## View the website
 
@@ -50,7 +50,9 @@ Future edits to `index.html` on `main` will publish automatically. GitHub Pages 
 
 ## Motion and source display
 
-The jellyfish swims within viewport-aware bounds using two layers of smoothly interpolated seeded noise. It is smaller than in v2, gently banks as it changes direction, and retains its procedural tentacles. The code panel scrolls real animation functions in a single-colour Courier terminal style without syntax highlighting.
+The animated jellyfish has a smooth, continuous velocity, changes swimming direction towards procedural waypoints, and contracts its bell for propulsive bursts. It can turn and swim upside down. Three-dimensional bell coordinates are projected using yaw and pitch with depth-tested ASCII glyphs, while tentacles react to body velocity and move via delayed travelling waves.
+
+The source panel displays actual live JavaScript functions in a uniform, smaller 9px Courier font, with no syntax colourization.
 
 ## Development
 
