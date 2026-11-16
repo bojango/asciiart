@@ -1,5 +1,21 @@
 # PELAGIC - Living ASCII
 
+## GREENWOOD 001 — a second living ASCII scene
+
+The toolbar now switches between **PELAGIC** (the existing autonomous jellyfish) and **GREENWOOD** (a new portrait-first woodland clearing) without leaving the site. The scene selection is remembered in the browser.
+
+GREENWOOD renders every visible landscape form using monospaced characters: an opening to the sky, distant trees, an ancient foreground trunk and branches, layered canopy, roots, ferns, moss, mushrooms and the forest floor. Light gradients provide ambience only. At night, the sky reveals stars and a few fireflies; during the day, typographic sunbeams illuminate the clearing. Wind gently moves vegetation, and the existing DEV weather simulation controls daylight, rain and haze. The existing colour button cycles early spring/summer/autumn/winter looks.
+
+This is an **art-direction prototype**: the scene is designed to be reviewed before wildlife, rare events or detailed seasonal physics are added. The new renderer is isolated in `greenwood.js`; the original PELAGIC rendering and physics remain intact. The code panel shows the currently selected scene's own source.
+
+### Planned GREENWOOD phases
+1. **Composition and atmosphere (001):** portrait framing, typographic depth layers, day/night, gentle motion. Review visual direction.
+2. **Environmental refinement (002):** improve sunlight, moonlight, wind, rain, mist, seasonal foliage/branches and controls.
+3. **Rare wildlife (003):** occasional rabbits, deer, foxes or owls with believable motion and depth occlusion.
+4. **Ambient ecology (004):** falling leaves, insects, rare discoveries, subtle interactions and performance improvements.
+5. **Live inputs / installation (005):** Open-Meteo weather while retaining simulation; later Raspberry Pi and optional smart-home sensors.
+
+
 A generative ASCII jellyfish artwork built with vanilla HTML, CSS and JavaScript.
 
 Live site: https://bojango.github.io/asciiart/
