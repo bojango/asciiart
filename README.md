@@ -40,6 +40,33 @@ A generative ASCII jellyfish artwork built with vanilla HTML, CSS and JavaScript
 
 Live site: https://bojango.github.io/asciiart/
 
+## Version 13: live weather, compact monochrome gallery and live life events
+
+### Artwork and code layout
+- Main artwork occupies 75% of the available main content area, with the source/dev panel at 25% and a thin dividing toolbar.
+- White/black-only toolbar buttons, pure black source background and white terminal typography.
+- A grey-highlighted source line advances through **functions that actually execute** (physics, tentacles, ecosystem, drawing and weather). The trace advances at a readable sampling rate; it is not a literal JavaScript instruction-pointer debugger.
+- Removed cell-count metadata and “All Glyphs / No Images”. The upper-right LIVE dot is green and pulses; it stops flashing when paused.
+
+### Live Open-Meteo weather
+- The weather developer tab has a persistent **LIVE / TEST** switch. LIVE is the default for new installations, and any previous mode choice is remembered.
+- LIVE reads Open-Meteo current temperature, precipitation, wind speed/direction, humidity and cloud cover, plus sunrise/sunset. A separate Open-Meteo European AQI feed provides air quality.
+- Forecast-derived sunlight changes continuously through daylight hours between sunrise and sunset, so the installation evolves through the day without requiring a new model value for every frame.
+- Weather is refreshed **every 20 minutes**, air quality **every 60 minutes**, with shorter backoff on failures. Input values transition gradually.
+- Default location: Lancaster, UK. DEV can select another town/city using Open-Meteo geocoding or explicitly ask permission for browser geolocation. Location/mode and test settings are saved locally.
+- Last-successful data is cached for short outages. DEV exposes fresh/stale/error state and latest refresh time. If no live data is available, the artwork uses neutral baseline values and displays ERROR rather than claiming they are live observations.
+- TEST retains manual sliders, effect checkboxes and presets. Both scenes use the same active environmental effects.
+- Weather comes from Open-Meteo's free non-commercial endpoints and uses no API key. Attribution: https://open-meteo.com/
+
+### Automatic ecosystem
+- When PELAGIC is selected, random plankton blooms, prey, fish and marine snow continue automatically via ecosystem.js; they are not dependent on weather mode.
+- DEV → LIFE retains switches, frequency controls and manual test encounters. Previous preferences are preserved.
+
+### Privacy and limitations
+- Public GitHub Pages contains no smart-home tokens. Device location is never requested automatically.
+- Open-Meteo weather/current conditions are model-based, not a private weather station; air quality is from CAMS model data.
+- Browser access to live APIs requires connectivity. Simulated and failed-network browser tests have been run, but live Safari API traffic must be checked after GitHub Pages deploys.
+
 ## Version 11: deeper exploration and occasional plankton encounters
 
 - The jellyfish explores **near and far depth goals** with inertia rather than hovering around one average Z position. It sometimes approaches significantly closer to the viewer before drifting away.

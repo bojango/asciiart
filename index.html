@@ -12,7 +12,7 @@
 * { box-sizing:border-box; }
 html,body { width:100%; height:100%; margin:0; padding:0; overflow:hidden; background:var(--bg); }
 body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono",monospace; -webkit-font-smoothing:antialiased; }
-.app { display:grid; grid-template-rows:minmax(0,2fr) 37px minmax(0,1fr); height:100vh; height:100dvh; width:100%; background:var(--bg); overflow:hidden; }
+.app { display:grid; grid-template-rows:minmax(0,3fr) 37px minmax(0,1fr); height:100vh; height:100dvh; width:100%; background:var(--bg); overflow:hidden; }
 .art { width:100%; position:relative; min-height:0; overflow:hidden; background:#03060b; }
 .art canvas { display:block; width:100%; height:100%; touch-action:manipulation; }
 .art:after { content:""; position:absolute; inset:0; pointer-events:none; background:radial-gradient(ellipse 75% 85% at 50% 46%,transparent 40%,rgba(1,3,8,.34) 100%); }
@@ -22,27 +22,27 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
 .hud.bottom-left { bottom:15px; left:20px; }
 .hud.bottom-right { bottom:15px; right:20px; text-align:right; }
 .hud strong { color:rgba(187,222,236,.75); font-weight:500; }
-.bar { border-top:1px solid #2a3547; border-bottom:1px solid #263248; display:flex; align-items:stretch; justify-content:space-between; gap:6px; padding:0 12px 0 16px; background:#0a101b; min-width:0; }
+.bar { border-top:1px solid #292929; border-bottom:1px solid #292929; display:flex; align-items:stretch; justify-content:space-between; gap:6px; padding:0 12px 0 16px; background:#000; min-width:0; }
 .identity { display:flex; gap:10px; align-items:center; min-width:0; white-space:nowrap; color:#b6c6d8; font-size:11px; font-weight:650; letter-spacing:.10em; }
 .identity em { color:#64738a; font-style:normal; font-size:10px; font-weight:400; }
-.led { width:5px; height:5px; display:block; border-radius:50%; background:#74d7be; box-shadow:0 0 9px rgba(99,242,186,.55); flex:none; }
-.led.off { background:#8b7385; box-shadow:none; }
+.led { width:5px; height:5px; display:block; border-radius:50%; background:#fff; box-shadow:none; flex:none; }
+.led.off { background:#777; box-shadow:none; }
 .actions { display:flex; align-items:center; gap:1px; flex:none; }
-.scene-switch {flex:none; border:1px solid #344538;background:#14221d;color:#d0decc;font:600 10px/1 "Courier New",monospace;letter-spacing:.055em;padding:7px 10px;white-space:nowrap;cursor:pointer;min-width:78px;}
-.scene-switch:hover,.scene-switch:focus-visible{color:#f2f9e9;background:#263f30;}
+.scene-switch {flex:none; border:1px solid #fff;background:#fff;color:#000;font:600 10px/1 "Courier New",monospace;letter-spacing:.055em;padding:7px 10px;white-space:nowrap;cursor:pointer;min-width:78px;}
+.scene-switch:hover,.scene-switch:focus-visible{color:#000;background:#ddd;}
 @media(max-width:480px){.bar .identity{display:none}.scene-switch{padding:6px 7px;font-size:9px;min-width:76px}.bar .actions button{min-width:32px;padding:0 5px}}
 @media(max-width:355px){.scene-switch{min-width:68px;font-size:8px}.bar .actions button{min-width:29px;padding:0 4px}}
-.actions button { -webkit-tap-highlight-color:transparent; display:inline-flex; align-items:center; justify-content:center; gap:7px; background:none; border:0; color:#a4b6ca; height:35px; min-width:42px; padding:0 9px; font:500 10px/1 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; letter-spacing:.05em; cursor:pointer; border-left:1px solid rgba(123,145,169,.10); border-radius:0; }
-.actions button:hover { color:#e2f5ff; background:#132137; }
-.actions button:focus-visible { outline:2px solid #8bc8ea; outline-offset:-3px; }
-.swatch { width:10px; height:10px; flex:none; display:inline-block; border-radius:50%; background:linear-gradient(125deg,#65e4ed,#cb65d6,#fac96e); box-shadow:0 0 8px rgba(111,150,252,.35); }
-.code { position:relative; min-height:0; overflow:hidden; background:#050d0a; }
-.code:after { content:""; position:absolute; pointer-events:none; inset:0; background:repeating-linear-gradient(to bottom,transparent 0,transparent 3px,rgba(79,175,129,.018) 4px),linear-gradient(to bottom,rgba(5,13,10,.3),transparent 15%,transparent 87%,rgba(5,13,10,.3)); }
-.code-inner { will-change:transform; font-family:"Courier New",Courier,monospace; font-variant-ligatures:none; font-weight:400; text-shadow:0 0 5px rgba(102,219,152,.09); }
-.line { display:flex; white-space:pre; align-items:baseline; height:15px; line-height:15px; font-size:9px; font-weight:400; color:#9bd6ac; letter-spacing:0; }
-.ln { display:inline-block; flex:0 0 35px; text-align:right; padding-right:12px; color:inherit; opacity:.43; user-select:none; font-size:inherit; line-height:inherit; }
+.actions button { -webkit-tap-highlight-color:transparent; display:inline-flex; align-items:center; justify-content:center; gap:7px; background:#000; border:0; color:#eee; height:35px; min-width:42px; padding:0 9px; font:500 10px/1 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; letter-spacing:.05em; cursor:pointer; border-left:1px solid rgba(123,145,169,.10); border-radius:0; }
+.actions button:hover { color:#000; background:#eaeaea; }
+.actions button:focus-visible { outline:2px solid #fff; outline-offset:-3px; }
+.swatch { width:10px; height:10px; flex:none; display:inline-block; border-radius:50%; background:linear-gradient(125deg,#fff,#777)!important; border:1px solid #dedede; box-shadow:none; }
+.code { position:relative; min-height:0; overflow:hidden; background:#000; }
+.code:after { content:""; position:absolute; pointer-events:none; inset:0; background:linear-gradient(to bottom,rgba(0,0,0,.16),transparent 14%,transparent 86%,rgba(0,0,0,.18)); }
+.code-inner { will-change:transform; font-family:"Courier New",Courier,monospace; font-variant-ligatures:none; font-weight:400; text-shadow:none; transition:transform 130ms linear; }
+.line { display:flex; white-space:pre; align-items:baseline; height:15px; line-height:15px; font-size:9px; font-weight:400; color:#ededed; letter-spacing:0; }
+.ln { display:inline-block; flex:0 0 35px; text-align:right; padding-right:12px; color:#777; opacity:1; user-select:none; font-size:inherit; line-height:inherit; }
 .src { color:inherit; white-space:pre; font-size:inherit; line-height:inherit; font-weight:inherit; }
-@media(max-width:480px){ .app{grid-template-rows:minmax(0,2fr) 35px minmax(0,1fr)}.hud{font-size:9px}.hud.top-left{top:14px;left:13px}.hud.top-right{top:14px;right:13px}.hud.bottom-left{left:13px;bottom:10px}.hud.bottom-right{right:13px;bottom:10px}.bar{padding:0 6px 0 11px}.identity{font-size:10px;gap:7px}.identity em{display:none}.actions button{height:33px;min-width:36px;padding:0 7px;font-size:10px}.line{font-size:9px;line-height:15px;height:15px}.ln{flex-basis:31px;padding-right:8px} }
+@media(max-width:480px){ .app{grid-template-rows:minmax(0,3fr) 35px minmax(0,1fr)}.hud{font-size:9px}.hud.top-left{top:14px;left:13px}.hud.top-right{top:14px;right:13px}.hud.bottom-left{left:13px;bottom:10px}.hud.bottom-right{right:13px;bottom:10px}.bar{padding:0 6px 0 11px}.identity{font-size:10px;gap:7px}.identity em{display:none}.actions button{height:33px;min-width:36px;padding:0 7px;font-size:10px}.line{font-size:9px;line-height:15px;height:15px}.ln{flex-basis:31px;padding-right:8px} }
 @media(max-width:340px){.hud.bottom-right{display:none}.identity{letter-spacing:0}.actions button{padding:0 5px;min-width:32px}.actions button .word{display:none}}
 
 /* DEV replaces the live code and never covers the artwork. */
@@ -71,7 +71,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
 .dev-panel .readout{color:#82b09e;font-size:9px;margin-left:auto;min-width:0;text-align:right;white-space:nowrap}
 @media(max-width:480px){.dev-panel{padding:5px 7px 3px;gap:3px;font-size:9px}.dev-panel header{min-height:21px}.dev-panel h2{font-size:10px}.dev-panel .dev-mode{display:none}.dev-panel .effect-grid{gap:2px 9px}.dev-panel .effect{padding-top:3px}.dev-panel input[type=range]{height:14px}.dev-panel .dev-footer button{font-size:9px;padding:4px 5px}.dev-panel .readout{font-size:8px}.actions button#devToggle{min-width:34px}}
 @media(max-height:650px){.dev-panel{gap:2px;padding-top:3px;padding-bottom:2px}.dev-panel header{min-height:18px}.dev-panel .effect{padding-top:1px}.dev-panel input[type=range]{height:12px}.dev-panel .dev-footer{min-height:18px}}
- .actions button[aria-pressed="true"] { color:#b5ffde; background:#12271f; }
+ .actions button[aria-pressed="true"] { color:#000; background:#fff; }
 .app.installation { grid-template-rows:minmax(0,1fr); }
 .app.installation > .bar,.app.installation > .code,.app.installation .hud { display:none; }
 .exit-installation { display:none; position:absolute; z-index:7; top:12px; right:12px; padding:6px 9px; border:1px solid #354350; border-radius:3px; background:rgba(4,10,17,.64); color:#adbdcc; font:10px "Courier New",monospace; cursor:pointer; opacity:.30; }
@@ -99,15 +99,38 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
 @media(max-width:480px){.dev-tabs button{font-size:8px;padding:3px}.dev-panel h2{font-size:9px}.eco-summary{font-size:8px}.eco-panel{gap:3px}.eco-switch{font-size:9px;padding:1px 0}.eco-tools button{font-size:9px;min-width:35px;padding:3px 5px}.eco-tools small{display:none}}
 @media(max-height:650px){.eco-summary{display:none}.eco-panel{gap:2px}.eco-tools{min-height:16px}}
 @media(prefers-reduced-motion:reduce){.led{box-shadow:none}}
+
+/* Executed-stage trace: highlight a moving line in the actual source listing. */
+.code .line.active-code{background:#383838;color:#fff;box-shadow:inset 3px 0 #a0a0a0}
+.code .line.active-code .ln{color:#d0d0d0}
+.live-indicator{display:inline-block;width:6px;height:6px;border-radius:50%;background:#39ed70;vertical-align:middle;box-shadow:0 0 9px rgba(65,255,113,.48);animation:liveBlink 1.5s ease-in-out infinite}
+.live-indicator.off{background:#999;box-shadow:none;animation:none}
+@keyframes liveBlink{0%,100%{opacity:1}50%{opacity:.18}}
+@media(prefers-reduced-motion:reduce){.live-indicator{animation:none}}
+/* Weather source and location controls live inside the existing DEV panel. */
+.dev-panel{overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
+.dev-panel .effect-grid{flex:0 0 auto;grid-template-rows:repeat(4,32px)}
+.dev-panel .effect{padding-top:2px}
+.weather-source[hidden]{display:none!important}
+.weather-source{display:flex;flex-direction:column;gap:3px;flex:none;border-bottom:1px solid #2c4038;padding-bottom:4px}
+.weather-source .source-row{display:flex;align-items:center;gap:4px;min-height:20px}
+.weather-source button{font-size:9px;border-color:#666;background:#000;color:#ddd}
+.weather-source button[aria-pressed="true"]{background:#fff;color:#000;border-color:#fff}
+.weather-source .source-status{color:#a6c8b6;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font:9px/1.2 'Courier New',monospace;flex:1}
+.weather-source .location-entry{flex:1;min-width:0;background:#050807;border:1px solid #4b6359;border-radius:2px;padding:2px 4px;font:10px 'Courier New',monospace;color:#ddd;height:20px}
+.weather-source .location-label{font-size:8px;color:#8bada1;white-space:nowrap;text-overflow:ellipsis;overflow:hidden}
+.weather-source .location-meta{color:#85a398;font-size:9px;white-space:nowrap}
+.dev-panel .preset-group select:disabled{opacity:.4}
+@media(max-width:480px){.weather-source .source-row{min-height:18px}.weather-source .source-status{font-size:8px}.weather-source button{padding:3px 5px}.dev-panel .effect-grid{grid-template-rows:repeat(4,30px)}}
 </style>
 </head>
 <body>
 <main class="app" aria-label="Procedural ASCII art experiment">
   <section class="art" id="art" aria-label="Animated ASCII jellyfish with bioluminescent tentacles and moving ASCII sea life">
     <canvas id="sea" role="img" aria-label="Colourful animated ASCII jellyfish in a dark deep-sea scene"></canvas>
-    <div class="hud top-left">PELAGIC <strong>/</strong> 012<br>LIVING ECOSYSTEM</div>
-    <div class="hud top-right"><span id="status">LIVE</span> <strong>●</strong><br><span id="detailStat">192 × 92</span></div>
-    <div class="hud bottom-left">MEDUSA <strong>ASTRALIS</strong><br>ALL GLYPHS / NO IMAGES</div>
+    <div class="hud top-left">PELAGIC <strong>/</strong> 013<br>LIVING ECOSYSTEM</div>
+    <div class="hud top-right"><span id="status">LIVE</span> <span id="liveDot" class="live-indicator" aria-label="Animation running"></span></div>
+    <div class="hud bottom-left">MEDUSA <strong>ASTRALIS</strong></div>
     <div class="hud bottom-right">DEPTH <strong>2480 M</strong><br>PROCEDURAL MOTION</div>
 
     <button type="button" class="exit-installation" id="exitInstallation" aria-label="Exit installation mode">EXIT</button>
@@ -127,10 +150,15 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
   <section class="code" id="code" aria-label="Continuously scrolling generative animation source code">
     <div class="code-inner" id="codeInner" aria-hidden="true"></div>
     <aside class="dev-panel" id="devPanel" hidden aria-label="Environmental simulation developer controls">
-      <header><h2>DEV / SIM</h2><div class="dev-tabs"><button id="devTabWeather" type="button" aria-pressed="true">WEATHER</button><button id="devTabLife" type="button" aria-pressed="false">LIFE</button></div><span class="dev-mode">OFFLINE</span><div class="preset-group"><label for="weatherPreset">PRESET</label><select id="weatherPreset" aria-label="Weather preset"><option value="custom">Custom</option><option value="calm">Calm</option><option value="storm">Storm</option><option value="cold">Cold</option><option value="heat">Heatwave</option><option value="night">Night</option><option value="mist">Mist</option></select></div><button id="devClose" type="button" aria-label="Close developer panel">×</button></header>
+      <header><h2>DEV / CONTROL</h2><div class="dev-tabs"><button id="devTabWeather" type="button" aria-pressed="true">WEATHER</button><button id="devTabLife" type="button" aria-pressed="false">LIFE</button></div><span class="dev-mode" id="weatherModeBadge">LIVE WEATHER</span><div class="preset-group"><label for="weatherPreset">PRESET</label><select id="weatherPreset" aria-label="Weather preset"><option value="custom">Custom</option><option value="calm">Calm</option><option value="storm">Storm</option><option value="cold">Cold</option><option value="heat">Heatwave</option><option value="night">Night</option><option value="mist">Mist</option></select></div><button id="devClose" type="button" aria-label="Close developer panel">×</button></header>
+      <div class="weather-source" id="weatherSource">
+        <div class="source-row"><button id="weatherModeLive" type="button" aria-pressed="true">LIVE</button><button id="weatherModeTest" type="button" aria-pressed="false">TEST</button><span class="source-status" id="weatherStatus" aria-live="polite">Connecting…</span></div>
+        <div class="source-row"><input class="location-entry" id="weatherCity" aria-label="Weather location" placeholder="Town or city" value="Lancaster"><button id="setWeatherCity" type="button">SET</button><button id="weatherUseGPS" type="button" aria-label="Use device location">GPS</button><button id="weatherRefresh" type="button" aria-label="Refresh live weather">↻</button></div>
+        <div class="location-label" id="weatherLocationLabel">Lancaster, UK · Open-Meteo</div>
+      </div>
       <div class="effect-grid" id="weatherControls"></div>
       <section class="eco-panel" id="ecosystemPanel" hidden aria-label="PELAGIC ecosystem controls">
-        <div class="eco-summary">Rare, independent encounters. Prey are caught only when a tentacle touches them.</div>
+        <div class="eco-summary">AUTOMATIC • Rare encounters are live. Use the buttons below for manual testing.</div>
         <div class="eco-grid" id="ecosystemControls"></div>
         <div class="eco-tools"><label>Activity <input id="ecoRate" aria-label="Ecosystem event frequency" type="range" min="0.55" max="2" step="0.05" value="1"></label><output id="ecoRateValue">1.00×</output></div>
         <div class="eco-tools eco-actions"><button type="button" data-spawn="bloom">BLOOM</button><button type="button" data-spawn="prey">PREY</button><button type="button" data-spawn="fish">FISH</button><button type="button" id="ecoReset">CLEAR</button><small>Simulated encounters</small></div>
@@ -190,6 +218,8 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
   ];
   let paletteIndex=0,highRes=true,speed=1,paused=false;
   let width=390,height=570,dpr=1,t=0,last=0,drawDebt=0,sourceOffset=0,sourceHeight=1;
+  let sourceLines=0,traceIndex=0,traceTimer=0,traceLast=-1;
+  let traceRanges={},traceSeen=new Set(),traceStage='physics',traceStageOffset=0,traceStageIndex=0;
   const stars=Array.from({length:175},(_,i)=>({x:rand(i*7+1),y:rand(i*7+2),v:.3+rand(i*7+3)*1.0,s:rand(i*7+4),phase:rand(i*7+5)*TAU}));
   const plankton=Array.from({length:45},(_,i)=>({x:rand(i*13+7),y:rand(i*13+8),phase:rand(i*13+9)*TAU,drift:rand(i*13+10)*2+1}));
   let font=10,letter=6,row=11,centerX=195,centerY=215,radius=150;
@@ -241,7 +271,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     radius=Math.min(width*.258,height*.195,165);
     font=clamp(radius*(highRes?.060:.082),highRes?8.2:11,highRes?12.5:16);
     letter=font*.614;row=font*1.08;
-    document.getElementById('detailStat').textContent=`${Math.round(width/letter)} × ${Math.round(height/row)}`;
+    // Cell density is internal, not displayed in the artwork.
     configureRopes();
   }
   const print=(char,x,y,color,px=font,glow=0)=>{
@@ -764,7 +794,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
       const lines=greenwood.source().split('\n');
       sourceHeight=lines.length*15;
       const once=lines.map((line,i)=>`<div class="line"><span class="ln">${String(i+1).padStart(3,'0')}</span><span class="src">${escapeHTML(line)||'&nbsp;'}</span></div>`).join('');
-      codeInner.innerHTML=once+once;sourceOffset=0;return;
+      codeInner.innerHTML=once;sourceLines=lines.length;traceIndex=0;traceLast=-1;sourceOffset=0;traceRanges={forest:{start:0,end:Math.max(0,lines.length-1)}};traceStage='forest';traceStageOffset=0;traceStageIndex=0;traceSeen=new Set();codeInner.style.transform='translate3d(0,0,0)';return;
     }
     // The panel displays real source from the animation and ecology engines.
     const chunks=[
@@ -796,11 +826,42 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
       '// End of source. Return to the beginning.',
       ''
     ];
-    const lines=chunks.join('\n').split('\n');
+    const fullSource=chunks.join('\n');
+    const lines=fullSource.split('\n');
+    traceRanges={};
+    for(const [key,fn] of [['weather',environment.effects],['physics',swim],['ropes',advanceRopes],['ecosystem',ecosystem.update],['render',render]]){
+      const body=fn.toString(),idx=fullSource.indexOf(body);
+      if(idx>=0){const start=fullSource.slice(0,idx).split('\n').length-1;traceRanges[key]={start,end:start+body.split('\n').length-1};}
+    }
+    traceStage='physics';traceStageIndex=0;traceStageOffset=0;traceSeen=new Set();
     const lineHeight=15;
     sourceHeight=lines.length*lineHeight;
     const once=lines.map((line,i)=>`<div class="line"><span class="ln">${String(i+1).padStart(3,'0')}</span><span class="src">${escapeHTML(line)||'&nbsp;'}</span></div>`).join('');
-    codeInner.innerHTML=once+once;
+    codeInner.innerHTML=once;sourceLines=lines.length;traceIndex=0;traceLast=-1;sourceOffset=0;codeInner.style.transform='translate3d(0,0,0)';
+  }
+  function markExecuted(name){traceSeen.add(name);}
+  function updateCodeTrace(delta){
+    if(!sourceLines||!devPanel.hidden)return;
+    traceTimer+=delta*speed;
+    if(traceTimer<.14)return;
+    traceTimer%=.14;
+    if(traceLast>=0&&codeInner.children[traceLast])codeInner.children[traceLast].classList.remove('active-code');
+    const available=(currentScene==='greenwood'?['forest']:['physics','ropes','ecosystem','render','weather'])
+      .filter(key=>traceSeen.has(key)&&traceRanges[key]);
+    if(!available.length)return;
+    if(!available.includes(traceStage)||traceStageOffset>(traceRanges[traceStage].end-traceRanges[traceStage].start)){
+      traceStageIndex=(traceStageIndex+1)%available.length;
+      traceStage=available[traceStageIndex];traceStageOffset=0;
+    }
+    const area=traceRanges[traceStage];
+    traceIndex=Math.min(area.end,area.start+traceStageOffset++);
+    traceLast=traceIndex;
+    const current=codeInner.children[traceIndex];
+    if(current)current.classList.add('active-code');
+    // Active lines belong to functions executed by the current engine.
+    // The line-by-line animation is sampled, not a JavaScript VM instruction pointer.
+    sourceOffset=Math.max(0,traceIndex*15-Math.max(30,codeBox.clientHeight)*.66);
+    codeInner.style.transform=`translate3d(0,${-sourceOffset}px,0)`;
   }
   function changePalette(){
     if(currentScene==='greenwood'){document.getElementById('colorName').textContent=greenwood.cycleSeason();return;}
@@ -814,8 +875,8 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     try{localStorage.setItem('pelagic.scene',currentScene);}catch(_){ }
     const forest=currentScene==='greenwood';
     document.getElementById('sceneName').textContent=forest?'◇ GREENWOOD':'◌ PELAGIC';
-    document.querySelector('.hud.top-left').innerHTML=forest?'GREENWOOD <strong>/</strong> 002<br>CINEMATIC CLEARING':'PELAGIC <strong>/</strong> 012<br>LIVING ECOSYSTEM';
-    document.querySelector('.hud.bottom-left').innerHTML=forest?'THE <strong>OLD GROVE</strong><br>ALL GLYPHS / NO IMAGES':'MEDUSA <strong>ASTRALIS</strong><br>ALL GLYPHS / NO IMAGES';
+    document.querySelector('.hud.top-left').innerHTML=forest?'GREENWOOD <strong>/</strong> 002<br>CINEMATIC CLEARING':'PELAGIC <strong>/</strong> 013<br>LIVING ECOSYSTEM';
+    document.querySelector('.hud.bottom-left').innerHTML=forest?'THE <strong>OLD GROVE</strong>':'MEDUSA <strong>ASTRALIS</strong>';
     document.querySelector('.hud.bottom-right').innerHTML=forest?'FIELD STUDY <strong>01</strong><br>LAYERS / LIGHT / WIND':'DEPTH <strong>2480 M</strong><br>PROCEDURAL MOTION';
     document.getElementById('colorName').textContent=forest?greenwood.season:palettes[paletteIndex].name;
     document.getElementById('swatch').style.background=forest?'linear-gradient(120deg,#315c4b,#a2b677,#b78d4a)':palettes[paletteIndex].swatch;
@@ -833,8 +894,9 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     document.getElementById('pause').setAttribute('aria-label',paused?'Resume animation':'Pause animation');
     document.getElementById('led').classList.toggle('off',paused);
     document.getElementById('status').textContent=paused?'PAUSED':'LIVE';
+    document.getElementById('liveDot').classList.toggle('off',paused);
   }
-  // Developer mode is a simulator; no private credentials or live feeds.
+  // DEV offers live Open-Meteo data and a separate offline test simulator.
   const devPanel=document.getElementById('devPanel');
   const app=document.querySelector('.app');
   const devToggle=document.getElementById('devToggle');
@@ -881,6 +943,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
   }
   function setDevTab(life){
     document.getElementById('weatherControls').hidden=life;
+    document.getElementById('weatherSource').hidden=life;
     document.getElementById('ecosystemPanel').hidden=!life;
     document.getElementById('devTabWeather').setAttribute('aria-pressed',String(!life));
     document.getElementById('devTabLife').setAttribute('aria-pressed',String(life));
@@ -907,17 +970,54 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
   document.getElementById('devTabWeather').addEventListener('click',()=>setDevTab(false));
   document.getElementById('devTabLife').addEventListener('click',()=>setDevTab(true));
   function syncDeveloperControls(){
-    const {values,enabled}=environment.state();
+    const {values,enabled,mode}=environment.state();
+    const live=mode==='live';
+    document.getElementById('weatherModeLive').setAttribute('aria-pressed',String(live));
+    document.getElementById('weatherModeTest').setAttribute('aria-pressed',String(!live));
+    document.getElementById('weatherPreset').disabled=live;
     for(const input of document.querySelectorAll('#weatherControls input')){
       if(input.dataset.effect){input.checked=!!enabled[input.dataset.effect];continue;}
       const field=input.dataset.field;if(!field)continue;
       input.value=values[field];
       const block=input.closest('.effect');
       const checkbox=block.querySelector('input[type=checkbox]');
-      input.disabled=!!checkbox&&!enabled[checkbox.dataset.effect];
-      block.querySelector('output').textContent=`${values[field]} ${block.querySelector('output').dataset.unit}`;
+      input.disabled=live || (!!checkbox&&!enabled[checkbox.dataset.effect]);
+      const shown=field==='temperatureC'?Math.round(Number(values[field])*10)/10:Math.round(Number(values[field]));
+      block.querySelector('output').textContent=`${shown} ${block.querySelector('output').dataset.unit}`;
     }
+    updateWeatherStatus();
   }
+  let weatherUIError='';
+  function updateWeatherStatus(){
+    const info=environment.state();
+    const source=info.mode==='live';
+    const status=document.getElementById('weatherStatus');
+    const updated=info.weatherUpdated?new Date(info.weatherUpdated).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}):'—';
+    const aq=info.airUpdated&&Number.isFinite(info.values.airQualityIndex)?` · AQI ${Math.round(info.values.airQualityIndex)}`:'';
+    status.textContent=weatherUIError|| (source ? `${info.weatherStatus.toUpperCase()} · ${updated}${aq}` : 'SIMULATED • OFFLINE');
+    status.title=weatherUIError||info.message||'Weather: '+info.weatherStatus+'; AQI: '+info.airStatus;
+    document.getElementById('weatherLocationLabel').textContent=`${info.location.name} · Open-Meteo${source?' · 20 min refresh':''}`;
+    document.getElementById('weatherModeBadge').textContent=source?'LIVE WEATHER':'TEST WEATHER';
+  }
+  async function chooseCity(){
+    const query=document.getElementById('weatherCity').value.trim();
+    if(!query)return;
+    weatherUIError='Finding location…';updateWeatherStatus();
+    try{await environment.setLocation(query);weatherUIError='';syncDeveloperControls();}
+    catch(err){weatherUIError=String(err.message||err).slice(0,65);updateWeatherStatus();}
+  }
+  document.getElementById('weatherModeLive').addEventListener('click',()=>{weatherUIError='';environment.setMode('live');syncDeveloperControls();});
+  document.getElementById('weatherModeTest').addEventListener('click',()=>{weatherUIError='';environment.setMode('test');syncDeveloperControls();});
+  document.getElementById('setWeatherCity').addEventListener('click',chooseCity);
+  document.getElementById('weatherCity').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();chooseCity();}});
+  document.getElementById('weatherUseGPS').addEventListener('click',async()=>{
+    weatherUIError='Checking location permission…';updateWeatherStatus();
+    try{await environment.useDeviceLocation();weatherUIError='';syncDeveloperControls();}
+    catch(err){weatherUIError=String(err.message||err).slice(0,65);updateWeatherStatus();}
+  });
+  document.getElementById('weatherRefresh').addEventListener('click',()=>{
+    weatherUIError='';environment.refresh(true).then(()=>{syncDeveloperControls();});updateWeatherStatus();
+  });
   function toggleDeveloper(force){
     const show=typeof force==='boolean'?force:devPanel.hidden;
     devPanel.hidden=!show;codeBox.classList.toggle('dev-active',show);
@@ -954,23 +1054,25 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     debug: ()=>({x:swimmer.x,y:swimmer.y,z:swimmer.z,depthGoal:swimmer.depthGoal,depthChanges:swimmer.depthChanges,angle:swimmer.angle,scale:bodyScale(),velocity:[swimmer.vx,swimmer.vy,swimmer.vz],thrust:swimmer.thrust,ceilingGlide:swimmer.ceilingGlide,streamline:swimmer.streamline,burstActive:t<swimmer.burstUntil,ecosystem:ecosystem.state(),behaviour:swimmer.behaviour,effects:environmentalFx,penetrations:ropes.reduce((count,r)=>count+(r.points||[]).slice(1).filter(p=>!!bellPenetration(p.x,p.y)).length,0),ropeCount:ropes.length})
   });
   buildDeveloperControls();
+  let weatherStatusTimer=0;
   function frame(now){
     if(!last)last=now;
     const delta=Math.min((now-last)/1000,.075);last=now;
     if(!paused){
       t+=delta*speed;
-      environment.tick(delta);
+      markExecuted('weather');environment.tick(delta);
+      weatherStatusTimer+=delta;
+      if(weatherStatusTimer>3){weatherStatusTimer=0;if(!devPanel.hidden && !devPanel.classList.contains('life-mode')){syncDeveloperControls();}}
       environmentalFx=environment.effects();
-      if(currentScene==='pelagic')swim(delta*speed,t);
+      if(currentScene==='pelagic'){markExecuted('physics');swim(delta*speed,t);}
       ropeDebt+=delta*speed;
       let steps=0;
-      while(ropeDebt>=1/60&&steps++<5){if(currentScene==='pelagic')advanceRopes(1/60,t-ropeDebt+1/60);ropeDebt-=1/60;}
+      while(ropeDebt>=1/60&&steps++<5){if(currentScene==='pelagic'){markExecuted('ropes');advanceRopes(1/60,t-ropeDebt+1/60);}ropeDebt-=1/60;}
       if(steps>5)ropeDebt=0;
-      if(currentScene==='pelagic')ecosystem.update(delta*speed,t,swimmer,ropes,{width,height,radius,scale:bodyScale()},environmentalFx);
-      sourceOffset=(sourceOffset+delta*speed*31)%sourceHeight;
-      codeInner.style.transform=`translate3d(0,${-sourceOffset}px,0)`;
+      if(currentScene==='pelagic'){markExecuted('ecosystem');ecosystem.update(delta*speed,t,swimmer,ropes,{width,height,radius,scale:bodyScale()},environmentalFx);}
+      updateCodeTrace(delta);
       drawDebt+=delta;
-      if(drawDebt>=1/30){render(t);drawDebt=0;
+      if(drawDebt>=1/30){markExecuted(currentScene==='greenwood'?'forest':'render');render(t);drawDebt=0;
         if(!devPanel.hidden)document.getElementById('devReadout').textContent=currentScene==='greenwood'?`GROVE · ${greenwood.season}`:devPanel.classList.contains('life-mode')?`CATCH ${ecosystem.state().counts.preyCaught}`:`Z ${swimmer.z.toFixed(1)} · ${swimmer.behaviour.slice(0,5).toUpperCase()}`;
       }
     }
