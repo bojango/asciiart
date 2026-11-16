@@ -83,7 +83,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
 <main class="app" aria-label="Procedural ASCII art experiment">
   <section class="art" id="art" aria-label="Animated ASCII jellyfish with bioluminescent tentacles and moving ASCII sea life">
     <canvas id="sea" role="img" aria-label="Colourful animated ASCII jellyfish in a dark deep-sea scene"></canvas>
-    <div class="hud top-left">PELAGIC <strong>/</strong> 009<br>GENERATIVE SPECIMEN</div>
+    <div class="hud top-left">PELAGIC <strong>/</strong> 010<br>GENERATIVE SPECIMEN</div>
     <div class="hud top-right"><span id="status">LIVE</span> <strong>●</strong><br><span id="detailStat">192 × 92</span></div>
     <div class="hud bottom-left">MEDUSA <strong>ASTRALIS</strong><br>ALL GLYPHS / NO IMAGES</div>
     <div class="hud bottom-right">DEPTH <strong>2480 M</strong><br>PROCEDURAL MOTION</div>
@@ -128,7 +128,8 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
   const swimmer={x:0,y:0,vx:0,vy:0,angle:-.12,yaw:.18,pitch:-.07,
     strokePhase:0,stroke:0,pulse:0,pulseRate:0,thrust:0,travel:0,turn:0,initialised:false,
     z:.20,vz:0,energy:.7,curiousUntil:0,startledUntil:0,interest:0,startle:0,behaviour:'exploring',
-    burstUntil:0,burstPower:0,nextBurstAt:9,streamline:0 };
+    burstUntil:0,burstPower:0,nextBurstAt:9,streamline:0,
+    ceilingGlide:false,glideDirection:1,glideStart:0 };
   // Smooth, seeded random motion: no teleporting targets, no repeating L/R loop.
   const noise=(time,seed)=>{
     const cell=Math.floor(time),f=time-cell;
@@ -157,19 +158,42 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
   const setFont=(px)=>{ctx.font=`${px}px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace`;ctx.textBaseline='middle';};
   // The base palette is spectral. A slow phase drift animates the
   // chromatic bands without making the entire animal flash in unison.
+  const temperatureStops=[[-10,[21,70,181]],[-5,[34,102,220]],[0,[78,171,247]],
+    [5,[88,222,235]],[10,[247,166,67]],[15,[251,104,55]],
+    [20,[243,66,61]],[25,[212,25,51]],[35,[187,20,47]]];
+  let temperatureTint={value:NaN,r:0,g:0,b:0};
+  function getTemperatureTint(){
+    const degrees=clamp(12+environmentalFx.temperature*30,-10,35);
+    if(!Number.isFinite(temperatureTint.value)||Math.abs(degrees-temperatureTint.value)>.025){
+      let j=1;
+      while(j<temperatureStops.length-1 && degrees>temperatureStops[j][0])j++;
+      const lo=temperatureStops[j-1],hi=temperatureStops[j];
+      const u=clamp((degrees-lo[0])/(hi[0]-lo[0]),0,1);
+      temperatureTint={value:degrees,r:lo[1][0]+(hi[1][0]-lo[1][0])*u,
+        g:lo[1][1]+(hi[1][1]-lo[1][1])*u,b:lo[1][2]+(hi[1][2]-lo[1][2])*u};
+    }
+    return temperatureTint;
+  }
   const colour=(progress,light,opacity=1)=>{
     const p=palettes[paletteIndex];
-    // Temperature blends spatial bands toward clearly recognisable extremes.
-    // Frozen: blue/cyan. Hot: red/coral. Effect can be disabled in DEV.
+    // Actual outdoor-temperature scale, tuned for northern England.
+    // -10C is deep blue; 0C ice blue; +5C cyan; +10C orange;
+    // +20C coral and +25C+ red. Crossfading RGB avoids green in transition.
     const base=p.start+p.span*clamp(progress,0,1)+(paletteIndex===3?0:t*2.8);
-    const cold=clamp((-environmentalFx.temperature-.12)/.67,0,1);
-    const hot=clamp((environmentalFx.temperature-.12)/.67,0,1);
-    const hue=base*(1-cold-hot)+(204+progress*26)*cold+(350+progress*28)*hot;
-    const saturation=p.sat+(94-p.sat)*Math.max(cold,hot);
     const nighttime=1-environmentalFx.daylight;
     const lumen=clamp(light+nighttime*5-environmentalFx.air*6,0,100);
     const alpha=opacity*(1-environmentalFx.air*.22)*(1+nighttime*.055);
-    return `hsla(${((hue%360)+360)%360},${saturation}%,${lumen}%,${clamp(alpha,0,1)})`;
+    if(environmentalFx.enabled?.temperature){
+      const c=getTemperatureTint();
+      // Moving internal bands remain visible within each temperature colour.
+      const detail=1+.11*Math.sin(progress*11-t*.7)+.055*Math.cos(progress*25+t*.35);
+      const illumination=clamp((lumen-38)/44,.24,1.18)*detail;
+      const r=Math.round(clamp(c.r*illumination,0,255));
+      const g=Math.round(clamp(c.g*illumination,0,255));
+      const b=Math.round(clamp(c.b*illumination,0,255));
+      return `rgba(${r},${g},${b},${clamp(alpha,0,1)})`;
+    }
+    return `hsla(${((base%360)+360)%360},${p.sat}%,${lumen}%,${clamp(alpha,0,1)})`;
   };
   function resize(){
     const b=art.getBoundingClientRect();width=Math.max(200,b.width);height=Math.max(230,b.height);
@@ -269,9 +293,24 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     if(!a.initialised){a.x=width*.50;a.y=height*.40;a.angle=0;a.initialised=true;}
     if(!dt){centerX=a.x;centerY=a.y;return;}
     const scale=bodyScale(),footprint=radius*scale;
-    const minX=footprint*1.08,maxX=Math.max(minX+1,width-footprint*1.08);
-    const minY=footprint*1.04,maxY=Math.max(minY+1,height-footprint*1.54);
+    // World bounds only catch rare escapes. Swim planning starts well before
+    // the visible edges, with no positional snapping inside the safe region.
+    const minX=footprint*.88,maxX=Math.max(minX+1,width-footprint*.88);
+    const minY=footprint*.78,maxY=Math.max(minY+1,height-footprint*1.25);
     const depth=clamp((a.y-minY)/Math.max(1,maxY-minY),0,1);
+    const preferredTop=Math.max(footprint*1.52,height*.29);
+    const preferredBottom=Math.min(height-footprint*1.52,height*.68);
+    // An upward-moving animal naturally suspends its strokes, banks sideways
+    // and glides down until safely below the upper zone (with hysteresis).
+    if(!a.ceilingGlide && a.y<preferredTop && a.vy<12){
+      a.ceilingGlide=true;a.glideStart=time;
+      a.glideDirection=rand(time*5.43+201)>.5?1:-1;
+    }
+    if(a.ceilingGlide && a.y>preferredTop+height*.15 && time>a.glideStart+3){
+      a.ceilingGlide=false;
+    }
+    const topProximity=clamp((preferredTop+height*.12-a.y)/(height*.20),0,1);
+    const bottomProximity=clamp((a.y-preferredBottom)/(height*.18),0,1);
 
     // An internal, slowly varying temperament prevents identical reactions.
     const temper=.65+.30*noise(time*.033,901)+.17*noise(time*.11,27);
@@ -296,6 +335,8 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     a.z=clamp(a.z+a.vz*dt,-.70,.90);
 
     const prev=a.pulse;
+    // Bell strokes quieten while the jellyfish coasts down from the ceiling;
+    // its outer rim still breathes, but it is not producing full thrust.
     a.strokePhase+=dt*(2.00+.40*depth+.30*a.energy+.15*noise(time*.18,42)+(burstActive?2.5:0));
     const cycle=(a.strokePhase%TAU)/TAU;
     const smooth=u=>u*u*(3-2*u);
@@ -303,35 +344,44 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     a.pulseRate=(a.pulse-prev)/dt;
     a.stroke=Math.max(0,a.pulseRate);
 
-    const steer=clamp(.23*noise(time*.10,8)+.13*noise(time*.30,22)+.002*a.vx,-.31,.31);
-    a.angle=ease(a.angle,steer,1.30,dt);
+    // Choose a diagonal glide rather than parking underneath the ceiling.
+    const steer=clamp(.28*noise(time*.10,8)+.16*noise(time*.30,22)
+      +(a.ceilingGlide?.27*a.glideDirection:0)+.002*a.vx,-.49,.49);
+    a.angle=ease(a.angle,steer,1.08,dt);
     a.turn=ease(a.turn,steer-a.angle,1.5,dt);
     a.yaw=ease(a.yaw,.60*noise(time*.15,8)+.26*Math.sin(time*.22),.76,dt);
     a.pitch=ease(a.pitch,.13*noise(time*.24,38)+.055*Math.sin(time*.39),.80,dt);
 
     // Real pulse propulsion, modified subtly by energy, not by the sensors.
-    const thrust=84*a.stroke*(.80+.22*a.energy)*(burstActive?1.65:1);
+    const effort=(a.ceilingGlide?.16:1)*(1-.66*topProximity);
+    const thrust=84*a.stroke*(.80+.22*a.energy)*(burstActive?1.65:1)*effort;
     a.thrust=thrust;
     const currentX=15*noise(time*.12,12)+7*noise(time*.37,31)+environmentalFx.windX;
     const currentY=10*noise(time*.14,59)+6*noise(time*.31,84)+environmentalFx.windY;
     const drag=1.05+.36*(1-a.pulse);
     let fx=thrust*Math.sin(a.angle)+(currentX-a.vx)*drag;
     let fy=-thrust*Math.cos(a.angle)+25+(currentY-a.vy)*drag;
-    if(startleActive){fy-=a.startle*12;fx+=a.startle*13*Math.sin(time*3);}
+    if(startleActive){fy-=a.startle*7*(1-topProximity);fx+=a.startle*13*Math.sin(time*3);}
     if(environmentalFx.rain){fx+=environmentalFx.rain*12*noise(time*.73,43);}
-    const zone=footprint*.24;
-    if(a.x<minX+zone)fx+=(minX+zone-a.x)*4.2;
-    if(a.x>maxX-zone)fx-=(a.x-maxX+zone)*4.2;
-    if(a.y<minY+zone)fy+=(minY+zone-a.y)*5.0;
-    if(a.y>maxY-zone)fy-=(a.y-maxY+zone)*5.0;
+    // Distant, soft restoring currents: no sudden reversal at a hard wall.
+    const meanderY=height*(.46+.09*noise(time*.055,737));
+    fy+=(meanderY-a.y)*.12;
+    fy+=topProximity*32+Math.max(0,-a.vy)*.48*topProximity;
+    fy-=bottomProximity*29;
+    // Gently change course near the lateral edges.
+    const sideZone=Math.max(footprint*.40,width*.12);
+    if(a.x<minX+sideZone)fx+=(minX+sideZone-a.x)*1.8;
+    if(a.x>maxX-sideZone)fx-=(a.x-maxX+sideZone)*1.8;
     const maxSpeed=burstActive?136:82;
     a.vx=clamp(a.vx+fx*dt,-maxSpeed,maxSpeed);
     a.vy=clamp(a.vy+fy*dt,-maxSpeed,maxSpeed);
     a.x+=a.vx*dt;a.y+=a.vy*dt;
-    if(a.x<minX){a.x=minX;a.vx=Math.max(0,a.vx)*.25;}
-    if(a.x>maxX){a.x=maxX;a.vx=Math.min(0,a.vx)*.25;}
-    if(a.y<minY){a.y=minY;a.vy=Math.max(0,a.vy)*.25;}
-    if(a.y>maxY){a.y=maxY;a.vy=Math.min(0,a.vy)*.25;}
+    // Emergency safety catches only, outside the normal steering corridor.
+    // Leave most of the physics untouched, even if part of the bell clips.
+    if(a.x<minX){a.x=minX;a.vx=Math.max(4,Math.abs(a.vx)*.30);}
+    if(a.x>maxX){a.x=maxX;a.vx=-Math.max(4,Math.abs(a.vx)*.30);}
+    if(a.y<minY){a.y=minY;a.vy=Math.max(8,Math.abs(a.vy)*.30);a.ceilingGlide=true;}
+    if(a.y>maxY){a.y=maxY;a.vy=-Math.max(8,Math.abs(a.vy)*.30);a.ceilingGlide=false;}
     a.travel=Math.hypot(a.vx,a.vy);centerX=a.x;centerY=a.y;
     // A short-lived, dissipating ASCII wake provides direction/depth cues.
     if(a.stroke>1.7 && wake.length<180 && Math.floor(time*24)%3===0){
@@ -356,7 +406,9 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     const polarity=(a.z>.55? -1:a.z<-.38?1:toward?-1:1);
     a.vz=clamp(a.vz+polarity*(.63+.46*power),-1.12,1.12);
     a.vx+=(rand(time*7.71+29)-.5)*65*power;
-    a.vy-=23*power+rand(time*13.7+44)*35*power;
+    // At the top, a burst goes mainly into Z or sideways, not into the wall.
+    const upper=Math.max(radius*bodyScale()*1.55,height*.31);
+    a.vy+=(a.y<upper?12*power:-(23+rand(time*13.7+44)*35)*power);
     a.burstUntil=time+.80+.48*rand(time*5.71+19);
     a.burstPower=power;
     a.streamline=Math.max(a.streamline,.19*power);
@@ -777,7 +829,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     environment: Object.freeze({setInput:environment.setInput,setEnabled:environment.setEnabled,preset:environment.preset}),
     presence: strength=>signalPresence(strength),
     touch: (x,y)=>signalTouch(x,y),
-    debug: ()=>({x:swimmer.x,y:swimmer.y,z:swimmer.z,scale:bodyScale(),velocity:[swimmer.vx,swimmer.vy,swimmer.vz],streamline:swimmer.streamline,burstActive:t<swimmer.burstUntil,behaviour:swimmer.behaviour,effects:environmentalFx,penetrations:ropes.reduce((count,r)=>count+(r.points||[]).slice(1).filter(p=>!!bellPenetration(p.x,p.y)).length,0),ropeCount:ropes.length})
+    debug: ()=>({x:swimmer.x,y:swimmer.y,z:swimmer.z,scale:bodyScale(),velocity:[swimmer.vx,swimmer.vy,swimmer.vz],thrust:swimmer.thrust,ceilingGlide:swimmer.ceilingGlide,streamline:swimmer.streamline,burstActive:t<swimmer.burstUntil,behaviour:swimmer.behaviour,effects:environmentalFx,penetrations:ropes.reduce((count,r)=>count+(r.points||[]).slice(1).filter(p=>!!bellPenetration(p.x,p.y)).length,0),ropeCount:ropes.length})
   });
   buildDeveloperControls();
   function frame(now){

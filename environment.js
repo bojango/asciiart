@@ -7,7 +7,7 @@
   'use strict';
   const clamp = (n,a,b) => Math.max(a,Math.min(b,Number.isFinite(Number(n)) ? Number(n) : a));
   const definitions = Object.freeze({
-    temperature: {field:'temperatureC',min:-15,max:40,default:14},
+    temperature: {field:'temperatureC',min:-10,max:35,default:14},
     wind:        {field:'windKmh',min:0,max:90,default:8},
     rain:        {field:'rainPct',min:0,max:100,default:0},
     airQuality:  {field:'airQualityIndex',min:0,max:200,default:25},
