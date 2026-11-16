@@ -83,7 +83,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
 <main class="app" aria-label="Procedural ASCII art experiment">
   <section class="art" id="art" aria-label="Animated ASCII jellyfish with bioluminescent tentacles and moving ASCII sea life">
     <canvas id="sea" role="img" aria-label="Colourful animated ASCII jellyfish in a dark deep-sea scene"></canvas>
-    <div class="hud top-left">PELAGIC <strong>/</strong> 010<br>GENERATIVE SPECIMEN</div>
+    <div class="hud top-left">PELAGIC <strong>/</strong> 011<br>GENERATIVE SPECIMEN</div>
     <div class="hud top-right"><span id="status">LIVE</span> <strong>●</strong><br><span id="detailStat">192 × 92</span></div>
     <div class="hud bottom-left">MEDUSA <strong>ASTRALIS</strong><br>ALL GLYPHS / NO IMAGES</div>
     <div class="hud bottom-right">DEPTH <strong>2480 M</strong><br>PROCEDURAL MOTION</div>
@@ -125,10 +125,11 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
   const PI=Math.PI,TAU=PI*2;
   const rand=(n)=>{let x=Math.sin(n*127.1+78.23)*43758.5453;return x-Math.floor(x)};
   const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
-  const swimmer={x:0,y:0,vx:0,vy:0,angle:-.12,yaw:.18,pitch:-.07,
+  const swimmer={x:0,y:0,vx:0,vy:0,angle:0,yaw:.18,pitch:-.07,
     strokePhase:0,stroke:0,pulse:0,pulseRate:0,thrust:0,travel:0,turn:0,initialised:false,
     z:.20,vz:0,energy:.7,curiousUntil:0,startledUntil:0,interest:0,startle:0,behaviour:'exploring',
-    burstUntil:0,burstPower:0,nextBurstAt:9,streamline:0,
+    burstUntil:0,burstPower:0,nextBurstAt:8,streamline:0,
+    depthGoal:.20,nextDepthDecision:9,depthChanges:0,
     ceilingGlide:false,glideDirection:1,glideStart:0 };
   // Smooth, seeded random motion: no teleporting targets, no repeating L/R loop.
   const noise=(time,seed)=>{
@@ -137,6 +138,10 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     return 2*(rand(cell*11.71+seed)*(1-u)+rand((cell+1)*11.71+seed)*u)-1;
   };
   const bodyScale=()=>clamp(1/(1+swimmer.z*.46),.72,1.47);
+  // One intermittent, ephemeral plankton bloom: a discovery, not another UI element.
+  // It does not prescribe a route; the animal can ignore it entirely.
+  const bloom={active:false,next:12,until:0,born:0,x:0,y:0,z:0,vx:0,vy:0,seed:0,
+    curious:false,disturbedAt:-100,interactions:0,visits:0};
   const wake=[];
   const ropes=[];
   let ropeDebt=0;
@@ -319,19 +324,27 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     a.behaviour=startleActive?'startled':curiousActive?'curious':temper<.48?'resting':'exploring';
     a.energy=ease(a.energy,clamp(temper+(curiousActive?.24:0)+(startleActive?.45:0),.32,1.4),.45,dt);
     a.startle=ease(a.startle,startleActive?1:0,startleActive?3:1.1,dt);
-    // Occasional autonomous spurts, with longer calm intervals between them.
+    // Occasional bursts break up long glides, separated by varied quiet periods.
     if(time>a.nextBurstAt && !startleActive){
-      startBurst(time,.68+.30*rand(time*1.3+76));
-      a.nextBurstAt=time+15+rand(time*3.7+26)*21;
+      startBurst(time,.72+.32*rand(time*1.3+76));
+      a.nextBurstAt=time+11+rand(time*3.7+26)*16;
     }
     const burstActive=time<a.burstUntil;
     a.streamline=ease(a.streamline,clamp((Math.hypot(a.vx,a.vy)+Math.abs(a.vz)*65-35)/110,0,.35)+(burstActive?.20:0),burstActive?6:2.3,dt);
 
-    // Z is a genuine third axis of exploration: no viewport drag/zoom.
-    const wanderingZ=.17+.53*noise(time*.043,211)+.14*noise(time*.106,61);
-    const desiredZ=clamp(curiousActive && a.interest>.45 ? -.67 : wanderingZ,-.70,.89);
-    const zForce=(desiredZ-a.z)*1.85-a.vz*2.2;
-    a.vz=clamp(a.vz+zForce*dt,burstActive?-1.12:-.60,burstActive?1.12:.60);
+    // Depth exploration uses occasional near/far goals and time to glide
+    // between them. No periodic zoom and no forced path through the screen.
+    if(time>=a.nextDepthDecision){
+      const choice=rand(time*2.37+211);
+      a.depthGoal=choice<.40?-.48-.18*rand(time+8):choice<.83?.50+.30*rand(time+17):-.13;
+      a.nextDepthDecision=time+10+rand(time*3.71+61)*11;
+      a.depthChanges++;
+    }
+    const bloomCurious=bloom.active&&bloom.curious&&bloom.disturbedAt<0;
+    const desiredZ=clamp(curiousActive&&a.interest>.45?-.64:
+      bloomCurious?bloom.z:a.depthGoal,-.70,.89);
+    const zForce=(desiredZ-a.z)*3.5-a.vz*2.45;
+    a.vz=clamp(a.vz+zForce*dt,burstActive?-1.3:-.84,burstActive?1.3:.84);
     a.z=clamp(a.z+a.vz*dt,-.70,.90);
 
     const prev=a.pulse;
@@ -344,17 +357,20 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     a.pulseRate=(a.pulse-prev)/dt;
     a.stroke=Math.max(0,a.pulseRate);
 
-    // Choose a diagonal glide rather than parking underneath the ceiling.
-    const steer=clamp(.28*noise(time*.10,8)+.16*noise(time*.30,22)
-      +(a.ceilingGlide?.27*a.glideDirection:0)+.002*a.vx,-.49,.49);
-    a.angle=ease(a.angle,steer,1.08,dt);
+    // Upright resting posture. Banking reflects sideways velocity/turning,
+    // and settles to neutral once lateral forces diminish (no persistent lean).
+    const baseSteer=.075*noise(time*.11,8)+.036*noise(time*.32,22);
+    const sideSteer=clamp(a.vx/250,-.13,.13);
+    const glideSteer=a.ceilingGlide?.10*a.glideDirection:0;
+    const steer=clamp(baseSteer+sideSteer+glideSteer,-.23,.23);
+    a.angle=ease(a.angle,steer,burstActive?2.4:1.45,dt);
     a.turn=ease(a.turn,steer-a.angle,1.5,dt);
-    a.yaw=ease(a.yaw,.60*noise(time*.15,8)+.26*Math.sin(time*.22),.76,dt);
+    a.yaw=ease(a.yaw,.52*noise(time*.15,8)+.22*Math.sin(time*.22),.76,dt);
     a.pitch=ease(a.pitch,.13*noise(time*.24,38)+.055*Math.sin(time*.39),.80,dt);
 
     // Real pulse propulsion, modified subtly by energy, not by the sensors.
     const effort=(a.ceilingGlide?.16:1)*(1-.66*topProximity);
-    const thrust=84*a.stroke*(.80+.22*a.energy)*(burstActive?1.65:1)*effort;
+    const thrust=92*a.stroke*(.80+.22*a.energy)*(burstActive?1.8:1)*effort;
     a.thrust=thrust;
     const currentX=15*noise(time*.12,12)+7*noise(time*.37,31)+environmentalFx.windX;
     const currentY=10*noise(time*.14,59)+6*noise(time*.31,84)+environmentalFx.windY;
@@ -363,6 +379,13 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     let fy=-thrust*Math.cos(a.angle)+25+(currentY-a.vy)*drag;
     if(startleActive){fy-=a.startle*7*(1-topProximity);fx+=a.startle*13*Math.sin(time*3);}
     if(environmentalFx.rain){fx+=environmentalFx.rain*12*noise(time*.73,43);}
+    // A fading plankton bloom can invite investigation, but never controls
+    // the animal or overrides the ceiling-avoidance system.
+    if(bloom.active&&bloom.curious&&bloom.disturbedAt<0&&!startleActive){
+      const curiosity=(1-topProximity*.8)*(.7+.3*a.energy);
+      fx+=clamp((bloom.x-a.x)*.21,-29,29)*curiosity;
+      fy+=clamp((bloom.y-a.y)*.12,-15,15)*curiosity;
+    }
     // Distant, soft restoring currents: no sudden reversal at a hard wall.
     const meanderY=height*(.46+.09*noise(time*.055,737));
     fy+=(meanderY-a.y)*.12;
@@ -372,7 +395,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     const sideZone=Math.max(footprint*.40,width*.12);
     if(a.x<minX+sideZone)fx+=(minX+sideZone-a.x)*1.8;
     if(a.x>maxX-sideZone)fx-=(a.x-maxX+sideZone)*1.8;
-    const maxSpeed=burstActive?136:82;
+    const maxSpeed=burstActive?166:97;
     a.vx=clamp(a.vx+fx*dt,-maxSpeed,maxSpeed);
     a.vy=clamp(a.vy+fy*dt,-maxSpeed,maxSpeed);
     a.x+=a.vx*dt;a.y+=a.vy*dt;
@@ -383,6 +406,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     if(a.y<minY){a.y=minY;a.vy=Math.max(8,Math.abs(a.vy)*.30);a.ceilingGlide=true;}
     if(a.y>maxY){a.y=maxY;a.vy=-Math.max(8,Math.abs(a.vy)*.30);a.ceilingGlide=false;}
     a.travel=Math.hypot(a.vx,a.vy);centerX=a.x;centerY=a.y;
+    updateBloom(dt,time);
     // A short-lived, dissipating ASCII wake provides direction/depth cues.
     if(a.stroke>1.7 && wake.length<180 && Math.floor(time*24)%3===0){
       wake.push({x:a.x-a.vx*.13+(rand(time*7)*2-1)*footprint*.26,
@@ -391,6 +415,62 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     for(let i=wake.length-1;i>=0;i--){
       const w=wake[i];w.life-=dt;w.x+=(-a.vx*.07+currentX*.25)*dt;w.y+=(14+currentY*.13)*dt;
       if(w.life<=0)wake.splice(i,1);
+    }
+  }
+  function updateBloom(dt,time){
+    // Only one small cluster may exist; most frames remain nearly empty.
+    if(!bloom.active&&time>=bloom.next){
+      bloom.active=true;bloom.born=time;
+      bloom.until=time+12+rand(time*.9+91)*9;
+      bloom.seed=time*2.7+71;
+      const shift=(rand(time*2.3+17)-.5)*width*.66;
+      bloom.x=clamp(swimmer.x+shift,width*.16,width*.84);
+      bloom.y=clamp(swimmer.y+(rand(time*1.7+3)-.5)*height*.45,height*.30,height*.72);
+      bloom.z=clamp((rand(time+50)-.5)*1.35,-.58,.74);
+      bloom.vx=(rand(time+14)-.5)*7;
+      bloom.vy=(rand(time+31)-.5)*5;
+      bloom.curious=rand(time*5.9+29)<.64;
+      bloom.disturbedAt=-100;
+      bloom.visits++;
+    }
+    if(!bloom.active)return;
+    bloom.x+=dt*(bloom.vx+environmentalFx.windX*.07);
+    bloom.y+=dt*(bloom.vy+environmentalFx.windY*.04);
+    // Brightness and turbulence increase only when the animal passes nearby.
+    if(bloom.disturbedAt<0){
+      const dist=Math.hypot(swimmer.x-bloom.x,swimmer.y-bloom.y);
+      if(dist<radius*bodyScale()*1.08 && Math.abs(swimmer.z-bloom.z)<.45){
+        bloom.disturbedAt=time;
+        bloom.interactions++;
+        swimmer.energy=clamp(swimmer.energy+.15,0,1.4);
+        swimmer.curiousUntil=Math.max(swimmer.curiousUntil,time+2.2);
+      }
+    }
+    if(time>bloom.until){
+      bloom.active=false;
+      bloom.next=time+25+rand(time*1.9+44)*21;
+    }
+  }
+  function drawBloom(time){
+    if(!bloom.active)return;
+    const fade=clamp((time-bloom.born)/3,0,1)*clamp((bloom.until-time)/3,0,1);
+    const dispersal=clamp((time-bloom.disturbedAt)/3.8,0,1);
+    const disturbed=bloom.disturbedAt>0;
+    const zScale=clamp(1/(1+bloom.z*.4),.7,1.4);
+    for(let i=0;i<27;i++){
+      const angle=TAU*rand(i*11+bloom.seed)+time*(.11+.08*rand(i+44));
+      const ring=Math.sqrt(rand(i*19+bloom.seed+61));
+      const spread=(12+26*ring)*(1+(disturbed?dispersal*2.1:0))*zScale;
+      const x=bloom.x+Math.cos(angle)*spread+Math.sin(time*.61+i)*2.3;
+      const y=bloom.y+Math.sin(angle)*spread*.64+Math.cos(time*.43+i)*2.5;
+      const flash=disturbed?1.35*Math.exp(-dispersal*2.1):1;
+      const alpha=clamp(fade*(.10+.31*rand(i*7+13))*flash,0,.85);
+      const glyph=i%9===0?'*':i%4===0?'+':i%3===0?':':'.';
+      // Cool bioluminescent plankton remains distinct from the temperature-
+      // tinted animal, but never becomes a full-screen particle effect.
+      const hue=177+35*rand(i*7+71)+9*Math.sin(time*.24);
+      print(glyph,x,y,`hsla(${hue},83%,76%,${alpha})`,font*.8,
+        i%11===0?2:0);
     }
   }
   function signalPresence(strength=1){
@@ -686,6 +766,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     centerX=swimmer.x;centerY=swimmer.y;
     drawBackground(time);
     for(let i=0;i<4;i++)drawMini(time,i);
+    drawBloom(time);
     for(const w of wake){
       const light=clamp(w.life/1.8,0,1);
       print(w.seed>.7?'+':'.',w.x,w.y,colour(.42+w.seed*.20,75,.19*light),font*.80);
@@ -706,6 +787,8 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
       'const PI = Math.PI, TAU = PI * 2;',
       '',
       noise.toString(),'',
+      updateBloom.toString(),'',
+      drawBloom.toString(),'',
       swim.toString(),'',
       signalPresence.toString(),'',
       signalTouch.toString(),'',
@@ -829,7 +912,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     environment: Object.freeze({setInput:environment.setInput,setEnabled:environment.setEnabled,preset:environment.preset}),
     presence: strength=>signalPresence(strength),
     touch: (x,y)=>signalTouch(x,y),
-    debug: ()=>({x:swimmer.x,y:swimmer.y,z:swimmer.z,scale:bodyScale(),velocity:[swimmer.vx,swimmer.vy,swimmer.vz],thrust:swimmer.thrust,ceilingGlide:swimmer.ceilingGlide,streamline:swimmer.streamline,burstActive:t<swimmer.burstUntil,behaviour:swimmer.behaviour,effects:environmentalFx,penetrations:ropes.reduce((count,r)=>count+(r.points||[]).slice(1).filter(p=>!!bellPenetration(p.x,p.y)).length,0),ropeCount:ropes.length})
+    debug: ()=>({x:swimmer.x,y:swimmer.y,z:swimmer.z,depthGoal:swimmer.depthGoal,depthChanges:swimmer.depthChanges,angle:swimmer.angle,scale:bodyScale(),velocity:[swimmer.vx,swimmer.vy,swimmer.vz],thrust:swimmer.thrust,ceilingGlide:swimmer.ceilingGlide,streamline:swimmer.streamline,burstActive:t<swimmer.burstUntil,bloom:{active:bloom.active,visits:bloom.visits,interactions:bloom.interactions},behaviour:swimmer.behaviour,effects:environmentalFx,penetrations:ropes.reduce((count,r)=>count+(r.points||[]).slice(1).filter(p=>!!bellPenetration(p.x,p.y)).length,0),ropeCount:ropes.length})
   });
   buildDeveloperControls();
   function frame(now){

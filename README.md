@@ -4,6 +4,14 @@ A generative ASCII jellyfish artwork built with vanilla HTML, CSS and JavaScript
 
 Live site: https://bojango.github.io/asciiart/
 
+## Version 11: deeper exploration and occasional plankton encounters
+
+- The jellyfish explores **near and far depth goals** with inertia rather than hovering around one average Z position. It sometimes approaches significantly closer to the viewer before drifting away.
+- Sideways leaning is reduced. Banking responds more to lateral motion and settles toward upright when calm.
+- Faster swimming bursts happen occasionally; the existing ceiling-avoidance and bell-driven propulsion remain.
+- Small, faint **bioluminescent plankton blooms** sometimes appear, drift and fade. The jellyfish may investigate; a close encounter scatters the characters and subtly increases its energy. Most of the time, nothing special happens.
+- The developer simulation, weather toggles, code view and installation mode remain unchanged.
+
 ## Version 10: northern England temperature range and natural edge avoidance
 
 - Temperature colours now progress from **deep blue at -10°C**, through light blue and cyan around freezing, into **orange from +10°C** and coral/red as the temperature rises. The simulated temperature slider runs from -10°C to +35°C. Weather remains simulation-only and effects can still be toggled independently.
