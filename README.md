@@ -1,5 +1,30 @@
 # PELAGIC - Living ASCII
 
+## PELAGIC 016 — anatomy, anchored tentacles and rare visitors
+
+### Tentacle anatomy
+- Rebuilt the underside of the jellyfish into **32 fine marginal filaments** attached around the living bell rim, plus **four wider, milky, frilled oral arms** attached beneath the bell centre.
+- Oral arms now use several layered ASCII glyph strands to suggest semi-translucent tissue. Their heavier drag and slower fluid response distinguish them from delicate stinging filaments.
+- Marginal tentacles have varied lengths and precise moving rim anchors. The first three joints follow the bell more rigidly, are corrected after hull collision and are length-clamped (at most 1.07 times the physical segment length) so strands cannot visibly separate at their roots.
+- The DEV debugging readout now exposes `ropeKinds` and `maxRootGap` through `window.PELAGIC.debug()` for monitoring joint integrity.
+
+### Feeding
+- Prey can only be caught by a marginal tentacle: central oral arms are no longer treated as capture nets.
+- Captured prey remains entangled briefly, then moves inwards along the marginal strand and transitions into the central oral-arm region before consumption and the existing bioluminescent afterglow.
+- Automatic prey and voluntary/avoidant behaviour from V15 remain.
+
+### Rare visitor encounters
+- A separate rare visitor scheduler introduces occasional, temporary **distant jellyfish** or **octopus** silhouettes. They are rendered entirely as ASCII glyphs with perspective depth, gentle movement and atmospheric fading.
+- First automatic visitor is considered after about 82 seconds of continuous PELAGIC runtime; later visitors are typically about 3–6 minutes apart at the default LIFE rate. These are not permanent decorative background jellyfish.
+- The main jellyfish can ignore or sometimes investigate visitors when close enough. An octopus may occasionally trigger a startle response without scripted pursuit.
+- DEV → LIFE adds a **Rare visitors** toggle and manual **JELLY**/**OCTO** encounter buttons; all other weather, LIFE and scene controls remain.
+
+### Validation and caveats
+- JavaScript parsed without errors. A mocked mobile-size animation runtime confirmed 32 marginal / 4 oral arms and a maximum root-segment stretch of about 1.07× over 120 frames.
+- A separate 7-second ecosystem simulation verified tentacle capture, entanglement and consumption (around 3.3 seconds after capture). Both manual visitor types rendered into a mock canvas and updated without errors.
+- These are code/runtime checks, not a visual acceptance test in iPhone Safari. Inspect the published scene to confirm the frilled anatomy and rare visitors look right at actual display resolution.
+
+
 ## PELAGIC 015 — living behaviour, stronger 3D depth and feeding
 
 - More pronounced **near/far Z movement** with atmospheric perspective: particle parallax, changing scale, brightness and ASCII character detail. The swimmer can approach the viewer or retreat further into the tank.

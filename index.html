@@ -93,7 +93,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
 .dev-panel.life-mode .preset-group{display:none}
 .eco-panel{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;gap:5px;color:#9ec8b8}
 .eco-summary{font-size:9px;white-space:normal;flex:none;line-height:1.2}
-.eco-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(2,1fr);flex:1;gap:3px 10px;min-height:0}
+.eco-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(3,1fr);flex:1;gap:3px 10px;min-height:0}
 .eco-switch{display:flex;align-items:center;gap:6px;padding:3px 0 2px;border-top:1px solid #1b3530;font-size:10px;cursor:pointer}
 .eco-switch input{accent-color:#76cfaa;margin:0;flex:none;width:13px;height:13px}
 .eco-tools{display:flex;gap:7px;align-items:center;min-height:19px;flex:none;font-size:9px}
@@ -103,6 +103,10 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
 .eco-tools small{margin-left:auto;white-space:nowrap;color:#658c7b;font-size:8px}
 @media(max-width:480px){.dev-tabs button{font-size:8px;padding:3px}.dev-panel h2{font-size:9px}.eco-summary{font-size:8px}.eco-panel{gap:3px}.eco-switch{font-size:9px;padding:1px 0}.eco-tools button{font-size:9px;min-width:35px;padding:3px 5px}.eco-tools small{display:none}}
 @media(max-height:650px){.eco-summary{display:none}.eco-panel{gap:2px}.eco-tools{min-height:16px}}
+.eco-tools.eco-actions{flex-wrap:wrap;gap:4px;min-height:unset}
+.eco-tools.eco-actions small{display:none}
+.eco-panel{overflow-y:auto;scrollbar-width:thin;flex-shrink:0;min-height:140px}
+@media(max-width:480px){.eco-tools.eco-actions button{min-width:35px;padding:3px 4px}}
 @media(prefers-reduced-motion:reduce){.led{box-shadow:none}}
 
 .live-indicator{display:inline-block;width:6px;height:6px;border-radius:50%;background:#39ed70;vertical-align:middle;box-shadow:0 0 9px rgba(65,255,113,.48);animation:liveBlink 1.5s ease-in-out infinite}
@@ -130,7 +134,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
 <main class="app" aria-label="Procedural ASCII art experiment">
   <section class="art" id="art" aria-label="Animated ASCII jellyfish with bioluminescent tentacles and moving ASCII sea life">
     <canvas id="sea" role="img" aria-label="Colourful animated ASCII jellyfish in a dark deep-sea scene"></canvas>
-    <div class="hud top-left">PELAGIC <strong>/</strong> 015<br>LIVING ECOSYSTEM</div>
+    <div class="hud top-left">PELAGIC <strong>/</strong> 016<br>LIVING ECOSYSTEM</div>
     <div class="hud top-right"><span id="status">LIVE</span> <span id="liveDot" class="live-indicator" aria-label="Animation running"></span></div>
     <div class="hud bottom-left">MEDUSA <strong>ASTRALIS</strong></div>
     <div class="hud bottom-right">DEPTH <strong>2480 M</strong><br>PROCEDURAL MOTION</div>
@@ -163,7 +167,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
         <div class="eco-summary">AUTOMATIC • Rare encounters are live. Use the buttons below for manual testing.</div>
         <div class="eco-grid" id="ecosystemControls"></div>
         <div class="eco-tools"><label>Activity <input id="ecoRate" aria-label="Ecosystem event frequency" type="range" min="0.55" max="2" step="0.05" value="1"></label><output id="ecoRateValue">1.00×</output></div>
-        <div class="eco-tools eco-actions"><button type="button" data-spawn="bloom">BLOOM</button><button type="button" data-spawn="prey">PREY</button><button type="button" data-spawn="fish">FISH</button><button type="button" data-spawn="feeding">FEED</button><button type="button" id="ecoReset">CLEAR</button><small>Simulated encounters</small></div>
+        <div class="eco-tools eco-actions"><button type="button" data-spawn="bloom">BLOOM</button><button type="button" data-spawn="prey">PREY</button><button type="button" data-spawn="fish">FISH</button><button type="button" data-spawn="feeding">FEED</button><button type="button" data-spawn="jellyfish">JELLY</button><button type="button" data-spawn="octopus">OCTO</button><button type="button" id="ecoReset">CLEAR</button><small>Simulated encounters</small></div>
       </section>
       <div class="dev-footer"><button type="button" id="simulatePresence">PRESENCE</button><button type="button" id="simulateTouch">TOUCH</button><button type="button" id="installationMode">FULL ART</button><span class="readout" id="devReadout">Z —</span></div>
     </aside>
@@ -663,33 +667,40 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
   }
   // Each strand is a small, independent Verlet chain: no rigid sinusoidal
   // tentacle mesh. Flow and body motion introduce drag, slack and lag.
+  // Two distinct anatomical systems: marginal stinging filaments and
+  // broad, semi-translucent oral arms suspended under the bell.
   function configureRopes(){
     ropes.length=0;
     const add=(kind,index,count,phi,length)=>{
-      const n=Math.max(15,Math.ceil(length/(font*.85)));
+      const n=Math.max(18,Math.ceil(length/(font*.84)));
       ropes.push({kind,index,phi,length,n,step:length/n,
         seed:rand(130+index*13+(kind==='oral'?50:kind==='front'?100:0))*TAU,
         points:null});
     };
-    for(let i=0;i<19;i++){
-      const phi=TAU*(i+.28)/19;
-      add('back',i,19,phi,radius*(1.45+rand(301+i)*.65));
+    // Marginal tentacles grow from irregular, stable points all around the rim.
+    for(let i=0;i<22;i++){
+      const phi=TAU*(i+.23+.12*(rand(i*19+3)-.5))/22;
+      add('back',i,22,phi,radius*(1.42+rand(301+i)*.95));
     }
-    for(let i=0;i<7;i++){
-      const phi=TAU*(i+.38)/7;
-      add('front',i,7,phi,radius*(1.35+rand(401+i)*.72));
+    for(let i=0;i<10;i++){
+      const phi=TAU*(i+.41+.11*(rand(i*13+7)-.5))/10;
+      add('front',i,10,phi,radius*(1.55+rand(401+i)*.90));
     }
-    for(let i=0;i<5;i++)add('oral',i,5,0,radius*(1.27+rand(501+i)*.63));
+    // Four sheets of frilled oral tissue; not four more thin strings.
+    for(let i=0;i<4;i++)
+      add('oral',i,4,0,radius*(1.28+rand(501+i)*.70));
     ropeDebt=0;
   }
   function ropeAnchor(r,time){
     if(r.kind==='oral'){
-      const roots=[-.29,-.13,0,.13,.29];
-      // Oral arms spring from the underside, not the top of the bell.
-      return project(radius*roots[r.index]*(1-.09*swimmer.pulse),radius*.235,radius*.12);
+      const roots=[-.22,-.075,.075,.22];
+      // Every oral-arm root is pinned to the bell's central underside.
+      return project(radius*roots[r.index]*(1-.07*swimmer.pulse),
+        radius*(.205+.012*Math.sin(time*.8+r.index)),radius*(.10+.04*Math.sin(r.index*1.8)));
     }
+    // Marginal tentacles are attached to the *moving* hem, not a fixed circle.
     const rim=bellSurface(PI*.5,r.phi,time);
-    return project(rim.x*1.012,rim.y+radius*.026,rim.z*1.012);
+    return project(rim.x*1.006,rim.y+radius*.018,rim.z*1.006);
   }
   function advanceRopes(dt,time){
     const a=swimmer;
@@ -709,16 +720,18 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
       if(!dt){p[0].x=anchor.x;p[0].y=anchor.y;continue;}
       for(let i=1;i<p.length;i++){
         const u=i/r.n,pt=p[i];
-        const dx=(pt.x-pt.px)*.952,dy=(pt.y-pt.py)*.952;
+        const drag=r.kind==='oral'?.875:.954;
+        const dx=(pt.x-pt.px)*drag,dy=(pt.y-pt.py)*drag;
         pt.px=pt.x;pt.py=pt.y;
         // Travelling current varies along each arm; drag pulls against the
         // moving bell. A soft tailward bias prevents implausible tangling.
         const wave=time*1.15-u*6+r.seed;
         const flowX=69*Math.sin(wave)+40*Math.sin(time*.52+u*9+r.seed*1.3)+environmentalFx.windX*.72;
         const flowY=51*Math.cos(wave*.83)+38*Math.sin(time*.77-u*8+r.seed)+environmentalFx.windY*.60;
-        const pull=36+24*u;
-        pt.x+=dx+(flowX*u+tailX*pull-a.vx*.22)*dt*dt;
-        pt.y+=dy+(flowY*u+tailY*pull-a.vy*.22)*dt*dt;
+        const oral=r.kind==='oral',pull=oral?26+13*u:36+24*u;
+        const fluid=oral?.44:1;
+        pt.x+=dx+(flowX*u*fluid+tailX*pull-a.vx*(oral?.38:.22))*dt*dt;
+        pt.y+=dy+(flowY*u*fluid+tailY*pull-a.vy*(oral?.38:.22))*dt*dt;
       }
       // Maximum-distance constraints keep the soft ropes attached while
       // allowing them to fold, flutter and curl rather than standing straight.
@@ -740,42 +753,109 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
               prev.x+=dx*half;prev.y+=dy*half;}
           }
         }
+        // A rooted anatomical base: first three joints inherit bell motion,
+        // preventing delayed/detached strands after pulses or Z movement.
+        for(let i=1;i<=Math.min(3,r.n);i++){
+          const pt=p[i],distance=r.step*bodyScale()*i;
+          const targetX=anchor.x+tailX*distance,targetY=anchor.y+tailY*distance;
+          const stiffness=i===1?.91:i===2?.70:.42;
+          const dx=(targetX-pt.x)*stiffness,dy=(targetY-pt.y)*stiffness;
+          pt.x+=dx;pt.y+=dy;pt.px+=dx*.80;pt.py+=dy*.80;
+        }
         for(let i=1;i<p.length;i++)pushOutsideBell(p[i],bellHull,font*.35);
       }
+      // Finally bound the visible joints to the root after hull correction.
+      // Collision projection must never leave a perceptual gap at attachment.
       p[0].x=anchor.x;p[0].y=anchor.y;
-    }
-  }
-  function drawRope(r,time){
-    const p=r.points;if(!p)return;
-    const back=r.kind==='back',oral=r.kind==='oral';
-    const bright=oral?.75:back?.30:.64;
-    const chars=oral?'%xVY@&i|/\\{}':'|/\\!i:;,.~';
-    for(let i=1;i<p.length;i++){
-      const a=p[i-1],b=p[i];
-      const dx=b.x-a.x,dy=b.y-a.y,seg=Math.hypot(dx,dy)||1;
-      const steps=Math.max(1,Math.ceil(seg/(font*.68)));
-      const nx=-dy/seg,ny=dx/seg;
-      for(let k=0;k<steps;k++){
-        const q=k/steps,u=(i-1+q)/r.n;
-        const x=a.x+dx*q,y=a.y+dy*q;
-        const glyph=chars[Math.floor(rand(i*31+k*17+r.index*61+(oral?97:0))*chars.length)];
-        const opacity=bright*Math.pow(1-u,.24)*(.87+.13*Math.sin(time*1.2-u*9+r.seed))*clamp(1-swimmer.z*.18,.54,1.15)*(1+.10*swimmer.feedGlow);
-        const light=oral?78:back?66:73;
-        const chroma=clamp(.48+.29*Math.sin(time*.45-u*5+r.seed*.36)
-          +.17*Math.sin(time*.28+u*9+r.index*.7),0,1);
-        if(!bellPenetration(x,y))print(glyph,x,y,colour(chroma,light,opacity),font,oral&&i%11===0?1.5:0);
-        if(oral){
-          const frill=(1-u*.57)*radius*bodyScale()*(.046+.027*Math.sin(time*1.8-u*14+r.seed));
-          if(!bellPenetration(x+nx*frill,y+ny*frill))print(i%3===0?'{':'(',x+nx*frill,y+ny*frill,colour(clamp(chroma+.08*Math.sin(u*12+time*.7),0,1),73,opacity*.72));
-          if(!bellPenetration(x-nx*frill,y-ny*frill))print(i%3===1?'}':')',x-nx*frill,y-ny*frill,colour(clamp(chroma+.12*Math.cos(u*10-time*.5),0,1),75,opacity*.65));
-          if(k===0&&i%3===0){
-            if(!bellPenetration(x+nx*frill*.45,y+ny*frill*.45))print('x',x+nx*frill*.45,y+ny*frill*.45,colour(chroma,78,opacity*.55));
-          }
-        }else if(!back&&k===0&&i%3===0){
-          if(!bellPenetration(x+nx*font*.65,y+ny*font*.65))print('~',x+nx*font*.65,y+ny*font*.65,colour(chroma,70,opacity*.43));
+      p[0].px=anchor.x;p[0].py=anchor.y;
+      for(let i=1;i<=Math.min(3,r.n);i++){
+        const prev=p[i-1],pt=p[i],dx=pt.x-prev.x,dy=pt.y-prev.y;
+        const d=Math.hypot(dx,dy)||.0001,maximum=r.step*bodyScale()*1.07;
+        if(d>maximum){
+          const correction=(d-maximum)/d;
+          pt.x-=dx*correction;pt.y-=dy*correction;
+          pt.px-=dx*correction;pt.py-=dy*correction;
         }
       }
     }
+  }
+  // Fleshy central oral arms: thick semi-translucent tissue, densely ruffled
+  // edges, heavier inertia and multiple luminous layers along each ribbon.
+  function drawOralArm(r,time){
+    const p=r.points;if(!p)return;
+    const depthFade=clamp(1-swimmer.z*.17,.54,1.15);
+    for(let i=1;i<p.length;i++){
+      const a=p[i-1],b=p[i],dx=b.x-a.x,dy=b.y-a.y;
+      const segment=Math.hypot(dx,dy)||1;
+      const nx=-dy/segment,ny=dx/segment;
+      const steps=Math.max(1,Math.ceil(segment/(font*.72)));
+      for(let j=0;j<steps;j++){
+        const q=j/steps,u=(i-1+q)/r.n;
+        const x=a.x+dx*q,y=a.y+dy*q;
+        const fold=Math.sin(u*26+time*.72+r.seed*1.7);
+        const frill=Math.sin(u*45-time*.62+r.seed*2.3);
+        const taper=(1-.54*u)*clamp(u*8+.35,.35,1);
+        const width=radius*bodyScale()*(.060+.028*fold*fold)*taper;
+        const hue=clamp(.47+.23*Math.sin(u*8-time*.35+r.seed)+.12*fold,0,1);
+        const alpha=(.66+.18*Math.sin(u*9+r.seed)**2)*depthFade*(1+.14*swimmer.feedGlow);
+        // A luminous tissue spine, rather than a fifth thread.
+        if(!bellPenetration(x,y)||i<=3)
+          print('W%8@#&'[Math.floor(rand(i*71+j*19+r.index*7)*6)],
+            x,y,colour(hue,87,alpha*.64),font*1.03);
+        for(const side of [-1,1]){
+          const ripple=side*width*(.95+.22*frill);
+          const ex=x+nx*ripple,ey=y+ny*ripple;
+          const innerX=x+nx*ripple*.48,innerY=y+ny*ripple*.48;
+          if(!bellPenetration(innerX,innerY)||i<=3)
+            print('x%O8V'[Math.floor(rand(i*11+j*41+side*8+r.index)*5)],
+              innerX,innerY,colour(hue,82,alpha*.50));
+          if(!bellPenetration(ex,ey)||i<=3)
+            print(side<0?'{' : '}',ex,ey,
+              colour(clamp(hue+.07*side,0,1),78,alpha*(.44+.21*Math.abs(frill))));
+          if(j===0&&i%3===0){
+            const swell=width*(1.32+.18*Math.sin(time+u*14));
+            if(!bellPenetration(x+nx*side*swell,y+ny*side*swell))
+              print(side<0?'(' : ')',x+nx*side*swell,y+ny*side*swell,
+                colour(hue,76,alpha*.38));
+          }
+        }
+      }
+    }
+    // The insertion point stays visibly integrated with the underside.
+    print('V',p[0].x,p[0].y,colour(.55,87,.61*depthFade),font*1.05);
+  }
+  // Thin marginal filaments: different widths, lengths, currents and opacity.
+  // Segments 0–3 have a rigid root but their trailing tips remain fully Verlet.
+  function drawRope(r,time){
+    if(r.kind==='oral'){drawOralArm(r,time);return;}
+    const p=r.points;if(!p)return;
+    const back=r.kind==='back',bright=back?.30:.64;
+    const chars='|/\\!i:;,.~';
+    const perspective=clamp(1-swimmer.z*.19,.52,1.17);
+    for(let i=1;i<p.length;i++){
+      const a=p[i-1],b=p[i],dx=b.x-a.x,dy=b.y-a.y;
+      const seg=Math.hypot(dx,dy)||1;
+      const steps=Math.max(1,Math.ceil(seg/(font*.68)));
+      const nx=-dy/seg,ny=dx/seg;
+      for(let j=0;j<steps;j++){
+        const q=j/steps,u=(i-1+q)/r.n;
+        const x=a.x+dx*q,y=a.y+dy*q;
+        const glyph=i<4?'|':chars[Math.floor(rand(i*31+j*17+r.index*61)*chars.length)];
+        const alpha=bright*Math.pow(1-u,.39)*(.85+.15*Math.sin(time*1.2-u*9+r.seed))
+          *perspective*(1+.09*swimmer.feedGlow);
+        const hue=clamp(.48+.28*Math.sin(time*.45-u*5+r.seed*.36)
+          +.16*Math.sin(time*.28+u*9+r.index*.7),0,1);
+        if(!bellPenetration(x,y)||i<=2)
+          print(glyph,x,y,colour(hue,back?67:75,alpha),font,i<3&&!back?1.1:0);
+        // Sparse miniature barbs, never heavy frilling along outer strings.
+        if(!back&&i%12===0&&j===0&&u>.10&&u<.89){
+          const bx=x+nx*font*.53,by=y+ny*font*.53;
+          if(!bellPenetration(bx,by))
+            print('·',bx,by,colour(hue,71,alpha*.26),font*.80);
+        }
+      }
+    }
+    if(!back)print('·',p[0].x,p[0].y,colour(.56,86,.66*perspective),font,1.3);
   }
   function drawMotes(time){
     for(let i=0;i<36;i++){
@@ -839,7 +919,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
       drawBell.toString(),'',drawFeedGlow.toString(),'',
       configureRopes.toString(),'',
       advanceRopes.toString(),'',
-      drawRope.toString(),'',
+      drawOralArm.toString(),'',drawRope.toString(),'',
       drawBackground.toString(),'',
       
       render.toString(),'',
@@ -871,7 +951,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     try{localStorage.setItem('pelagic.scene',currentScene);}catch(_){ }
     const forest=currentScene==='greenwood';
     document.getElementById('sceneName').textContent=forest?'◇ GREENWOOD':'◌ PELAGIC';
-    document.querySelector('.hud.top-left').innerHTML=forest?'GREENWOOD <strong>/</strong> 002<br>CINEMATIC CLEARING':'PELAGIC <strong>/</strong> 015<br>LIVING ECOSYSTEM';
+    document.querySelector('.hud.top-left').innerHTML=forest?'GREENWOOD <strong>/</strong> 002<br>CINEMATIC CLEARING':'PELAGIC <strong>/</strong> 016<br>LIVING ECOSYSTEM';
     document.querySelector('.hud.bottom-left').innerHTML=forest?'THE <strong>OLD GROVE</strong>':'MEDUSA <strong>ASTRALIS</strong>';
     document.querySelector('.hud.bottom-right').innerHTML=forest?'FIELD STUDY <strong>01</strong><br>LAYERS / LIGHT / WIND':'DEPTH <strong>2480 M</strong><br>PROCEDURAL MOTION';
     document.getElementById('colorName').textContent=forest?greenwood.season:palettes[paletteIndex].name;
@@ -944,7 +1024,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     devPanel.classList.toggle('life-mode',life);
     if(life)syncEcosystemControls();
   }
-  for(const [key,title] of [['snow','Marine snow'],['blooms','Glowing blooms'],['prey','Tiny prey'],['fish','Small fish']]){
+  for(const [key,title] of [['snow','Marine snow'],['blooms','Glowing blooms'],['prey','Tiny prey'],['fish','Small fish'],['rare','Rare visitors']]){
     const label=document.createElement('label');label.className='eco-switch';
     const input=document.createElement('input');input.type='checkbox';input.dataset.species=key;input.setAttribute('aria-label',title);
     const text=document.createElement('span');text.textContent=title;
@@ -958,7 +1038,12 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
   });
   document.querySelector('.eco-actions').addEventListener('click',e=>{
     const type=e.target.dataset.spawn;
-    if(type){if(!ecosystem.state().switches[type==='bloom'?'blooms':type])ecosystem.setEnabled(type==='bloom'?'blooms':type,true);ecosystem.spawn(type);syncEcosystemControls();}
+    if(type){
+      const gate=type==='bloom'?'blooms':type==='feeding'?'prey':
+        (type==='jellyfish'||type==='octopus')?'rare':type;
+      if(!ecosystem.state().switches[gate])ecosystem.setEnabled(gate,true);
+      ecosystem.spawn(type);syncEcosystemControls();
+    }
     else if(e.target.id==='ecoReset')ecosystem.clear();
   });
   document.getElementById('devTabWeather').addEventListener('click',()=>setDevTab(false));
@@ -1045,7 +1130,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     ecosystem: Object.freeze({setEnabled:ecosystem.setEnabled,setRate:ecosystem.setRate,spawn:ecosystem.spawn,state:ecosystem.state}),
     presence: strength=>signalPresence(strength),
     touch: (x,y)=>signalTouch(x,y),
-    debug: ()=>({x:swimmer.x,y:swimmer.y,z:swimmer.z,depthGoal:swimmer.depthGoal,depthChanges:swimmer.depthChanges,angle:swimmer.angle,scale:bodyScale(),velocity:[swimmer.vx,swimmer.vy,swimmer.vz],thrust:swimmer.thrust,ceilingGlide:swimmer.ceilingGlide,streamline:swimmer.streamline,burstActive:t<swimmer.burstUntil,hunger:swimmer.hunger,feedGlow:swimmer.feedGlow,mood:swimmer.mood,ecosystem:ecosystem.state(),behaviour:swimmer.behaviour,effects:environmentalFx,penetrations:ropes.reduce((count,r)=>count+(r.points||[]).slice(1).filter(p=>!!bellPenetration(p.x,p.y)).length,0),ropeCount:ropes.length})
+    debug: ()=>({x:swimmer.x,y:swimmer.y,z:swimmer.z,depthGoal:swimmer.depthGoal,depthChanges:swimmer.depthChanges,angle:swimmer.angle,scale:bodyScale(),velocity:[swimmer.vx,swimmer.vy,swimmer.vz],thrust:swimmer.thrust,ceilingGlide:swimmer.ceilingGlide,streamline:swimmer.streamline,burstActive:t<swimmer.burstUntil,hunger:swimmer.hunger,feedGlow:swimmer.feedGlow,mood:swimmer.mood,ecosystem:ecosystem.state(),behaviour:swimmer.behaviour,effects:environmentalFx,penetrations:ropes.reduce((count,r)=>count+(r.points||[]).slice(1).filter(p=>!!bellPenetration(p.x,p.y)).length,0),ropeCount:ropes.length,ropeKinds:{marginal:ropes.filter(r=>r.kind!=='oral').length,oral:ropes.filter(r=>r.kind==='oral').length},maxRootGap:Math.max(0,...ropes.map(r=>!r.points?.length?0:Math.hypot(r.points[1].x-r.points[0].x,r.points[1].y-r.points[0].y)/(r.step*bodyScale())))})
   });
   buildDeveloperControls();
   let weatherStatusTimer=0;
@@ -1071,7 +1156,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
       scrollCode(delta);
       drawDebt+=delta;
       if(drawDebt>=1/30){render(t);drawDebt=0;
-        if(!devPanel.hidden)document.getElementById('devReadout').textContent=currentScene==='greenwood'?`GROVE · ${greenwood.season}`:devPanel.classList.contains('life-mode')?`CATCH ${ecosystem.state().counts.preyCaught}`:`Z ${swimmer.z.toFixed(1)} · ${swimmer.behaviour.slice(0,6).toUpperCase()}`;
+        if(!devPanel.hidden)document.getElementById('devReadout').textContent=currentScene==='greenwood'?`GROVE · ${greenwood.season}`:devPanel.classList.contains('life-mode')?`CATCH ${ecosystem.state().counts.preyCaught} · VISIT ${ecosystem.state().counts.visitors}`:`Z ${swimmer.z.toFixed(1)} · ${swimmer.behaviour.slice(0,6).toUpperCase()}`;
       }
     }
     requestAnimationFrame(frame);

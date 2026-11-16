@@ -1,4 +1,4 @@
-/* PELAGIC / 015 — an occasional living ecosystem, independent of the renderer.
+/* PELAGIC / 016 — an occasional living ecosystem, independent of the renderer.
    Plankton glows when disturbed; small copepods can only be caught by an actual
    moving tentacle. Fish are wildlife, not scripted prey. All species explore Z.
    The scenes, weather input and smart-home seam remain separate modules.
@@ -9,14 +9,14 @@
   const clamp=(v,a=0,b=1)=>Math.max(a,Math.min(b,v));
   const rand=(x)=>{let k=Math.sin(x*127.119+54.29)*43758.5453;return k-Math.floor(k);};
   const mix=(a,b,t)=>a+(b-a)*t;
-  const switches={snow:true,blooms:true,prey:true,fish:true};
-  const counts={blooms:0,bloomDisturbances:0,preyCaught:0,preyEaten:0,preyEscapes:0,fishVisits:0,fishScatters:0};
+  const switches={snow:true,blooms:true,prey:true,fish:true,rare:true};
+  const counts={blooms:0,bloomDisturbances:0,preyCaught:0,preyEaten:0,preyEscapes:0,fishVisits:0,fishScatters:0,visitors:0,visitorReactions:0};
   let lastFedAt=-1000;
   const snow=Array.from({length:76},(_,i)=>({x:rand(i*5+13),y:rand(i*7+29),z:mix(-1.3,1.6,rand(i*11+57)),speed:2+rand(i*9+30)*9,phase:rand(i+51)*TAU}));
   const prey=[];
   const fish=[];
-  let bloom=null;
-  let now=0, nextBloom=18,nextPrey=12,nextFish=29;
+  let bloom=null,visitor=null;
+  let now=0, nextBloom=18,nextPrey=12,nextFish=29,nextVisitor=82;
   let encounterRate=1;
   let activeAnimal=null,activeRopes=[];
   let activeSize={width:390,height:600};
@@ -27,7 +27,7 @@
     if(saved?.encounterRate!=null)encounterRate=clamp(Number(saved.encounterRate),.55,2);
   }catch(_){ }
   const persist=()=>{try{localStorage.setItem(storageKey,JSON.stringify({switches,encounterRate}));}catch(_){}};
-  function setEnabled(type,yes){if(!(type in switches))return;switches[type]=!!yes;if(!yes){if(type==='blooms')bloom=null;if(type==='prey')prey.length=0;if(type==='fish')fish.length=0;}persist();}
+  function setEnabled(type,yes){if(!(type in switches))return;switches[type]=!!yes;if(!yes){if(type==='blooms')bloom=null;if(type==='prey')prey.length=0;if(type==='fish')fish.length=0;if(type==='rare')visitor=null;}persist();}
   function setRate(value){encounterRate=clamp(Number(value)||1,.55,2);persist();}
   function project(v,w,h){
     const scale=clamp(Math.exp(-.57*v.z),.30,2.65);
@@ -37,7 +37,7 @@
     const w=activeSize.width,h=activeSize.height;
     if(type==='feeding' && activeAnimal && activeRopes.length){
       // Debug-only placement near a real moving tentacle; collision remains physical.
-      const available=activeRopes.filter(r=>r.points?.length>9);
+      const available=activeRopes.filter(r=>r.kind!=='oral'&&r.points?.length>9);
       if(!available.length)return;
       const r=available[Math.floor(rand(now*7+38)*available.length)];
       const segment=Math.min(r.points.length-1,Math.max(8,Math.floor(r.points.length*.60)));
@@ -45,6 +45,18 @@
       const sc=clamp(Math.exp(-.57*z),.30,2.65);
       prey.push({x:.5+(pt.x/w-.5)/sc,y:.5+(pt.y/h-.5)/sc,z,
         vx:0,vy:0,seed:now*33+44,born:now,ttl:now+9,capturedAt:-1,rope:-1,segment:0,curious:false,reactionUntil:0,reaction:'drifting',reactionCooldown:0,hold:.65+rand(now+31)*.55});
+      return;
+    }
+
+    if(type==='visitor'||type==='jellyfish'||type==='octopus'){
+      const seed=now*1.913+counts.visitors*87+201;
+      const kind=type==='visitor'?(rand(seed)<.72?'jellyfish':'octopus'):type;
+      const side=rand(seed+2)<.5?-1:1,manual=type!=='visitor';
+      const z=manual&&activeAnimal?clamp(activeAnimal.z+.33+rand(seed+6)*.48,-1.25,1.75):.80+rand(seed+6)*.96;
+      visitor={type:kind,seed,z,x:manual?(side<0?.10:.90):(side<0?-.20:1.20),y:kind==='octopus'?.53+rand(seed+7)*.26:.23+rand(seed+7)*.42,
+        vx:-side*(.024+rand(seed+8)*.016),vy:kind==='octopus'?.001:-.0018,
+        born:now,until:now+35+rand(seed+11)*16,curious:rand(seed+10)<.58,reacted:false};
+      counts.visitors++;nextVisitor=now+(175+rand(seed+29)*185)/encounterRate;
       return;
     }
     if(type==='bloom'||type==='blooms'){
@@ -106,7 +118,20 @@
     if(switches.blooms&&!bloom&&time>=nextBloom)spawn('bloom');
     if(switches.prey&&prey.length===0&&time>=nextPrey)spawn('prey');
     if(switches.fish&&fish.length===0&&time>=nextFish)spawn('fish');
+    if(switches.rare&&!visitor&&time>=nextVisitor)spawn('visitor');
     const w=physics.width,h=physics.height;
+    if(visitor){
+      const v=visitor;
+      v.x+=v.vx*dt+Math.sin(time*.22+v.seed)*dt*.0008;
+      v.y+=v.vy*dt+Math.cos(time*.46+v.seed)*dt*.00045;
+      const pos=project(v,w,h),distance=Math.hypot(pos.x-animal.x,pos.y-animal.y);
+      if(!v.reacted&&Math.abs(v.z-animal.z)<.72&&distance<physics.radius*physics.scale*2.15){
+        v.reacted=true;counts.visitorReactions++;
+        if(v.type==='octopus'&&rand(v.seed+time*.72)<.31)
+          animal.startledUntil=Math.max(animal.startledUntil||0,time+1.65);
+      }
+      if(time>v.until||v.x<-.42||v.x>1.42)visitor=null;
+    }
     if(bloom){
       const b=bloom;
       b.x+=dt*(b.drift+(fx.windX||0)*.000025);
@@ -128,7 +153,20 @@
         const rope=ropes[p.rope];
         if(rope?.points?.length){
           const target=Math.max(1,Math.round(p.segment*(1-progress*.975)));
-          const pt=rope.points[Math.min(target,rope.points.length-1)];
+          let pt=rope.points[Math.min(target,rope.points.length-1)];
+          // Prey transfers from the marginal strand into an oral arm near the bell.
+          if(progress>.70){
+            const oral=ropes.filter(r=>r.kind==='oral'&&r.points?.length>5);
+            if(oral.length){
+              const arm=oral[Math.floor(rand(p.seed+30)*oral.length)];
+              const targetIndex=Math.max(1,Math.round(5*(1-(progress-.70)/.30)));
+              const mid=arm.points[Math.min(targetIndex,arm.points.length-1)];
+              if(mid){
+                const q=clamp((progress-.70)/.30),fade=q*q*(3-2*q);
+                pt={x:mix(pt.x,mid.x,fade),y:mix(pt.y,mid.y,fade)};
+              }
+            }
+          }
           const sc=project({x:.5,y:.5,z:p.z},w,h).scale;
           const follow=1-Math.exp(-dt*(elapsed<hold?8:16));
           p.x=mix(p.x,.5+(pt.x/w-.5)/sc,follow);
@@ -170,6 +208,7 @@
       let captured=false;
       // Contact must be with moving tentacle segments, never the bell centre.
       for(let j=0;j<ropes.length&&!captured;j++){
+        if(ropes[j].kind==='oral')continue; // Marginal filaments capture, oral arms transport.
         const points=ropes[j].points;if(!points)continue;
         for(let k=3;k<points.length;k+=2){
           const a=points[k-1],b=points[k];
@@ -232,6 +271,12 @@
           return {x:pos.x,y:pos.y,z:f.z,strength:.12,type:'fish',id:f.seed};
       }
     }
+    if(visitor?.curious&&Math.abs(visitor.z-animal.z)<.85){
+      const pos=project(visitor,physics.width,physics.height);
+      if(Math.hypot(pos.x-animal.x,pos.y-animal.y)<physics.width*.58)
+        return {x:pos.x,y:pos.y,z:visitor.z,strength:visitor.type==='octopus'?.09:.13,
+          type:visitor.type,id:visitor.seed};
+    }
     return null;
   }
   function draw(ctx,layer,time,animal,physics){
@@ -287,6 +332,59 @@
         }
       }
     }
+    // Rare visitors retain silhouettes at a distance: animated ASCII, no sprites.
+    if(visitor&&switches.rare&&((visitor.z>animal.z)===(layer==='behind'))){
+      const v=visitor,pos=project(v,w,h);
+      const fade=clamp((time-v.born)/2,0,1)*clamp((v.until-time)/3,0,1);
+      const visibility=fade*clamp(1-Math.max(0,v.z)*.24,.32,1);
+      const sc=clamp(pos.scale,.34,1.75),unit=clamp(7*sc,5.8,13);
+      const ink=v.type==='octopus'?'156,168,191':'129,203,227';
+      const alpha=visibility*(layer==='behind'?.60:.77);
+      if(v.type==='jellyfish'){
+        // Illuminated bell dome; the hem and trailing filaments are separate.
+        for(let row=0;row<6;row++){
+          for(let col=-8;col<=8;col++){
+            const xx=col/8,arch=Math.sqrt(Math.max(0,1-xx*xx));
+            const top=2.6-3.4*arch;
+            if(row<top||row>3.5||rand(v.seed+row*91+col*13)<.22)continue;
+            const glyph=row>2.8?'_':rand(v.seed+col*23+row*7)>.7?'%':':';
+            symbol(glyph,pos.x+col*unit*.57,pos.y+(row-1)*unit*.78,
+              unit,'rgba('+ink+','+(alpha*(.38+.40*arch))+')');
+          }
+        }
+        for(let k=0;k<9;k++){
+          const u=(k-4)/4,length=(3.5+rand(v.seed+k*3)*5.5)*unit;
+          for(let j=0;j<11;j++){
+            const f=j/10,x=pos.x+u*5.4*unit+Math.sin(time*.8-u*3-f*4+v.seed)*f*unit*1.1;
+            const y=pos.y+unit*2.5+f*length;
+            const glyph=k%3===0?':':j%4===0?'.':'|';
+            symbol(glyph,x,y,unit*.76,'rgba('+ink+','+(alpha*.52*(1-.44*f))+')');
+          }
+        }
+      }else{
+        // Compact mantle and eight curling arms: a passing octopus silhouette.
+        for(let row=-4;row<=2;row++){
+          for(let col=-4;col<=4;col++){
+            const norm=col*col/22+row*row/24;
+            if(norm>1||rand(v.seed+row*33+col*17)<.13)continue;
+            const glyph=row<0?'%':row===1?':':'#';
+            symbol(glyph,pos.x+col*unit*.66,pos.y+row*unit*.75,unit*.92,
+              'rgba('+ink+','+(alpha*(.50+.30*(1-norm)))+')');
+          }
+        }
+        for(let k=0;k<8;k++){
+          const angle=k/7*Math.PI+.15,direction=k<4?-1:1;
+          const reach=(6+rand(v.seed+k*4)*5)*unit;
+          for(let j=0;j<15;j++){
+            const f=j/14,twist=Math.sin(f*6.5+time*.6+k*2)*unit*1.2*f;
+            const x=pos.x+direction*(3.1*unit+reach*f*Math.abs(Math.cos(angle)))+twist;
+            const y=pos.y+unit*2+f*reach*.54+Math.sin(f*5+k)*unit*f;
+            const glyph=j>12?'~':j%4===0?'o':'.';
+            symbol(glyph,x,y,unit*.9,'rgba('+ink+','+(alpha*.65*(1-.50*f))+')');
+          }
+        }
+      }
+    }
     if(switches.prey)for(const p of prey){
       if((p.z>animal.z)!==(layer==='behind'))continue;
       const pos=project(p,w,h), caught=p.capturedAt>=0;
@@ -317,8 +415,8 @@
     }
     ctx.restore();
   }
-  function clear(){bloom=null;prey.length=0;fish.length=0;nextBloom=Math.max(nextBloom,now+14);nextPrey=Math.max(nextPrey,now+12);nextFish=Math.max(nextFish,now+24);}
+  function clear(){bloom=null;visitor=null;prey.length=0;fish.length=0;nextBloom=Math.max(nextBloom,now+14);nextPrey=Math.max(nextPrey,now+12);nextFish=Math.max(nextFish,now+24);nextVisitor=Math.max(nextVisitor,now+70);}
   function startle(){if(bloom?.disturbedAt<0)bloom.disturbedAt=now;for(const f of fish)f.fleeUntil=Math.max(f.fleeUntil,now+2.6);}
-  const state=()=>({switches:{...switches},rate:encounterRate,active:{blooms:!!bloom,prey:prey.length,fish:fish.length},lastFedAt,counts:{...counts}});
+  const state=()=>({switches:{...switches},rate:encounterRate,active:{blooms:!!bloom,prey:prey.length,fish:fish.length,visitor:visitor?.type||null},lastFedAt,counts:{...counts}});
   window.PelagicEcosystem=Object.freeze({update,draw,interest,setEnabled,setRate,spawn,clear,startle,state});
 })();
