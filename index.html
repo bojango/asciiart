@@ -134,7 +134,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
 <main class="app" aria-label="Procedural ASCII art experiment">
   <section class="art" id="art" aria-label="Animated ASCII jellyfish with bioluminescent tentacles and moving ASCII sea life">
     <canvas id="sea" role="img" aria-label="Colourful animated ASCII jellyfish in a dark deep-sea scene"></canvas>
-    <div class="hud top-left">PELAGIC <strong>/</strong> 016<br>LIVING ECOSYSTEM</div>
+    <div class="hud top-left">PELAGIC <strong>/</strong> 016.1<br>LIVING ECOSYSTEM</div>
     <div class="hud top-right"><span id="status">LIVE</span> <span id="liveDot" class="live-indicator" aria-label="Animation running"></span></div>
     <div class="hud bottom-left">MEDUSA <strong>ASTRALIS</strong></div>
     <div class="hud bottom-right">DEPTH <strong>2480 M</strong><br>PROCEDURAL MOTION</div>
@@ -702,11 +702,63 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     const rim=bellSurface(PI*.5,r.phi,time);
     return project(rim.x*1.006,rim.y+radius*.018,rim.z*1.006);
   }
+  // Oral arms are heavy, semi-rigid sheets rather than free-folding ropes.
+  // Their spine relaxes towards an elongated hanging shape, with a stronger
+  // gravitational/rest-length bias than the marginal filaments.
+  function advanceOralArm(r,anchor,dt,time){
+    const a=swimmer,scale=bodyScale(),length=r.length*scale,segment=r.step*scale;
+    const current=clamp(environmentalFx.windX||0,-24,24);
+    const drift=clamp(-a.vx*.16+current*.22,-21,21);
+    const target=(i)=>{
+      const u=i/r.n,slowWave=Math.sin(time*.48+r.seed*.64-u*2.3);
+      const flex=u*u*(.055*length*slowWave+drift*.66);
+      const x=anchor.x+length*u*Math.sin(a.angle)*.105+flex
+        +length*.009*u*u*Math.sin(time*.65+u*4+r.seed);
+      const y=anchor.y+length*u*(.975+.013*Math.sin(time*.56+r.seed-u*1.7));
+      return {x,y};
+    };
+    if(!r.points||r.points.length!==r.n+1){
+      r.points=Array.from({length:r.n+1},(_,i)=>{
+        const pt=target(i);return {...pt,px:pt.x,py:pt.y};
+      });
+    }
+    const p=r.points;
+    p[0].x=anchor.x;p[0].y=anchor.y;p[0].px=anchor.x;p[0].py=anchor.y;
+    if(!dt)return;
+    // Weighted, strongly damped recovery prevents the "bright knot" that
+    // arose when oral joints were allowed to compress like thin filaments.
+    const stepDt=Math.min(.08,Math.max(0,dt));
+    for(let i=1;i<p.length;i++){
+      const u=i/r.n,pt=p[i],rest=target(i);
+      const response=1-Math.exp(-stepDt*(15-8*u));
+      pt.x+=(rest.x-pt.x)*response;
+      pt.y+=(rest.y-pt.y)*response;
+      // A heavier oral arm hangs down even during rapid bell contractions.
+      const prior=p[i-1];
+      const minimumY=Math.max(anchor.y+length*u*.84,prior.y+segment*.79);
+      if(pt.y<minimumY)pt.y=minimumY;
+      // Preserve strand length and avoid uncontrolled pinching or stretching.
+      let dx=pt.x-prior.x,dy=pt.y-prior.y;
+      let dist=Math.hypot(dx,dy)||.0001;
+      const maximum=segment*(i<=3?1.06:1.14);
+      if(dist>maximum){
+        const f=maximum/dist;
+        pt.x=prior.x+dx*f;pt.y=prior.y+dy*f;
+      }
+      dx=pt.x-prior.x;dy=pt.y-prior.y;dist=Math.hypot(dx,dy)||.0001;
+      if(dist<segment*.80){
+        // Bend locally instead of allowing folds to stack at the bell base.
+        pt.y=Math.max(pt.y,prior.y+segment*.80);
+      }
+      pt.px=pt.x;pt.py=pt.y;
+    }
+  }
   function advanceRopes(dt,time){
     const a=swimmer;
     bellHull=makeBellHull(time);
     for(const r of ropes){
       const anchor=ropeAnchor(r,time);
+      if(r.kind==='oral'){advanceOralArm(r,anchor,dt,time);continue;}
       const tailX=Math.sin(a.angle),tailY=Math.cos(a.angle);
       if(!r.points){
         r.points=Array.from({length:r.n+1},(_,i)=>{
@@ -918,7 +970,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
       environment.effects.toString(),'',
       drawBell.toString(),'',drawFeedGlow.toString(),'',
       configureRopes.toString(),'',
-      advanceRopes.toString(),'',
+      advanceOralArm.toString(),'',advanceRopes.toString(),'',
       drawOralArm.toString(),'',drawRope.toString(),'',
       drawBackground.toString(),'',
       
@@ -951,7 +1003,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     try{localStorage.setItem('pelagic.scene',currentScene);}catch(_){ }
     const forest=currentScene==='greenwood';
     document.getElementById('sceneName').textContent=forest?'◇ GREENWOOD':'◌ PELAGIC';
-    document.querySelector('.hud.top-left').innerHTML=forest?'GREENWOOD <strong>/</strong> 002<br>CINEMATIC CLEARING':'PELAGIC <strong>/</strong> 016<br>LIVING ECOSYSTEM';
+    document.querySelector('.hud.top-left').innerHTML=forest?'GREENWOOD <strong>/</strong> 002<br>CINEMATIC CLEARING':'PELAGIC <strong>/</strong> 016.1<br>LIVING ECOSYSTEM';
     document.querySelector('.hud.bottom-left').innerHTML=forest?'THE <strong>OLD GROVE</strong>':'MEDUSA <strong>ASTRALIS</strong>';
     document.querySelector('.hud.bottom-right').innerHTML=forest?'FIELD STUDY <strong>01</strong><br>LAYERS / LIGHT / WIND':'DEPTH <strong>2480 M</strong><br>PROCEDURAL MOTION';
     document.getElementById('colorName').textContent=forest?greenwood.season:palettes[paletteIndex].name;
@@ -1130,7 +1182,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     ecosystem: Object.freeze({setEnabled:ecosystem.setEnabled,setRate:ecosystem.setRate,spawn:ecosystem.spawn,state:ecosystem.state}),
     presence: strength=>signalPresence(strength),
     touch: (x,y)=>signalTouch(x,y),
-    debug: ()=>({x:swimmer.x,y:swimmer.y,z:swimmer.z,depthGoal:swimmer.depthGoal,depthChanges:swimmer.depthChanges,angle:swimmer.angle,scale:bodyScale(),velocity:[swimmer.vx,swimmer.vy,swimmer.vz],thrust:swimmer.thrust,ceilingGlide:swimmer.ceilingGlide,streamline:swimmer.streamline,burstActive:t<swimmer.burstUntil,hunger:swimmer.hunger,feedGlow:swimmer.feedGlow,mood:swimmer.mood,ecosystem:ecosystem.state(),behaviour:swimmer.behaviour,effects:environmentalFx,penetrations:ropes.reduce((count,r)=>count+(r.points||[]).slice(1).filter(p=>!!bellPenetration(p.x,p.y)).length,0),ropeCount:ropes.length,ropeKinds:{marginal:ropes.filter(r=>r.kind!=='oral').length,oral:ropes.filter(r=>r.kind==='oral').length},maxRootGap:Math.max(0,...ropes.map(r=>!r.points?.length?0:Math.hypot(r.points[1].x-r.points[0].x,r.points[1].y-r.points[0].y)/(r.step*bodyScale())))})
+    debug: ()=>({x:swimmer.x,y:swimmer.y,z:swimmer.z,depthGoal:swimmer.depthGoal,depthChanges:swimmer.depthChanges,angle:swimmer.angle,scale:bodyScale(),velocity:[swimmer.vx,swimmer.vy,swimmer.vz],thrust:swimmer.thrust,ceilingGlide:swimmer.ceilingGlide,streamline:swimmer.streamline,burstActive:t<swimmer.burstUntil,hunger:swimmer.hunger,feedGlow:swimmer.feedGlow,mood:swimmer.mood,ecosystem:ecosystem.state(),behaviour:swimmer.behaviour,effects:environmentalFx,penetrations:ropes.reduce((count,r)=>count+(r.points||[]).slice(1).filter(p=>!!bellPenetration(p.x,p.y)).length,0),ropeCount:ropes.length,ropeKinds:{marginal:ropes.filter(r=>r.kind!=='oral').length,oral:ropes.filter(r=>r.kind==='oral').length},oralHang:ropes.filter(r=>r.kind==='oral'&&r.points?.length>1).map(r=>({verticalRatio:(r.points[r.n].y-r.points[0].y)/(r.length*bodyScale()),horizontalOffset:(r.points[r.n].x-r.points[0].x)/(r.length*bodyScale())})),maxRootGap:Math.max(0,...ropes.map(r=>!r.points?.length?0:Math.hypot(r.points[1].x-r.points[0].x,r.points[1].y-r.points[0].y)/(r.step*bodyScale())))})
   });
   buildDeveloperControls();
   let weatherStatusTimer=0;

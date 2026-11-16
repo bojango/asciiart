@@ -1,5 +1,15 @@
 # PELAGIC - Living ASCII
 
+## PELAGIC 016.1 — heavier, non-bunching oral arms
+
+- Corrected the over-flexible, tangled central oral arms seen in the 16 November screen recording. The central frilled arms now have their **own heavily damped, shape-restoring spine** instead of sharing the unrestricted Verlet rope solver with the marginal tentacles.
+- Oral-arm control points keep a near-full-length hanging posture with a strong downward restoring bias, resisting compressive folding around the underside of the bell. They sway slowly with currents and movement, without forming a persistent tight knot.
+- Enforced minimum vertical spacing and separate maximum stretch limits near the base, while retaining fixed underside attachment anchors.
+- Left the 32 thin outer marginal filaments flexible and preserved their existing prey collision/feeding interactions, rare visitors, live weather and GREENWOOD.
+- Extended `window.PELAGIC.debug()` with `oralHang` values, allowing the arm-tip vertical ratios and offsets to be inspected while testing.
+- Mocked portrait/mobile animation test across 700 frame updates: oral-arm vertical extent was **0.937–1.014×** intended length; root stretch stayed at or below **1.07×**. This is a simulated regression, not an iPhone Safari visual acceptance test.
+
+
 ## PELAGIC 016 — anatomy, anchored tentacles and rare visitors
 
 ### Tentacle anatomy
