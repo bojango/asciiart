@@ -1,5 +1,18 @@
 # PELAGIC - Living ASCII
 
+## PELAGIC 012 — rare living ecosystem and wider depth
+
+This iteration makes PELAGIC a quiet deep-sea ecosystem rather than a jellyfish with random decorative events.
+
+- The jellyfish can roam a much wider simulated **Z-axis**; perspective scales across near and distant depths without an artificial whole-body pulse.
+- A separate `ecosystem.js` module simulates **marine snow**, occasional **bioluminescent plankton blooms**, drifting **copepod-like prey**, and intermittent groups of **small ASCII fish**. Each has independent position and depth. A bloom scatters and brightens when the jellyfish passes through.
+- Predation is **contact-based**: a prey item must meet an actual moving tentacle segment at a compatible depth to be caught. It then travels towards the bell; fish react to proximity but are not scripted prey.
+- Curiosity is probabilistic, not compulsory. The jellyfish may investigate a bloom, inspect nearby fish or prey, or ignore them entirely. Environmental influences do not prescribe its path.
+- **DEV → LIFE** provides independent visibility toggles, an encounter-rate control and manual BLOOM, PREY, FISH and FEED tests. WEATHER retains its existing controls. FEED plants a test prey item beside a moving strand and still requires a real collision.
+- No new API, camera, sensor, dependency or credential is required. The two scenes still share the existing website and environment controls.
+
+**Development note:** All ecological dynamics are intentionally stylised. Jellyfish realistically capture small drifting prey with their tentacles; the glowing bloom is an atmospheric plankton effect, not algae that a jellyfish directly eats. Naturally occurring encounters are deliberately intermittent.
+
 ## GREENWOOD V2: compositional rebuild
 
 GREENWOOD now uses a portrait-oriented cinematic woodland composition: a large, textured foreground oak on the **right**, a sunlit clearing **left of centre**, a visible sky opening, layered distant trunks, a small forest-floor stream, roots, ferns, moss, stones and mushrooms. Different materials use distinct ASCII characters, density and palette logic. The scene retains its weather simulation, season switching, daylight shafts, mist, rain, stars and night fireflies.

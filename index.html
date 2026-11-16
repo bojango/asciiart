@@ -80,6 +80,24 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
 
 
 
+/* Independent LIFE/WEATHER developer tabs occupy the existing lower panel. */
+.dev-tabs{display:flex;gap:3px;align-items:center;flex:0 0 auto}
+.dev-tabs button{font-size:9px;padding:4px 5px;background:transparent;border:1px solid #24453d;color:#8cb6a6}
+.dev-tabs button[aria-pressed="true"]{color:#d5f4e4;background:#214b3b}
+.dev-panel .effect-grid[hidden],.eco-panel[hidden]{display:none!important}
+.dev-panel.life-mode .preset-group{display:none}
+.eco-panel{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;gap:5px;color:#9ec8b8}
+.eco-summary{font-size:9px;white-space:normal;flex:none;line-height:1.2}
+.eco-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(2,1fr);flex:1;gap:3px 10px;min-height:0}
+.eco-switch{display:flex;align-items:center;gap:6px;padding:3px 0 2px;border-top:1px solid #1b3530;font-size:10px;cursor:pointer}
+.eco-switch input{accent-color:#76cfaa;margin:0;flex:none;width:13px;height:13px}
+.eco-tools{display:flex;gap:7px;align-items:center;min-height:19px;flex:none;font-size:9px}
+.eco-tools label{display:flex;align-items:center;gap:7px;flex:1}
+.eco-tools input{width:100%;flex:1;min-width:0;accent-color:#79d6a5}
+.eco-tools button{padding:4px 6px;min-width:42px}
+.eco-tools small{margin-left:auto;white-space:nowrap;color:#658c7b;font-size:8px}
+@media(max-width:480px){.dev-tabs button{font-size:8px;padding:3px}.dev-panel h2{font-size:9px}.eco-summary{font-size:8px}.eco-panel{gap:3px}.eco-switch{font-size:9px;padding:1px 0}.eco-tools button{font-size:9px;min-width:35px;padding:3px 5px}.eco-tools small{display:none}}
+@media(max-height:650px){.eco-summary{display:none}.eco-panel{gap:2px}.eco-tools{min-height:16px}}
 @media(prefers-reduced-motion:reduce){.led{box-shadow:none}}
 </style>
 </head>
@@ -87,7 +105,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
 <main class="app" aria-label="Procedural ASCII art experiment">
   <section class="art" id="art" aria-label="Animated ASCII jellyfish with bioluminescent tentacles and moving ASCII sea life">
     <canvas id="sea" role="img" aria-label="Colourful animated ASCII jellyfish in a dark deep-sea scene"></canvas>
-    <div class="hud top-left">PELAGIC <strong>/</strong> 011<br>GENERATIVE SPECIMEN</div>
+    <div class="hud top-left">PELAGIC <strong>/</strong> 012<br>LIVING ECOSYSTEM</div>
     <div class="hud top-right"><span id="status">LIVE</span> <strong>●</strong><br><span id="detailStat">192 × 92</span></div>
     <div class="hud bottom-left">MEDUSA <strong>ASTRALIS</strong><br>ALL GLYPHS / NO IMAGES</div>
     <div class="hud bottom-right">DEPTH <strong>2480 M</strong><br>PROCEDURAL MOTION</div>
@@ -109,14 +127,21 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
   <section class="code" id="code" aria-label="Continuously scrolling generative animation source code">
     <div class="code-inner" id="codeInner" aria-hidden="true"></div>
     <aside class="dev-panel" id="devPanel" hidden aria-label="Environmental simulation developer controls">
-      <header><h2>ENV / SIMULATION</h2><span class="dev-mode">OFFLINE</span><div class="preset-group"><label for="weatherPreset">PRESET</label><select id="weatherPreset" aria-label="Weather preset"><option value="custom">Custom</option><option value="calm">Calm</option><option value="storm">Storm</option><option value="cold">Cold</option><option value="heat">Heatwave</option><option value="night">Night</option><option value="mist">Mist</option></select></div><button id="devClose" type="button" aria-label="Close developer panel">×</button></header>
+      <header><h2>DEV / SIM</h2><div class="dev-tabs"><button id="devTabWeather" type="button" aria-pressed="true">WEATHER</button><button id="devTabLife" type="button" aria-pressed="false">LIFE</button></div><span class="dev-mode">OFFLINE</span><div class="preset-group"><label for="weatherPreset">PRESET</label><select id="weatherPreset" aria-label="Weather preset"><option value="custom">Custom</option><option value="calm">Calm</option><option value="storm">Storm</option><option value="cold">Cold</option><option value="heat">Heatwave</option><option value="night">Night</option><option value="mist">Mist</option></select></div><button id="devClose" type="button" aria-label="Close developer panel">×</button></header>
       <div class="effect-grid" id="weatherControls"></div>
+      <section class="eco-panel" id="ecosystemPanel" hidden aria-label="PELAGIC ecosystem controls">
+        <div class="eco-summary">Rare, independent encounters. Prey are caught only when a tentacle touches them.</div>
+        <div class="eco-grid" id="ecosystemControls"></div>
+        <div class="eco-tools"><label>Activity <input id="ecoRate" aria-label="Ecosystem event frequency" type="range" min="0.55" max="2" step="0.05" value="1"></label><output id="ecoRateValue">1.00×</output></div>
+        <div class="eco-tools eco-actions"><button type="button" data-spawn="bloom">BLOOM</button><button type="button" data-spawn="prey">PREY</button><button type="button" data-spawn="fish">FISH</button><button type="button" id="ecoReset">CLEAR</button><small>Simulated encounters</small></div>
+      </section>
       <div class="dev-footer"><button type="button" id="simulatePresence">PRESENCE</button><button type="button" id="simulateTouch">TOUCH</button><button type="button" id="installationMode">FULL ART</button><span class="readout" id="devReadout">Z —</span></div>
     </aside>
   </section>
 </main>
 <script src="./environment.js"></script>
 <script src="./greenwood.js"></script>
+<script src="./ecosystem.js"></script>
 <script>
 (()=>{'use strict';
   const canvas=document.getElementById('sea');
@@ -127,6 +152,8 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
   // Environmental values are computed in environment.js and do not own the animal.
   const environment=window.PelagicEnvironment;
   const greenwood=window.PelagicGreenwood;
+  const ecosystem=window.PelagicEcosystem;
+  if(!ecosystem)throw Error('PELAGIC ecosystem module missing');
   if(!greenwood)throw Error('GREENWOOD scene module missing');
   let currentScene='pelagic';try{const requested=new URLSearchParams(location.search).get('scene');currentScene=requested==='greenwood'?'greenwood':requested==='pelagic'?'pelagic':localStorage.getItem('pelagic.scene')==='greenwood'?'greenwood':'pelagic';}catch(_){}
   if(!environment)throw Error('Environment adapter missing');
@@ -138,7 +165,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     strokePhase:0,stroke:0,pulse:0,pulseRate:0,thrust:0,travel:0,turn:0,initialised:false,
     z:.20,vz:0,energy:.7,curiousUntil:0,startledUntil:0,interest:0,startle:0,behaviour:'exploring',
     burstUntil:0,burstPower:0,nextBurstAt:8,streamline:0,
-    depthGoal:.20,nextDepthDecision:9,depthChanges:0,
+    depthGoal:.20,nextDepthDecision:15,depthChanges:0,
     ceilingGlide:false,glideDirection:1,glideStart:0 };
   // Smooth, seeded random motion: no teleporting targets, no repeating L/R loop.
   const noise=(time,seed)=>{
@@ -146,11 +173,8 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     const u=f*f*f*(f*(f*6-15)+10);
     return 2*(rand(cell*11.71+seed)*(1-u)+rand((cell+1)*11.71+seed)*u)-1;
   };
-  const bodyScale=()=>clamp(1/(1+swimmer.z*.46),.72,1.47);
-  // One intermittent, ephemeral plankton bloom: a discovery, not another UI element.
-  // It does not prescribe a route; the animal can ignore it entirely.
-  const bloom={active:false,next:12,until:0,born:0,x:0,y:0,z:0,vx:0,vy:0,seed:0,
-    curious:false,disturbedAt:-100,interactions:0,visits:0};
+  const bodyScale=()=>clamp(Math.exp(-swimmer.z*.50),.47,1.87);
+  // Independent wildlife and feeding logic live in ecosystem.js.
   const wake=[];
   const ropes=[];
   let ropeDebt=0;
@@ -345,16 +369,16 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     // between them. No periodic zoom and no forced path through the screen.
     if(time>=a.nextDepthDecision){
       const choice=rand(time*2.37+211);
-      a.depthGoal=choice<.40?-.48-.18*rand(time+8):choice<.83?.50+.30*rand(time+17):-.13;
-      a.nextDepthDecision=time+10+rand(time*3.71+61)*11;
+      a.depthGoal=choice<.41?-1.04-.19*rand(time+8):choice<.85?1.02+.41*rand(time+17):-.15;
+      a.nextDepthDecision=time+20+rand(time*3.71+61)*14;
       a.depthChanges++;
     }
-    const bloomCurious=bloom.active&&bloom.curious&&bloom.disturbedAt<0;
-    const desiredZ=clamp(curiousActive&&a.interest>.45?-.64:
-      bloomCurious?bloom.z:a.depthGoal,-.70,.89);
-    const zForce=(desiredZ-a.z)*3.5-a.vz*2.45;
-    a.vz=clamp(a.vz+zForce*dt,burstActive?-1.3:-.84,burstActive?1.3:.84);
-    a.z=clamp(a.z+a.vz*dt,-.70,.90);
+    const encounter=ecosystem.interest(a,{width,height});
+    const desiredZ=clamp(curiousActive&&a.interest>.45?-1.12:
+      encounter?encounter.z:a.depthGoal,-1.25,1.50);
+    const zForce=(desiredZ-a.z)*1.65-a.vz*2.10;
+    a.vz=clamp(a.vz+zForce*dt,burstActive?-1.35:-.76,burstActive?1.35:.76);
+    a.z=clamp(a.z+a.vz*dt,-1.25,1.50);
 
     const prev=a.pulse;
     // Bell strokes quieten while the jellyfish coasts down from the ceiling;
@@ -390,10 +414,10 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     if(environmentalFx.rain){fx+=environmentalFx.rain*12*noise(time*.73,43);}
     // A fading plankton bloom can invite investigation, but never controls
     // the animal or overrides the ceiling-avoidance system.
-    if(bloom.active&&bloom.curious&&bloom.disturbedAt<0&&!startleActive){
-      const curiosity=(1-topProximity*.8)*(.7+.3*a.energy);
-      fx+=clamp((bloom.x-a.x)*.21,-29,29)*curiosity;
-      fy+=clamp((bloom.y-a.y)*.12,-15,15)*curiosity;
+    if(encounter&&!startleActive){
+      const curiosity=encounter.strength*(1-topProximity*.8)*(.7+.3*a.energy);
+      fx+=clamp((encounter.x-a.x)*.21,-29,29)*curiosity;
+      fy+=clamp((encounter.y-a.y)*.13,-15,15)*curiosity;
     }
     // Distant, soft restoring currents: no sudden reversal at a hard wall.
     const meanderY=height*(.46+.09*noise(time*.055,737));
@@ -415,7 +439,6 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     if(a.y<minY){a.y=minY;a.vy=Math.max(8,Math.abs(a.vy)*.30);a.ceilingGlide=true;}
     if(a.y>maxY){a.y=maxY;a.vy=-Math.max(8,Math.abs(a.vy)*.30);a.ceilingGlide=false;}
     a.travel=Math.hypot(a.vx,a.vy);centerX=a.x;centerY=a.y;
-    updateBloom(dt,time);
     // A short-lived, dissipating ASCII wake provides direction/depth cues.
     if(a.stroke>1.7 && wake.length<180 && Math.floor(time*24)%3===0){
       wake.push({x:a.x-a.vx*.13+(rand(time*7)*2-1)*footprint*.26,
@@ -424,62 +447,6 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     for(let i=wake.length-1;i>=0;i--){
       const w=wake[i];w.life-=dt;w.x+=(-a.vx*.07+currentX*.25)*dt;w.y+=(14+currentY*.13)*dt;
       if(w.life<=0)wake.splice(i,1);
-    }
-  }
-  function updateBloom(dt,time){
-    // Only one small cluster may exist; most frames remain nearly empty.
-    if(!bloom.active&&time>=bloom.next){
-      bloom.active=true;bloom.born=time;
-      bloom.until=time+12+rand(time*.9+91)*9;
-      bloom.seed=time*2.7+71;
-      const shift=(rand(time*2.3+17)-.5)*width*.66;
-      bloom.x=clamp(swimmer.x+shift,width*.16,width*.84);
-      bloom.y=clamp(swimmer.y+(rand(time*1.7+3)-.5)*height*.45,height*.30,height*.72);
-      bloom.z=clamp((rand(time+50)-.5)*1.35,-.58,.74);
-      bloom.vx=(rand(time+14)-.5)*7;
-      bloom.vy=(rand(time+31)-.5)*5;
-      bloom.curious=rand(time*5.9+29)<.64;
-      bloom.disturbedAt=-100;
-      bloom.visits++;
-    }
-    if(!bloom.active)return;
-    bloom.x+=dt*(bloom.vx+environmentalFx.windX*.07);
-    bloom.y+=dt*(bloom.vy+environmentalFx.windY*.04);
-    // Brightness and turbulence increase only when the animal passes nearby.
-    if(bloom.disturbedAt<0){
-      const dist=Math.hypot(swimmer.x-bloom.x,swimmer.y-bloom.y);
-      if(dist<radius*bodyScale()*1.08 && Math.abs(swimmer.z-bloom.z)<.45){
-        bloom.disturbedAt=time;
-        bloom.interactions++;
-        swimmer.energy=clamp(swimmer.energy+.15,0,1.4);
-        swimmer.curiousUntil=Math.max(swimmer.curiousUntil,time+2.2);
-      }
-    }
-    if(time>bloom.until){
-      bloom.active=false;
-      bloom.next=time+25+rand(time*1.9+44)*21;
-    }
-  }
-  function drawBloom(time){
-    if(!bloom.active)return;
-    const fade=clamp((time-bloom.born)/3,0,1)*clamp((bloom.until-time)/3,0,1);
-    const dispersal=clamp((time-bloom.disturbedAt)/3.8,0,1);
-    const disturbed=bloom.disturbedAt>0;
-    const zScale=clamp(1/(1+bloom.z*.4),.7,1.4);
-    for(let i=0;i<27;i++){
-      const angle=TAU*rand(i*11+bloom.seed)+time*(.11+.08*rand(i+44));
-      const ring=Math.sqrt(rand(i*19+bloom.seed+61));
-      const spread=(12+26*ring)*(1+(disturbed?dispersal*2.1:0))*zScale;
-      const x=bloom.x+Math.cos(angle)*spread+Math.sin(time*.61+i)*2.3;
-      const y=bloom.y+Math.sin(angle)*spread*.64+Math.cos(time*.43+i)*2.5;
-      const flash=disturbed?1.35*Math.exp(-dispersal*2.1):1;
-      const alpha=clamp(fade*(.10+.31*rand(i*7+13))*flash,0,.85);
-      const glyph=i%9===0?'*':i%4===0?'+':i%3===0?':':'.';
-      // Cool bioluminescent plankton remains distinct from the temperature-
-      // tinted animal, but never becomes a full-screen particle effect.
-      const hue=177+35*rand(i*7+71)+9*Math.sin(time*.24);
-      print(glyph,x,y,`hsla(${hue},83%,76%,${alpha})`,font*.8,
-        i%11===0?2:0);
     }
   }
   function signalPresence(strength=1){
@@ -492,8 +459,8 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     if(a.burstUntil>0 && time<a.burstUntil+.5)return false;
     const toward=rand(time*19.37+59)>.54;
     // A quick retreat/approach in depth, plus an upward/diagonal kick.
-    const polarity=(a.z>.55? -1:a.z<-.38?1:toward?-1:1);
-    a.vz=clamp(a.vz+polarity*(.63+.46*power),-1.12,1.12);
+    const polarity=(a.z>1.10?-1:a.z<-.98?1:toward?-1:1);
+    a.vz=clamp(a.vz+polarity*(.68+.48*power),-1.43,1.43);
     a.vx+=(rand(time*7.71+29)-.5)*65*power;
     // At the top, a burst goes mainly into Z or sideways, not into the wall.
     const upper=Math.max(radius*bodyScale()*1.55,height*.31);
@@ -515,6 +482,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     }else{
       a.vx+=dx/mag*19;a.vy+=dy/mag*14-5;a.vz+=.08;
     }
+    ecosystem.startle();
     a.nextBurstAt=Math.max(a.nextBurstAt,t+6);
     a.curiousUntil=Math.min(a.curiousUntil,t+1);
   }
@@ -775,8 +743,8 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     if(currentScene==='greenwood'){greenwood.draw(ctx,width,height,time,environmentalFx,highRes);return;}
     centerX=swimmer.x;centerY=swimmer.y;
     drawBackground(time);
+    ecosystem.draw(ctx,'behind',time,swimmer,{width,height,radius});
     for(let i=0;i<4;i++)drawMini(time,i);
-    drawBloom(time);
     for(const w of wake){
       const light=clamp(w.life/1.8,0,1);
       print(w.seed>.7?'+':'.',w.x,w.y,colour(.42+w.seed*.20,75,.19*light),font*.80);
@@ -787,6 +755,8 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     for(const rope of ropes)if(rope.kind==='oral')drawRope(rope,time);
     for(const rope of ropes)if(rope.kind==='front')drawRope(rope,time);
     drawMotes(time);
+    ecosystem.draw(ctx,'front',time,swimmer,{width,height,radius});
+    setFont(font);
   }
   const escapeHTML=(s)=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   function buildSource(){
@@ -796,15 +766,15 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
       const once=lines.map((line,i)=>`<div class="line"><span class="ln">${String(i+1).padStart(3,'0')}</span><span class="src">${escapeHTML(line)||'&nbsp;'}</span></div>`).join('');
       codeInner.innerHTML=once+once;sourceOffset=0;return;
     }
-    // The panel displays real function bodies from the running animation engine.
+    // The panel displays real source from the animation and ecology engines.
     const chunks=[
       '// PELAGIC / live generative source',
       '// Bell contraction drives thrust; soft collision keeps filaments outside.',
       'const PI = Math.PI, TAU = PI * 2;',
       '',
       noise.toString(),'',
-      updateBloom.toString(),'',
-      drawBloom.toString(),'',
+      '// Independently simulated plankton, prey and shoals in ecosystem.js.',
+      ecosystem.update.toString(),'',ecosystem.draw.toString(),'',
       swim.toString(),'',
       signalPresence.toString(),'',
       signalTouch.toString(),'',
@@ -844,7 +814,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     try{localStorage.setItem('pelagic.scene',currentScene);}catch(_){ }
     const forest=currentScene==='greenwood';
     document.getElementById('sceneName').textContent=forest?'◇ GREENWOOD':'◌ PELAGIC';
-    document.querySelector('.hud.top-left').innerHTML=forest?'GREENWOOD <strong>/</strong> 002<br>CINEMATIC CLEARING':'PELAGIC <strong>/</strong> 011<br>GENERATIVE SPECIMEN';
+    document.querySelector('.hud.top-left').innerHTML=forest?'GREENWOOD <strong>/</strong> 002<br>CINEMATIC CLEARING':'PELAGIC <strong>/</strong> 012<br>LIVING ECOSYSTEM';
     document.querySelector('.hud.bottom-left').innerHTML=forest?'THE <strong>OLD GROVE</strong><br>ALL GLYPHS / NO IMAGES':'MEDUSA <strong>ASTRALIS</strong><br>ALL GLYPHS / NO IMAGES';
     document.querySelector('.hud.bottom-right').innerHTML=forest?'FIELD STUDY <strong>01</strong><br>LAYERS / LIGHT / WIND':'DEPTH <strong>2480 M</strong><br>PROCEDURAL MOTION';
     document.getElementById('colorName').textContent=forest?greenwood.season:palettes[paletteIndex].name;
@@ -901,6 +871,41 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     });
     syncDeveloperControls();
   }
+  function syncEcosystemControls(){
+    const state=ecosystem.state();
+    for(const input of document.querySelectorAll('#ecosystemControls input[data-species]')){
+      input.checked=!!state.switches[input.dataset.species];
+    }
+    document.getElementById('ecoRate').value=state.rate;
+    document.getElementById('ecoRateValue').textContent=`${state.rate.toFixed(2)}×`;
+  }
+  function setDevTab(life){
+    document.getElementById('weatherControls').hidden=life;
+    document.getElementById('ecosystemPanel').hidden=!life;
+    document.getElementById('devTabWeather').setAttribute('aria-pressed',String(!life));
+    document.getElementById('devTabLife').setAttribute('aria-pressed',String(life));
+    devPanel.classList.toggle('life-mode',life);
+    if(life)syncEcosystemControls();
+  }
+  for(const [key,title] of [['snow','Marine snow'],['blooms','Glowing blooms'],['prey','Tiny prey'],['fish','Small fish']]){
+    const label=document.createElement('label');label.className='eco-switch';
+    const input=document.createElement('input');input.type='checkbox';input.dataset.species=key;input.setAttribute('aria-label',title);
+    const text=document.createElement('span');text.textContent=title;
+    label.append(input,text);document.getElementById('ecosystemControls').appendChild(label);
+  }
+  document.getElementById('ecosystemControls').addEventListener('change',e=>{
+    const key=e.target.dataset.species;if(key)ecosystem.setEnabled(key,e.target.checked);
+  });
+  document.getElementById('ecoRate').addEventListener('input',e=>{
+    ecosystem.setRate(Number(e.target.value));syncEcosystemControls();
+  });
+  document.querySelector('.eco-actions').addEventListener('click',e=>{
+    const type=e.target.dataset.spawn;
+    if(type){if(!ecosystem.state().switches[type==='bloom'?'blooms':type])ecosystem.setEnabled(type==='bloom'?'blooms':type,true);ecosystem.spawn(type);syncEcosystemControls();}
+    else if(e.target.id==='ecoReset')ecosystem.clear();
+  });
+  document.getElementById('devTabWeather').addEventListener('click',()=>setDevTab(false));
+  document.getElementById('devTabLife').addEventListener('click',()=>setDevTab(true));
   function syncDeveloperControls(){
     const {values,enabled}=environment.state();
     for(const input of document.querySelectorAll('#weatherControls input')){
@@ -943,9 +948,10 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
   // The website never gains control over devices or stores credentials.
   window.PELAGIC=Object.freeze({
     environment: Object.freeze({setInput:environment.setInput,setEnabled:environment.setEnabled,preset:environment.preset}),
+    ecosystem: Object.freeze({setEnabled:ecosystem.setEnabled,setRate:ecosystem.setRate,spawn:ecosystem.spawn,state:ecosystem.state}),
     presence: strength=>signalPresence(strength),
     touch: (x,y)=>signalTouch(x,y),
-    debug: ()=>({x:swimmer.x,y:swimmer.y,z:swimmer.z,depthGoal:swimmer.depthGoal,depthChanges:swimmer.depthChanges,angle:swimmer.angle,scale:bodyScale(),velocity:[swimmer.vx,swimmer.vy,swimmer.vz],thrust:swimmer.thrust,ceilingGlide:swimmer.ceilingGlide,streamline:swimmer.streamline,burstActive:t<swimmer.burstUntil,bloom:{active:bloom.active,visits:bloom.visits,interactions:bloom.interactions},behaviour:swimmer.behaviour,effects:environmentalFx,penetrations:ropes.reduce((count,r)=>count+(r.points||[]).slice(1).filter(p=>!!bellPenetration(p.x,p.y)).length,0),ropeCount:ropes.length})
+    debug: ()=>({x:swimmer.x,y:swimmer.y,z:swimmer.z,depthGoal:swimmer.depthGoal,depthChanges:swimmer.depthChanges,angle:swimmer.angle,scale:bodyScale(),velocity:[swimmer.vx,swimmer.vy,swimmer.vz],thrust:swimmer.thrust,ceilingGlide:swimmer.ceilingGlide,streamline:swimmer.streamline,burstActive:t<swimmer.burstUntil,ecosystem:ecosystem.state(),behaviour:swimmer.behaviour,effects:environmentalFx,penetrations:ropes.reduce((count,r)=>count+(r.points||[]).slice(1).filter(p=>!!bellPenetration(p.x,p.y)).length,0),ropeCount:ropes.length})
   });
   buildDeveloperControls();
   function frame(now){
@@ -960,11 +966,12 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
       let steps=0;
       while(ropeDebt>=1/60&&steps++<5){if(currentScene==='pelagic')advanceRopes(1/60,t-ropeDebt+1/60);ropeDebt-=1/60;}
       if(steps>5)ropeDebt=0;
+      if(currentScene==='pelagic')ecosystem.update(delta*speed,t,swimmer,ropes,{width,height,radius,scale:bodyScale()},environmentalFx);
       sourceOffset=(sourceOffset+delta*speed*31)%sourceHeight;
       codeInner.style.transform=`translate3d(0,${-sourceOffset}px,0)`;
       drawDebt+=delta;
       if(drawDebt>=1/30){render(t);drawDebt=0;
-        if(!devPanel.hidden)document.getElementById('devReadout').textContent=currentScene==='greenwood'?`GROVE · ${greenwood.season}`:`Z ${swimmer.z.toFixed(1)} · ${swimmer.behaviour.slice(0,5).toUpperCase()}`;
+        if(!devPanel.hidden)document.getElementById('devReadout').textContent=currentScene==='greenwood'?`GROVE · ${greenwood.season}`:devPanel.classList.contains('life-mode')?`CATCH ${ecosystem.state().counts.preyCaught}`:`Z ${swimmer.z.toFixed(1)} · ${swimmer.behaviour.slice(0,5).toUpperCase()}`;
       }
     }
     requestAnimationFrame(frame);
