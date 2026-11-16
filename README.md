@@ -1,65 +1,57 @@
-# PELAGIC — Living ASCII
+# PELAGIC - Living ASCII
 
-An experimental, responsive ASCII-art animation rendered in real time with vanilla HTML, CSS and JavaScript.
+A generative ASCII jellyfish artwork built with vanilla HTML, CSS and JavaScript.
 
-Version 7 couples bell contractions to propulsion: the changing rim drives actual upward/diagonal acceleration, then drag and currents determine the glide. It also prevents the tentacles penetrating the dynamically projected 3D bell silhouette.
+Live site: https://bojango.github.io/asciiart/
 
-## View the website
+## Version 8: autonomous depth and simulated environment
 
-When GitHub Pages is enabled for this repository, open the Pages URL shown in **Settings → Pages**. On a standard personal repository named `asciiart`, this is normally `https://bojango.github.io/asciiart/`.
+The animation and the environment inputs are deliberately separate. The jellyfish retains its own pulse-driven propulsion, flowing and colliding tentacles, and internal temperament. A Z axis lets it swim nearer or further from the screen, with perspective scaling and depth cues.
 
-## Run locally
+Environmental simulation independently affects:
+- Temperature: spectral colour shift.
+- Wind speed/direction: background drift and simulated currents affecting body and tentacles.
+- Rain: ASCII rain, restrained current turbulence.
+- Air quality: atmospheric haze and contrast.
+- Humidity: drifting mist.
+- Daylight: relative ambient brightness and bioluminescence.
 
-Open `index.html` in a desktop browser, or run a local web server:
+In DEV mode, toggle each influence separately, adjust its slider or test presets: calm, storm, cold, heatwave, night and mist. Preferences persist in the current browser.
 
-```sh
-python3 -m http.server 8000
-```
+Simulate a nearby person to test curiosity and a gradual 3D approach. Simulated touch and touching the artwork cause a gentle startle, not direct manipulation.
 
-Then visit `http://localhost:8000`.
+Full-screen installation mode is available at the bottom of DEV and hides code, menus and metadata. The discreet EXIT control returns to the normal layout.
 
-For iPhone testing, GitHub Pages is recommended. Safari's Files preview does not consistently execute locally opened HTML/JavaScript.
+## Controls and files
 
-## Controls
+index.html: ASCII renderer, creature physics, depth and behaviour engine, developer UI and scrolling live source.
 
-| Control | What it does |
-| --- | --- |
-| Colour | Cycle through four palettes |
-| HI-RES / LO-RES | Switch ASCII glyph density |
-| Speed | Change animation speed |
-| Pause | Pause / resume the scene and code scroll |
+environment.js: offline weather simulation, presets, smoothing, feature toggles and local preferences.
 
-Desktop keyboard shortcuts: **C** for colour, **D** for detail, **Space** for pause.
+archive/v1-concept.html: earlier prototype.
 
-## Publish with GitHub Pages
+Toolbar: Colour, Detail, Speed, DEV, Pause. Keyboard: C, D, Space, backtick (DEV) and Escape.
 
-1. Make the repository **Public**.
-2. Open **Settings → Pages**.
-3. Under **Build and deployment**, select **Deploy from a branch**.
-4. Choose **`main`**, folder **`/(root)`**, then **Save**.
-5. Wait until GitHub displays the published website URL.
+## Staged development
 
-Future edits to `index.html` on `main` will publish automatically. GitHub Pages hosting is public; don't add secrets to the repository.
+Stage 1: Visual refinement, Z-axis, autonomous behavioural state, touch/presence simulation, installation mode. This is the current build.
 
-## Project files
+Stage 2: Link Open-Meteo weather and air-quality APIs after choosing which effects to keep. Retain manual simulation, show data freshness and handle unavailable network data safely.
 
-- `index.html` — current website, v3; self-contained (no external libraries, fonts or image assets required)
-- `archive/v1-concept.html` — the earlier first draft
-- `previews/` — preview images are available in the project starter ZIP and can be added through GitHub's web uploader
-- `.nojekyll` — tells Pages to serve the project as static files
+Stage 3: Raspberry Pi kiosk display, optional local Home Assistant or compatible smart-home sensor connection. No HomeKit or Home Assistant access exists yet. Do not put secret tokens in a public GitHub Pages repo.
 
-## Motion and source display
+For future adapters, browser-side methods are exposed:
+- window.PELAGIC.environment.setInput('temperatureC', 6)
+- window.PELAGIC.environment.setEnabled('rain', false)
+- window.PELAGIC.environment.preset('storm')
+- window.PELAGIC.presence(1)
+- window.PELAGIC.touch(200, 250)
+- window.PELAGIC.debug()
 
-The jellyfish remains upright with modest steering angles. Rather than following a precomputed path, each **bell contraction generates a thrust force** along the body axis. The bell refills during recovery and its increased drag slows the animal; water currents and soft viewport boundaries contribute to its trajectory. It can travel vertically and diagonally.
+These methods are an interface, not a sensor integration.
 
-The rope particles use Verlet integration, length constraints and a **recomputed projected collision hull** sampled from the deformed bell geometry on each physics step. Penetrating tentacle points are pushed out, and glyphs within the bell are hidden. This is a stylised 2D/3D physics approximation, not a fluid dynamics simulation.
+## Local development
 
-The lower panel continuously scrolls real JavaScript source in a uniform 9px monochrome Courier font.
+From the repository root, run python3 -m http.server 8000 and visit http://localhost:8000/. Both index.html and environment.js must be present.
 
-## Development
-
-Edit `index.html` to update the visuals, animation logic and code panel. This is a zero-build static site; there is no npm install or deployment pipeline.
-
-## Status
-
-Concept prototype. Visuals and performance may vary between browsers and iPhone models.
+GitHub Pages: publish the main branch from /(root). The artwork is a stylised physics simulation, not a real fluid dynamics model.

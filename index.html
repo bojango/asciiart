@@ -40,6 +40,36 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
 .src { color:inherit; white-space:pre; font-size:inherit; line-height:inherit; font-weight:inherit; }
 @media(max-width:480px){ .app{grid-template-rows:minmax(0,2fr) 35px minmax(0,1fr)}.hud{font-size:9px}.hud.top-left{top:14px;left:13px}.hud.top-right{top:14px;right:13px}.hud.bottom-left{left:13px;bottom:10px}.hud.bottom-right{right:13px;bottom:10px}.bar{padding:0 6px 0 11px}.identity{font-size:10px;gap:7px}.identity em{display:none}.actions button{height:33px;min-width:36px;padding:0 7px;font-size:10px}.line{font-size:9px;line-height:15px;height:15px}.ln{flex-basis:31px;padding-right:8px} }
 @media(max-width:340px){.hud.bottom-right{display:none}.identity{letter-spacing:0}.actions button{padding:0 5px;min-width:32px}.actions button .word{display:none}}
+
+/* The environmental simulator is intentionally an overlay, never a third page column. */
+.dev-panel[hidden] { display:none !important; }
+.dev-panel { position:absolute; z-index:8; top:12px; right:12px; bottom:12px; width:min(348px,calc(100% - 24px)); overflow-y:auto; overscroll-behavior:contain; -webkit-overflow-scrolling:touch; border:1px solid #354b56; background:rgba(5,13,17,.968); color:#bfd6d0; border-radius:5px; box-shadow:0 16px 54px #000b; padding:13px; font:11px/1.45 "Courier New",monospace; }
+.dev-panel header { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:9px; }
+.dev-panel h2 { font-size:12px; margin:0; letter-spacing:.1em; color:#c5f0de; }
+.dev-panel .hint { font-size:10px; color:#829d9b; margin:4px 0 12px; }
+.dev-panel .dev-mode { padding:7px 9px; border:1px solid #294542; margin:0 0 10px; color:#83bbac; background:#091c1a; }
+.dev-panel .effect { padding:7px 0; border-top:1px solid #1b3434; }
+.dev-panel .effect-title { display:flex; justify-content:space-between; align-items:center; gap:10px; }
+.dev-panel .effect-title label { display:flex; align-items:center; gap:8px; }
+.dev-panel input[type=checkbox] { accent-color:#81d8b7; width:15px; height:15px; margin:0; }
+.dev-panel input[type=range] { width:100%; margin:7px 0 0; accent-color:#94dabd; height:16px; }
+.dev-panel input[type=range]:disabled { opacity:.24; }
+.dev-panel output { font-variant-numeric:tabular-nums; color:#c1eccb; }
+.dev-panel button, .dev-panel select { border:1px solid #385750; background:#10241f; color:#c1e8dc; font:11px "Courier New",monospace; padding:7px 9px; border-radius:2px; cursor:pointer; }
+.dev-panel button:focus-visible,.dev-panel select:focus-visible { outline:2px solid #9be2c2; outline-offset:2px; }
+.dev-panel .dev-buttons { display:flex; gap:6px; margin-top:12px; }
+.dev-panel .dev-buttons button { flex:1; }
+.dev-panel .readout { margin-top:10px; color:#7aa798; font-size:10px; }
+.dev-panel .mini { color:#829d9b; font-size:10px; }
+ .actions button[aria-pressed="true"] { color:#b5ffde; background:#12271f; }
+.app.installation { grid-template-rows:minmax(0,1fr); }
+.app.installation > .bar,.app.installation > .code,.app.installation .hud { display:none; }
+.exit-installation { display:none; position:absolute; z-index:7; top:12px; right:12px; padding:6px 9px; border:1px solid #354350; border-radius:3px; background:rgba(4,10,17,.64); color:#adbdcc; font:10px "Courier New",monospace; cursor:pointer; opacity:.30; }
+.exit-installation:focus-visible,.exit-installation:hover {opacity:1;}
+.app.installation .exit-installation {display:block;}
+
+@media(max-width:480px){ .dev-panel {top:5px;right:6px;bottom:5px;width:min(325px,calc(100% - 12px));font-size:11px;padding:11px;} .actions button#devToggle{min-width:34px;} }
+
 @media(prefers-reduced-motion:reduce){.led{box-shadow:none}}
 </style>
 </head>
@@ -47,10 +77,26 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
 <main class="app" aria-label="Procedural ASCII art experiment">
   <section class="art" id="art" aria-label="Animated ASCII jellyfish with bioluminescent tentacles and moving ASCII sea life">
     <canvas id="sea" role="img" aria-label="Colourful animated ASCII jellyfish in a dark deep-sea scene"></canvas>
-    <div class="hud top-left">PELAGIC <strong>/</strong> 007<br>GENERATIVE SPECIMEN</div>
+    <div class="hud top-left">PELAGIC <strong>/</strong> 008<br>GENERATIVE SPECIMEN</div>
     <div class="hud top-right"><span id="status">LIVE</span> <strong>●</strong><br><span id="detailStat">192 × 92</span></div>
     <div class="hud bottom-left">MEDUSA <strong>ASTRALIS</strong><br>ALL GLYPHS / NO IMAGES</div>
     <div class="hud bottom-right">DEPTH <strong>2480 M</strong><br>PROCEDURAL MOTION</div>
+
+    <button type="button" class="exit-installation" id="exitInstallation" aria-label="Exit installation mode">EXIT</button>
+    <aside class="dev-panel" id="devPanel" hidden aria-label="Environmental simulation developer controls">
+      <header><h2>ENVIRONMENT / SIMULATION</h2><button id="devClose" type="button" aria-label="Close developer panel">CLOSE ×</button></header>
+      <p class="dev-mode">SOURCE: SIMULATED · OFFLINE</p>
+      <p class="hint">Toggle each influence independently. Changes blend in gradually. Live weather will be connected after visual testing.</p>
+      <label for="weatherPreset">SCENARIO</label>
+      <select id="weatherPreset" aria-label="Weather preset">
+        <option value="custom">Custom</option><option value="calm">Calm</option><option value="storm">Storm</option><option value="cold">Cold</option><option value="heat">Heatwave</option><option value="night">Night</option><option value="mist">Mist</option>
+      </select>
+      <div id="weatherControls"></div>
+      <div class="dev-buttons"><button type="button" id="simulatePresence">PERSON NEARBY</button><button type="button" id="simulateTouch">TOUCH REACTION</button></div>
+      <div class="dev-buttons"><button type="button" id="installationMode">ENTER INSTALLATION MODE</button></div>
+      <p class="readout" id="devReadout">Z — / behaviour: exploring</p>
+      <p class="mini">Touch the artwork to startle the animal, not to drag it. Future sensors will use the same event interface.</p>
+    </aside>
   </section>
   <nav class="bar" aria-label="Animation controls">
     <div class="identity"><span id="led" class="led"></span><span>medusa.js</span><em>/ live source</em></div>
@@ -58,6 +104,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
       <button id="color" type="button" aria-label="Change colour palette" title="Change colour palette"><i id="swatch" class="swatch"></i><span class="word" id="colorName">LUMEN</span></button>
       <button id="density" type="button" aria-label="Toggle ASCII detail" title="Toggle ASCII detail"><span id="densityName">HI-RES</span></button>
       <button id="speed" type="button" aria-label="Change animation speed" title="Change animation speed"><span id="speedName">1×</span></button>
+      <button id="devToggle" type="button" aria-label="Open developer simulation" aria-expanded="false" aria-controls="devPanel" title="Environmental simulator"><span>DEV</span></button>
       <button id="pause" type="button" aria-label="Pause animation" title="Pause animation"><span id="pauseName">Ⅱ</span></button>
     </div>
   </nav>
@@ -65,6 +112,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     <div class="code-inner" id="codeInner" aria-hidden="true"></div>
   </section>
 </main>
+<script src="./environment.js"></script>
 <script>
 (()=>{'use strict';
   const canvas=document.getElementById('sea');
@@ -72,17 +120,24 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
   const art=document.getElementById('art');
   const codeInner=document.getElementById('codeInner');
   const codeBox=document.getElementById('code');
+  // Environmental values are computed in environment.js and do not own the animal.
+  const environment=window.PelagicEnvironment;
+  if(!environment)throw Error('Environment adapter missing');
+  let environmentalFx=environment.effects();
   const PI=Math.PI,TAU=PI*2;
   const rand=(n)=>{let x=Math.sin(n*127.1+78.23)*43758.5453;return x-Math.floor(x)};
   const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
   const swimmer={x:0,y:0,vx:0,vy:0,angle:-.12,yaw:.18,pitch:-.07,
-    strokePhase:0,stroke:0,pulse:0,pulseRate:0,thrust:0,travel:0,turn:0,initialised:false};
+    strokePhase:0,stroke:0,pulse:0,pulseRate:0,thrust:0,travel:0,turn:0,initialised:false,
+    z:.20,vz:0,energy:.7,curiousUntil:0,startledUntil:0,interest:0,startle:0,behaviour:'exploring' };
   // Smooth, seeded random motion: no teleporting targets, no repeating L/R loop.
   const noise=(time,seed)=>{
     const cell=Math.floor(time),f=time-cell;
     const u=f*f*f*(f*(f*6-15)+10);
     return 2*(rand(cell*11.71+seed)*(1-u)+rand((cell+1)*11.71+seed)*u)-1;
   };
+  const bodyScale=()=>clamp(1/(1+swimmer.z*.46),.72,1.47);
+  const wake=[];
   const ropes=[];
   let ropeDebt=0;
   let bellHull=null;
@@ -105,8 +160,12 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
   // chromatic bands without making the entire animal flash in unison.
   const colour=(progress,light,opacity=1)=>{
     const p=palettes[paletteIndex];
-    const hue=p.start+p.span*clamp(progress,0,1)+(paletteIndex===3?0:t*2.8);
-    return `hsla(${((hue%360)+360)%360},${p.sat}%,${light}%,${clamp(opacity,0,1)})`;
+    // Temperature tints the underlying spectral bands instead of replacing them.
+    const hue=p.start+p.span*clamp(progress,0,1)+(paletteIndex===3?0:t*2.8)+environmentalFx.temperature*48;
+    const nighttime=1-environmentalFx.daylight;
+    const lumen=clamp(light+nighttime*5-environmentalFx.air*6,0,100);
+    const alpha=opacity*(1-environmentalFx.air*.22)*(1+nighttime*.055);
+    return `hsla(${((hue%360)+360)%360},${p.sat}%,${lumen}%,${clamp(alpha,0,1)})`;
   };
   function resize(){
     const b=art.getBoundingClientRect();width=Math.max(200,b.width);height=Math.max(230,b.height);
@@ -131,11 +190,12 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
   function drawBackground(time){
     ctx.fillStyle='#03060b';ctx.fillRect(0,0,width,height);
     const mist=ctx.createRadialGradient(centerX,centerY-radius*.25,10,centerX,centerY-radius*.25,Math.max(radius*2.4,height*.68));
-    mist.addColorStop(0,colour(.26,24,.11));mist.addColorStop(.55,colour(.7,17,.047));mist.addColorStop(1,'rgba(0,0,0,0)');
+    const haze=environmentalFx.humidity*.16+environmentalFx.air*.11;
+    mist.addColorStop(0,colour(.26,24,.08+haze));mist.addColorStop(.55,colour(.7,17,.036+haze*.32));mist.addColorStop(1,'rgba(0,0,0,0)');
     ctx.fillStyle=mist;ctx.fillRect(0,0,width,height);
     setFont(font);
     for(const s of stars){
-      const x=s.x*width+Math.sin(time*.2+s.phase)*5;
+      const x=s.x*width+Math.sin(time*.2+s.phase)*5+environmentalFx.windX*time*.06%(width*.06);
       const y=(s.y*height+time*s.v*2.4)%(height+12);
       const strength=(.07+s.s*.22)*(.72+.28*Math.sin(time*.8+s.phase));
       const char=s.s>.975?'*':s.s>.90?'+':s.s>.70?':':'.';
@@ -145,7 +205,14 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
       const p=plankton[i],x=p.x*width+Math.sin(time*.45+p.phase)*15;
       const y=((p.y*height-time*p.drift*3)%(height+25)+(height+25))%(height+25);
       const glow=.10+.13*(.5+.5*Math.sin(time*1.1+p.phase));
-      print(i%9===0?'o':i%3===0?'+':'.',x,y,colour(.4+(i%5)*.10,75,glow));
+      print(i%9===0?'o':i%3===0?'+':'.',x+environmentalFx.windX*time*.13,y,colour(.4+(i%5)*.10,75,glow));
+    }
+    // Rain is restrained ASCII precipitation, behind the animal.
+    const rainCount=Math.floor(environmentalFx.rain*115);
+    for(let i=0;i<rainCount;i++){
+      const q=rand(i*19+8),fall=(time*(40+q*85)+rand(i*19+9)*height)%height;
+      const x=((rand(i*19+12)*width+environmentalFx.windX*time*.45)%(width+22)+(width+22))%(width+22);
+      print(i%5===0?'/':i%7===0?':':'|',x,fall,colour(.28,64,.055+q*.12),font*.78);
     }
   }
   const miniForm=[
@@ -183,7 +250,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     const xx=x*cy+z*sy, zz=z*cy-x*sy;
     const cp=Math.cos(a.pitch),sp=Math.sin(a.pitch);
     const yy=y*cp-zz*sp, depth=y*sp+zz*cp;
-    const perspective=clamp(1+depth/(radius*9.0),.83,1.18);
+    const perspective=bodyScale()*clamp(1+depth/(radius*9.0),.83,1.18);
     const px=xx*perspective,py=yy*perspective;
     const c=Math.cos(a.angle),si=Math.sin(a.angle);
     return {x:a.x+px*c-py*si,y:a.y+px*si+py*c,z:depth};
@@ -191,68 +258,99 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
   // A gently banked animal, powered by strokes rather than a moving
   // positional target. Positive contraction velocity ejects water below
   // the bell; thrust acts along its body axis, while drag acts on velocity.
+  // Physical swimming remains autonomous. Environment only biases currents,
+  // activity and visibility; proximity may influence preferred Z-depth.
   function swim(dt,time){
     const a=swimmer;
-    if(!a.initialised){
-      a.x=width*.50;a.y=height*.40;a.angle=0;a.initialised=true;
-    }
+    if(!a.initialised){a.x=width*.50;a.y=height*.40;a.angle=0;a.initialised=true;}
     if(!dt){centerX=a.x;centerY=a.y;return;}
-    const minX=radius*1.12,maxX=Math.max(minX+1,width-radius*1.12);
-    const minY=radius*1.12,maxY=Math.max(minY+1,height-radius*1.62);
-    const depth=clamp((a.y-minY)/(maxY-minY),0,1);
+    const scale=bodyScale(),footprint=radius*scale;
+    const minX=footprint*1.08,maxX=Math.max(minX+1,width-footprint*1.08);
+    const minY=footprint*1.04,maxY=Math.max(minY+1,height-footprint*1.54);
+    const depth=clamp((a.y-minY)/Math.max(1,maxY-minY),0,1);
 
-    // Stroke rate varies gently with available headroom and ambient flow.
-    // One rapid contraction is followed by a longer, passive refill.
+    // An internal, slowly varying temperament prevents identical reactions.
+    const temper=.65+.30*noise(time*.033,901)+.17*noise(time*.11,27);
+    const startleActive=time<a.startledUntil;
+    const curiousActive=time<a.curiousUntil;
+    a.behaviour=startleActive?'startled':curiousActive?'curious':temper<.48?'resting':'exploring';
+    a.energy=ease(a.energy,clamp(temper+(curiousActive?.24:0)+(startleActive?.45:0),.32,1.4),.45,dt);
+    a.startle=ease(a.startle,startleActive?1:0,startleActive?3:1.1,dt);
+
+    // Z is a genuine third axis of exploration: no viewport drag/zoom.
+    const wanderingZ=.17+.53*noise(time*.043,211)+.14*noise(time*.106,61);
+    const desiredZ=clamp(curiousActive && a.interest>.45 ? -.67 : wanderingZ,-.70,.89);
+    const zForce=(desiredZ-a.z)*1.85-a.vz*2.2;
+    a.vz=clamp(a.vz+zForce*dt,-.47,.47);
+    a.z=clamp(a.z+a.vz*dt,-.70,.90);
+
     const prev=a.pulse;
-    a.strokePhase+=dt*(2.22+.43*depth+.18*noise(time*.18,42));
+    a.strokePhase+=dt*(2.00+.40*depth+.30*a.energy+.15*noise(time*.18,42));
     const cycle=(a.strokePhase%TAU)/TAU;
     const smooth=u=>u*u*(3-2*u);
     a.pulse=cycle<.31?smooth(cycle/.31):1-smooth((cycle-.31)/.69);
     a.pulseRate=(a.pulse-prev)/dt;
     a.stroke=Math.max(0,a.pulseRate);
 
-    // The bell aims only within a narrow upright cone: turns create
-    // diagonal strokes, never a full tumble or upside-down swimming.
-    const steer=clamp(.24*noise(time*.12,8)+.13*noise(time*.30,22)
-      +.002*a.vx,-.31,.31);
+    const steer=clamp(.23*noise(time*.10,8)+.13*noise(time*.30,22)+.002*a.vx,-.31,.31);
     a.angle=ease(a.angle,steer,1.30,dt);
     a.turn=ease(a.turn,steer-a.angle,1.5,dt);
-    a.yaw=ease(a.yaw,.49*noise(time*.19,8)+.22*Math.sin(time*.27),.76,dt);
-    a.pitch=ease(a.pitch,.11*noise(time*.24,38)+.055*Math.sin(time*.39),.80,dt);
+    a.yaw=ease(a.yaw,.60*noise(time*.15,8)+.26*Math.sin(time*.22),.76,dt);
+    a.pitch=ease(a.pitch,.13*noise(time*.24,38)+.055*Math.sin(time*.39),.80,dt);
 
-    // The *same* contraction rate drives both the bell mesh and thrust.
-    // This is a stylised damped force model, not a precomputed path.
-    const thrust=84*a.stroke;
+    // Real pulse propulsion, modified subtly by energy, not by the sensors.
+    const thrust=84*a.stroke*(.80+.22*a.energy);
     a.thrust=thrust;
-    const currentX=15*noise(time*.12,12)+7*noise(time*.37,31);
-    const currentY=10*noise(time*.14,59)+6*noise(time*.31,84);
-    const drag=1.05+.36*(1-a.pulse); // opened bell catches more water
+    const currentX=15*noise(time*.12,12)+7*noise(time*.37,31)+environmentalFx.windX;
+    const currentY=10*noise(time*.14,59)+6*noise(time*.31,84)+environmentalFx.windY;
+    const drag=1.05+.36*(1-a.pulse);
     let fx=thrust*Math.sin(a.angle)+(currentX-a.vx)*drag;
     let fy=-thrust*Math.cos(a.angle)+25+(currentY-a.vy)*drag;
-
-    // Soft repulsion from the viewport, like an aquarium boundary.
-    // No hard reversal or waypoint snapping during ordinary swimming.
-    const zone=radius*.23;
+    if(startleActive){fy-=a.startle*12;fx+=a.startle*13*Math.sin(time*3);}
+    if(environmentalFx.rain){fx+=environmentalFx.rain*12*noise(time*.73,43);}
+    const zone=footprint*.24;
     if(a.x<minX+zone)fx+=(minX+zone-a.x)*4.2;
     if(a.x>maxX-zone)fx-=(a.x-maxX+zone)*4.2;
     if(a.y<minY+zone)fy+=(minY+zone-a.y)*5.0;
     if(a.y>maxY-zone)fy-=(a.y-maxY+zone)*5.0;
-    a.vx=clamp(a.vx+fx*dt,-64,64);
-    a.vy=clamp(a.vy+fy*dt,-66,66);
-    a.x+=a.vx*dt;
-    a.y+=a.vy*dt;
+    a.vx=clamp(a.vx+fx*dt,-67,67);
+    a.vy=clamp(a.vy+fy*dt,-70,70);
+    a.x+=a.vx*dt;a.y+=a.vy*dt;
     if(a.x<minX){a.x=minX;a.vx=Math.max(0,a.vx)*.25;}
     if(a.x>maxX){a.x=maxX;a.vx=Math.min(0,a.vx)*.25;}
     if(a.y<minY){a.y=minY;a.vy=Math.max(0,a.vy)*.25;}
     if(a.y>maxY){a.y=maxY;a.vy=Math.min(0,a.vy)*.25;}
-    a.travel=Math.hypot(a.vx,a.vy);
-    centerX=a.x;centerY=a.y;
+    a.travel=Math.hypot(a.vx,a.vy);centerX=a.x;centerY=a.y;
+    // A short-lived, dissipating ASCII wake provides direction/depth cues.
+    if(a.stroke>1.7 && wake.length<180 && Math.floor(time*24)%3===0){
+      wake.push({x:a.x-a.vx*.13+(rand(time*7)*2-1)*footprint*.26,
+        y:a.y+footprint*.38,z:a.z,life:1.8,seed:rand(time*43)});
+    }
+    for(let i=wake.length-1;i>=0;i--){
+      const w=wake[i];w.life-=dt;w.x+=(-a.vx*.07+currentX*.25)*dt;w.y+=(14+currentY*.13)*dt;
+      if(w.life<=0)wake.splice(i,1);
+    }
+  }
+  function signalPresence(strength=1){
+    const a=swimmer;
+    a.interest=clamp((Number(strength)||0)*(.6+.4*rand(t*7+19)),0,1);
+    a.curiousUntil=t+7+rand(t*12+31)*6;
+  }
+  function signalTouch(x=swimmer.x,y=swimmer.y){
+    const a=swimmer;
+    a.startledUntil=t+2.4;
+    const dx=a.x-x,dy=a.y-y,mag=Math.hypot(dx,dy)||1;
+    a.vx+=dx/mag*21;
+    a.vy+=dy/mag*17-6;
+    a.vz+=.13; // startled animals may retreat slightly into the scene
+    a.curiousUntil=Math.min(a.curiousUntil,t+1);
   }
   // The propulsive stroke constricts the hem, while the central crown
   // keeps its shape. A little asymmetric curvature follows steering.
   function bellSurface(polar,phi,time){
     const ring=Math.sin(polar),skirt=Math.pow(ring,3);
-    const squeeze=1-.16*swimmer.pulse*skirt*(1+.13*Math.cos(phi)*swimmer.angle);
+    const squeeze=1-.16*swimmer.pulse*skirt*(1+.13*Math.cos(phi)*swimmer.angle)
+      +.005*swimmer.startle*Math.sin(phi*9-time*7)*skirt;
     const fluting=.014*Math.sin(phi*13-time*1.28)+.009*Math.cos(phi*8+time*.61);
     const r=radius*ring*squeeze*(1+fluting*skirt);
     const x=r*Math.cos(phi)+radius*.012*ring*Math.sin(time*.64+polar*8+phi*2);
@@ -278,6 +376,8 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
         if(old&&old.z>pos.z)continue;
         const crest=1-polar/(PI*.5);
         const near=.5+.5*Math.sin(phi+swimmer.yaw);
+        // The far face remains semitransparent, with a subtle 3D lighting cue.
+        const depthShade=.65+.35*near;
         // Several moving waves create patches of cyan, lilac, magenta,
         // amber and blue. The patterns flow across a stable surface.
         const chroma=clamp(.48+.27*Math.sin(phi*2.4+polar*5.5-time*.43)
@@ -293,7 +393,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
         const ch=band[Math.floor(rand(k*43+j*73+17)*band.length)];
         cells.set(key,{x:swimmer.x+gx*letter,y:swimmer.y+gy*row,z:pos.z,
           ch,progress:chroma,light:44+density*37+8*near,
-          alpha:clamp(.22+.68*density+.14*ribs,.16,.94)});
+          alpha:clamp((.19+.68*density+.14*ribs)*depthShade,.12,.94)});
       }
     }
     setFont(font);
@@ -409,8 +509,8 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
       if(!r.points){
         r.points=Array.from({length:r.n+1},(_,i)=>{
           const u=i/r.n, d=u*r.length;
-          const x=anchor.x+tailX*d+Math.sin(u*7+r.seed)*u*radius*.13;
-          const y=anchor.y+tailY*d+Math.cos(u*6+r.seed)*u*radius*.10;
+          const x=anchor.x+tailX*d*bodyScale()+Math.sin(u*7+r.seed)*u*radius*.13*bodyScale();
+          const y=anchor.y+tailY*d*bodyScale()+Math.cos(u*6+r.seed)*u*radius*.10*bodyScale();
           return {x,y,px:x,py:y};
         });
       }
@@ -423,8 +523,8 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
         // Travelling current varies along each arm; drag pulls against the
         // moving bell. A soft tailward bias prevents implausible tangling.
         const wave=time*1.15-u*6+r.seed;
-        const flowX=69*Math.sin(wave)+40*Math.sin(time*.52+u*9+r.seed*1.3);
-        const flowY=51*Math.cos(wave*.83)+38*Math.sin(time*.77-u*8+r.seed);
+        const flowX=69*Math.sin(wave)+40*Math.sin(time*.52+u*9+r.seed*1.3)+environmentalFx.windX*.72;
+        const flowY=51*Math.cos(wave*.83)+38*Math.sin(time*.77-u*8+r.seed)+environmentalFx.windY*.60;
         const pull=36+24*u;
         pt.x+=dx+(flowX*u+tailX*pull-a.vx*.22)*dt*dt;
         pt.y+=dy+(flowY*u+tailY*pull-a.vy*.22)*dt*dt;
@@ -438,9 +538,10 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
           const dist=Math.hypot(dx,dy)||.001;
           // Near the root, preserve a little minimum separation to avoid
           // physically impossible collapse into the umbrella.
-          const undershoot=i<=5&&dist<r.step*.52;
-          if(dist>r.step||undershoot){
-            const target=undershoot?r.step*.52:r.step;
+          const actualStep=r.step*bodyScale();
+          const undershoot=i<=5&&dist<actualStep*.52;
+          if(dist>actualStep||undershoot){
+            const target=undershoot?actualStep*.52:actualStep;
             const stretch=(dist-target)/dist;
             if(i===1){cur.x-=dx*stretch;cur.y-=dy*stretch;}
             else {const half=.5*stretch;
@@ -473,7 +574,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
           +.17*Math.sin(time*.28+u*9+r.index*.7),0,1);
         if(!bellPenetration(x,y))print(glyph,x,y,colour(chroma,light,opacity),font,oral&&i%11===0?1.5:0);
         if(oral){
-          const frill=(1-u*.57)*radius*(.046+.027*Math.sin(time*1.8-u*14+r.seed));
+          const frill=(1-u*.57)*radius*bodyScale()*(.046+.027*Math.sin(time*1.8-u*14+r.seed));
           if(!bellPenetration(x+nx*frill,y+ny*frill))print(i%3===0?'{':'(',x+nx*frill,y+ny*frill,colour(clamp(chroma+.08*Math.sin(u*12+time*.7),0,1),73,opacity*.72));
           if(!bellPenetration(x-nx*frill,y-ny*frill))print(i%3===1?'}':')',x-nx*frill,y-ny*frill,colour(clamp(chroma+.12*Math.cos(u*10-time*.5),0,1),75,opacity*.65));
           if(k===0&&i%3===0){
@@ -500,6 +601,10 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     centerX=swimmer.x;centerY=swimmer.y;
     drawBackground(time);
     for(let i=0;i<4;i++)drawMini(time,i);
+    for(const w of wake){
+      const light=clamp(w.life/1.8,0,1);
+      print(w.seed>.7?'+':'.',w.x,w.y,colour(.42+w.seed*.20,75,.19*light),font*.80);
+    }
     setFont(font);
     for(const rope of ropes)if(rope.kind==='back')drawRope(rope,time);
     drawBell(time);
@@ -517,12 +622,15 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
       '',
       noise.toString(),'',
       swim.toString(),'',
+      signalPresence.toString(),'',
+      signalTouch.toString(),'',
       project.toString(),'',
       bellSurface.toString(),'',
       makeBellHull.toString(),'',
       bellPenetration.toString(),'',
       pushOutsideBell.toString(),'',
       colour.toString(),'',
+      environment.effects.toString(),'',
       drawBell.toString(),'',
       configureRopes.toString(),'',
       advanceRopes.toString(),'',
@@ -554,11 +662,96 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     document.getElementById('led').classList.toggle('off',paused);
     document.getElementById('status').textContent=paused?'PAUSED':'LIVE';
   }
+  // Developer mode is a simulator; no private credentials or live feeds.
+  const devPanel=document.getElementById('devPanel');
+  const app=document.querySelector('.app');
+  const devToggle=document.getElementById('devToggle');
+  const fields=[
+    ['temperature','Temperature','temperatureC','°C'],
+    ['wind','Wind speed','windKmh','km/h'],
+    ['rain','Rain','rainPct','%'],
+    ['airQuality','Air quality index','airQualityIndex','AQI'],
+    ['humidity','Humidity','humidityPct','%'],
+    ['daylight','Daylight','daylightPct','%']
+  ];
+  function buildDeveloperControls(){
+    const controls=document.getElementById('weatherControls');
+    for(const [key,label,field,unit] of fields){
+      const d=environment.definitions[key];
+      const el=document.createElement('div');el.className='effect';
+      const ident='sim_'+field;
+      el.innerHTML=`<div class="effect-title"><label><input type="checkbox" data-effect="${key}" aria-label="Enable ${label} effect"><span>${label}</span></label><output for="${ident}"></output></div><input id="${ident}" type="range" min="${d.min}" max="${d.max}" step="1" data-field="${field}" aria-label="${label} simulation">`;
+      el.querySelector('output').dataset.unit=unit;
+      controls.appendChild(el);
+    }
+    const direction=document.createElement('div');direction.className='effect';
+    direction.innerHTML='<div class="effect-title"><span>Wind direction</span><output data-unit="°"></output></div><input id="sim_windDirection" type="range" min="0" max="360" step="5" data-field="windDirection" aria-label="Wind current direction">';
+    controls.appendChild(direction);
+    controls.addEventListener('input',e=>{
+      const field=e.target.dataset.field;if(!field)return;
+      environment.setInput(field,Number(e.target.value));
+      document.getElementById('weatherPreset').value='custom';
+      syncDeveloperControls();
+    });
+    controls.addEventListener('change',e=>{
+      const key=e.target.dataset.effect;if(!key)return;
+      environment.setEnabled(key,e.target.checked);syncDeveloperControls();
+    });
+    syncDeveloperControls();
+  }
+  function syncDeveloperControls(){
+    const {values,enabled}=environment.state();
+    for(const input of document.querySelectorAll('#weatherControls input')){
+      if(input.dataset.effect){input.checked=!!enabled[input.dataset.effect];continue;}
+      const field=input.dataset.field;if(!field)continue;
+      input.value=values[field];
+      const block=input.closest('.effect');
+      const checkbox=block.querySelector('input[type=checkbox]');
+      input.disabled=!!checkbox&&!enabled[checkbox.dataset.effect];
+      block.querySelector('output').textContent=`${values[field]} ${block.querySelector('output').dataset.unit}`;
+    }
+  }
+  function toggleDeveloper(force){
+    const show=typeof force==='boolean'?force:devPanel.hidden;
+    devPanel.hidden=!show;devToggle.setAttribute('aria-expanded',String(show));
+    devToggle.setAttribute('aria-pressed',String(show));
+    if(show)syncDeveloperControls();
+  }
+  devToggle.addEventListener('click',()=>toggleDeveloper());
+  document.getElementById('devClose').addEventListener('click',()=>toggleDeveloper(false));
+  document.getElementById('weatherPreset').addEventListener('change',e=>{
+    environment.preset(e.target.value);syncDeveloperControls();
+  });
+  function toggleInstallation(install){
+    const was=app.classList.contains('installation');
+    app.classList.toggle('installation',!!install);
+    if(install)toggleDeveloper(false);
+    if(was!==!!install){resize();buildSource();swim(0,t);advanceRopes(0,t);render(t);}
+  }
+  document.getElementById('installationMode').addEventListener('click',()=>toggleInstallation(true));
+  document.getElementById('exitInstallation').addEventListener('click',()=>toggleInstallation(false));
+  document.getElementById('simulatePresence').addEventListener('click',()=>signalPresence(1));
+  document.getElementById('simulateTouch').addEventListener('click',()=>signalTouch(swimmer.x+radius*.3,swimmer.y+radius*.13));
+  canvas.addEventListener('pointerdown',e=>{
+    const bounds=canvas.getBoundingClientRect();
+    signalTouch(e.clientX-bounds.left,e.clientY-bounds.top);
+  });
+  // A stable integration seam for future presence, touch and smart-home input.
+  // The website never gains control over devices or stores credentials.
+  window.PELAGIC=Object.freeze({
+    environment: Object.freeze({setInput:environment.setInput,setEnabled:environment.setEnabled,preset:environment.preset}),
+    presence: strength=>signalPresence(strength),
+    touch: (x,y)=>signalTouch(x,y),
+    debug: ()=>({x:swimmer.x,y:swimmer.y,z:swimmer.z,scale:bodyScale(),velocity:[swimmer.vx,swimmer.vy,swimmer.vz],behaviour:swimmer.behaviour,effects:environmentalFx,penetrations:ropes.reduce((count,r)=>count+(r.points||[]).slice(1).filter(p=>!!bellPenetration(p.x,p.y)).length,0),ropeCount:ropes.length})
+  });
+  buildDeveloperControls();
   function frame(now){
     if(!last)last=now;
     const delta=Math.min((now-last)/1000,.075);last=now;
     if(!paused){
       t+=delta*speed;
+      environment.tick(delta);
+      environmentalFx=environment.effects();
       swim(delta*speed,t);
       ropeDebt+=delta*speed;
       let steps=0;
@@ -567,7 +760,9 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
       sourceOffset=(sourceOffset+delta*speed*31)%sourceHeight;
       codeInner.style.transform=`translate3d(0,${-sourceOffset}px,0)`;
       drawDebt+=delta;
-      if(drawDebt>=1/30){render(t);drawDebt=0;}
+      if(drawDebt>=1/30){render(t);drawDebt=0;
+        if(!devPanel.hidden)document.getElementById('devReadout').textContent=`Z ${swimmer.z.toFixed(2)} / ×${bodyScale().toFixed(2)} / ${swimmer.behaviour.toUpperCase()}`;
+      }
     }
     requestAnimationFrame(frame);
   }
@@ -575,7 +770,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
   document.getElementById('density').addEventListener('click',toggleDetail);
   document.getElementById('speed').addEventListener('click',changeSpeed);
   document.getElementById('pause').addEventListener('click',togglePause);
-  document.addEventListener('keydown',e=>{if(e.code==='Space'&&!['BUTTON','INPUT'].includes(document.activeElement.tagName)){e.preventDefault();togglePause();}if(e.key==='c')changePalette();if(e.key==='d')toggleDetail();});
+  document.addEventListener('keydown',e=>{if(e.code==='Space'&&!['BUTTON','INPUT'].includes(document.activeElement.tagName)){e.preventDefault();togglePause();}if(e.key==='c')changePalette();if(e.key==='d')toggleDetail();if(e.key==='`')toggleDeveloper();if(e.key==='Escape'){toggleDeveloper(false);if(app.classList.contains('installation'))toggleInstallation(false);}});
   let resizePending=0;
   window.addEventListener('resize',()=>{cancelAnimationFrame(resizePending);resizePending=requestAnimationFrame(()=>{resize();buildSource();swim(0,t);advanceRopes(0,t);render(t);});},{passive:true});
   resize();buildSource();swim(0,0);advanceRopes(0,0);render(0);
