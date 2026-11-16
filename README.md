@@ -2,7 +2,7 @@
 
 An experimental, responsive ASCII-art animation rendered in real time with vanilla HTML, CSS and JavaScript.
 
-Version 6 keeps the jellyfish upright, replaces whole-body pulsing with articulated bell-rim contractions and slow recovery, and gives the ASCII umbrella and tentacles travelling, multicoloured patterns inspired by the original reference video.
+Version 7 couples bell contractions to propulsion: the changing rim drives actual upward/diagonal acceleration, then drag and currents determine the glide. It also prevents the tentacles penetrating the dynamically projected 3D bell silhouette.
 
 ## View the website
 
@@ -50,9 +50,11 @@ Future edits to `index.html` on `main` will publish automatically. GitHub Pages 
 
 ## Motion and source display
 
-The swimmer drifts smoothly and banks at most about 14°, without tumbling or inverting. It uses a quick contraction and longer relaxation phase, locally narrowing the bell's outer rim rather than scaling the entire animal. Individual, inertia-driven tentacles stay attached to the changing geometry and follow the motion.
+The jellyfish remains upright with modest steering angles. Rather than following a precomputed path, each **bell contraction generates a thrust force** along the body axis. The bell refills during recovery and its increased drag slows the animal; water currents and soft viewport boundaries contribute to its trajectory. It can travel vertically and diagonally.
 
-The default **LUMEN** palette carries slowly shifting, spatially structured spectral bands through the bell and oral arms. AURORA, CORAL and GHOST remain available from the palette control. The lower panel continuously scrolls actual JavaScript source in uniform 9px monochrome Courier font.
+The rope particles use Verlet integration, length constraints and a **recomputed projected collision hull** sampled from the deformed bell geometry on each physics step. Penetrating tentacle points are pushed out, and glyphs within the bell are hidden. This is a stylised 2D/3D physics approximation, not a fluid dynamics simulation.
+
+The lower panel continuously scrolls real JavaScript source in a uniform 9px monochrome Courier font.
 
 ## Development
 
