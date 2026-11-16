@@ -1,5 +1,12 @@
 # PELAGIC - Living ASCII
 
+## GREENWOOD V2: compositional rebuild
+
+GREENWOOD now uses a portrait-oriented cinematic woodland composition: a large, textured foreground oak on the **right**, a sunlit clearing **left of centre**, a visible sky opening, layered distant trunks, a small forest-floor stream, roots, ferns, moss, stones and mushrooms. Different materials use distinct ASCII characters, density and palette logic. The scene retains its weather simulation, season switching, daylight shafts, mist, rain, stars and night fireflies.
+
+This phase deliberately contains no wildlife or scripted encounters. The renderer remains isolated in `greenwood.js`, and the existing PELAGIC scene, developer mode, environmental adapter, and direct `?scene=greenwood` link remain available.
+
+
 ## GREENWOOD 001 — a second living ASCII scene
 
 The toolbar now switches between **PELAGIC** (the existing autonomous jellyfish) and **GREENWOOD** (a new portrait-first woodland clearing) without leaving the site. The scene selection is remembered in the browser.
