@@ -128,7 +128,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
   const environment=window.PelagicEnvironment;
   const greenwood=window.PelagicGreenwood;
   if(!greenwood)throw Error('GREENWOOD scene module missing');
-  let currentScene=localStorage.getItem('pelagic.scene')==='greenwood'?'greenwood':'pelagic';
+  let currentScene='pelagic';try{const requested=new URLSearchParams(location.search).get('scene');currentScene=requested==='greenwood'?'greenwood':requested==='pelagic'?'pelagic':localStorage.getItem('pelagic.scene')==='greenwood'?'greenwood':'pelagic';}catch(_){}
   if(!environment)throw Error('Environment adapter missing');
   let environmentalFx=environment.effects();
   const PI=Math.PI,TAU=PI*2;
