@@ -1,5 +1,14 @@
 # PELAGIC - Living ASCII
 
+## Version 14: minimalist source and expanded artwork HUD
+
+- Removed the grey execution-trace highlight and abrupt line jumps. Source now scrolls continuously at a gentle pace.
+- The PELAGIC / GREENWOOD switcher uses a black background and white text.
+- The far-right Pause button has been replaced by a square expand-art icon. Space still pauses/resumes on desktop.
+- Expanded mode retains all four artwork corner labels, including the green LIVE indicator. The EXIT control is centred at the top so it doesn't overlap LIVE.
+- Weather, LIFE events, and the two scenes are unchanged.
+
+
 ## PELAGIC 012 — rare living ecosystem and wider depth
 
 This iteration makes PELAGIC a quiet deep-sea ecosystem rather than a jellyfish with random decorative events.

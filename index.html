@@ -28,17 +28,22 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
 .led { width:5px; height:5px; display:block; border-radius:50%; background:#fff; box-shadow:none; flex:none; }
 .led.off { background:#777; box-shadow:none; }
 .actions { display:flex; align-items:center; gap:1px; flex:none; }
-.scene-switch {flex:none; border:1px solid #fff;background:#fff;color:#000;font:600 10px/1 "Courier New",monospace;letter-spacing:.055em;padding:7px 10px;white-space:nowrap;cursor:pointer;min-width:78px;}
-.scene-switch:hover,.scene-switch:focus-visible{color:#000;background:#ddd;}
+.scene-switch {flex:none; border:1px solid #484848;background:#000;color:#f5f5f5;font:600 10px/1 "Courier New",monospace;letter-spacing:.055em;padding:7px 10px;white-space:nowrap;cursor:pointer;min-width:78px;}
+.scene-switch:hover,.scene-switch:focus-visible{color:#fff;background:#171717;border-color:#bdbdbd;}
 @media(max-width:480px){.bar .identity{display:none}.scene-switch{padding:6px 7px;font-size:9px;min-width:76px}.bar .actions button{min-width:32px;padding:0 5px}}
 @media(max-width:355px){.scene-switch{min-width:68px;font-size:8px}.bar .actions button{min-width:29px;padding:0 4px}}
 .actions button { -webkit-tap-highlight-color:transparent; display:inline-flex; align-items:center; justify-content:center; gap:7px; background:#000; border:0; color:#eee; height:35px; min-width:42px; padding:0 9px; font:500 10px/1 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; letter-spacing:.05em; cursor:pointer; border-left:1px solid rgba(123,145,169,.10); border-radius:0; }
 .actions button:hover { color:#000; background:#eaeaea; }
 .actions button:focus-visible { outline:2px solid #fff; outline-offset:-3px; }
+/* Full-height square control for expanding the artwork. */
+.actions button#expandArt{width:35px;min-width:35px;height:35px;padding:0;border-left:1px solid #393939;background:#000;color:#fff}
+.actions button#expandArt:hover{background:#1c1c1c}
+.actions button#expandArt svg{display:block;width:19px;height:19px;stroke:currentColor;stroke-width:1.7;fill:none;stroke-linejoin:round;stroke-linecap:square}
+@media(max-width:480px){.actions button#expandArt{width:33px;min-width:33px;height:33px}}
 .swatch { width:10px; height:10px; flex:none; display:inline-block; border-radius:50%; background:linear-gradient(125deg,#fff,#777)!important; border:1px solid #dedede; box-shadow:none; }
 .code { position:relative; min-height:0; overflow:hidden; background:#000; }
 .code:after { content:""; position:absolute; pointer-events:none; inset:0; background:linear-gradient(to bottom,rgba(0,0,0,.16),transparent 14%,transparent 86%,rgba(0,0,0,.18)); }
-.code-inner { will-change:transform; font-family:"Courier New",Courier,monospace; font-variant-ligatures:none; font-weight:400; text-shadow:none; transition:transform 130ms linear; }
+.code-inner { will-change:transform; font-family:"Courier New",Courier,monospace; font-variant-ligatures:none; font-weight:400; text-shadow:none; }
 .line { display:flex; white-space:pre; align-items:baseline; height:15px; line-height:15px; font-size:9px; font-weight:400; color:#ededed; letter-spacing:0; }
 .ln { display:inline-block; flex:0 0 35px; text-align:right; padding-right:12px; color:#777; opacity:1; user-select:none; font-size:inherit; line-height:inherit; }
 .src { color:inherit; white-space:pre; font-size:inherit; line-height:inherit; font-weight:inherit; }
@@ -73,8 +78,8 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
 @media(max-height:650px){.dev-panel{gap:2px;padding-top:3px;padding-bottom:2px}.dev-panel header{min-height:18px}.dev-panel .effect{padding-top:1px}.dev-panel input[type=range]{height:12px}.dev-panel .dev-footer{min-height:18px}}
  .actions button[aria-pressed="true"] { color:#000; background:#fff; }
 .app.installation { grid-template-rows:minmax(0,1fr); }
-.app.installation > .bar,.app.installation > .code,.app.installation .hud { display:none; }
-.exit-installation { display:none; position:absolute; z-index:7; top:12px; right:12px; padding:6px 9px; border:1px solid #354350; border-radius:3px; background:rgba(4,10,17,.64); color:#adbdcc; font:10px "Courier New",monospace; cursor:pointer; opacity:.30; }
+.app.installation > .bar,.app.installation > .code { display:none; }
+.exit-installation { display:none; position:absolute; z-index:7; top:12px; left:50%; transform:translateX(-50%); padding:6px 9px; border:1px solid #59606a; border-radius:3px; background:rgba(0,0,0,.65); color:#dedede; font:10px "Courier New",monospace; cursor:pointer; opacity:.42; }
 .exit-installation:focus-visible,.exit-installation:hover {opacity:1;}
 .app.installation .exit-installation {display:block;}
 
@@ -100,9 +105,6 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
 @media(max-height:650px){.eco-summary{display:none}.eco-panel{gap:2px}.eco-tools{min-height:16px}}
 @media(prefers-reduced-motion:reduce){.led{box-shadow:none}}
 
-/* Executed-stage trace: highlight a moving line in the actual source listing. */
-.code .line.active-code{background:#383838;color:#fff;box-shadow:inset 3px 0 #a0a0a0}
-.code .line.active-code .ln{color:#d0d0d0}
 .live-indicator{display:inline-block;width:6px;height:6px;border-radius:50%;background:#39ed70;vertical-align:middle;box-shadow:0 0 9px rgba(65,255,113,.48);animation:liveBlink 1.5s ease-in-out infinite}
 .live-indicator.off{background:#999;box-shadow:none;animation:none}
 @keyframes liveBlink{0%,100%{opacity:1}50%{opacity:.18}}
@@ -128,7 +130,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
 <main class="app" aria-label="Procedural ASCII art experiment">
   <section class="art" id="art" aria-label="Animated ASCII jellyfish with bioluminescent tentacles and moving ASCII sea life">
     <canvas id="sea" role="img" aria-label="Colourful animated ASCII jellyfish in a dark deep-sea scene"></canvas>
-    <div class="hud top-left">PELAGIC <strong>/</strong> 013<br>LIVING ECOSYSTEM</div>
+    <div class="hud top-left">PELAGIC <strong>/</strong> 014<br>LIVING ECOSYSTEM</div>
     <div class="hud top-right"><span id="status">LIVE</span> <span id="liveDot" class="live-indicator" aria-label="Animation running"></span></div>
     <div class="hud bottom-left">MEDUSA <strong>ASTRALIS</strong></div>
     <div class="hud bottom-right">DEPTH <strong>2480 M</strong><br>PROCEDURAL MOTION</div>
@@ -144,7 +146,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
       <button id="density" type="button" aria-label="Toggle ASCII detail" title="Toggle ASCII detail"><span id="densityName">HI-RES</span></button>
       <button id="speed" type="button" aria-label="Change animation speed" title="Change animation speed"><span id="speedName">1×</span></button>
       <button id="devToggle" type="button" aria-label="Open developer simulation" aria-expanded="false" aria-controls="devPanel" title="Environmental simulator"><span>DEV</span></button>
-      <button id="pause" type="button" aria-label="Pause animation" title="Pause animation"><span id="pauseName">Ⅱ</span></button>
+      <button id="expandArt" type="button" aria-label="Expand artwork" title="Expand artwork"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H3v5 M16 3h5v5 M3 16v5h5 M21 16v5h-5"/></svg></button>
     </div>
   </nav>
   <section class="code" id="code" aria-label="Continuously scrolling generative animation source code">
@@ -218,8 +220,6 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
   ];
   let paletteIndex=0,highRes=true,speed=1,paused=false;
   let width=390,height=570,dpr=1,t=0,last=0,drawDebt=0,sourceOffset=0,sourceHeight=1;
-  let sourceLines=0,traceIndex=0,traceTimer=0,traceLast=-1;
-  let traceRanges={},traceSeen=new Set(),traceStage='physics',traceStageOffset=0,traceStageIndex=0;
   const stars=Array.from({length:175},(_,i)=>({x:rand(i*7+1),y:rand(i*7+2),v:.3+rand(i*7+3)*1.0,s:rand(i*7+4),phase:rand(i*7+5)*TAU}));
   const plankton=Array.from({length:45},(_,i)=>({x:rand(i*13+7),y:rand(i*13+8),phase:rand(i*13+9)*TAU,drift:rand(i*13+10)*2+1}));
   let font=10,letter=6,row=11,centerX=195,centerY=215,radius=150;
@@ -794,7 +794,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
       const lines=greenwood.source().split('\n');
       sourceHeight=lines.length*15;
       const once=lines.map((line,i)=>`<div class="line"><span class="ln">${String(i+1).padStart(3,'0')}</span><span class="src">${escapeHTML(line)||'&nbsp;'}</span></div>`).join('');
-      codeInner.innerHTML=once;sourceLines=lines.length;traceIndex=0;traceLast=-1;sourceOffset=0;traceRanges={forest:{start:0,end:Math.max(0,lines.length-1)}};traceStage='forest';traceStageOffset=0;traceStageIndex=0;traceSeen=new Set();codeInner.style.transform='translate3d(0,0,0)';return;
+      codeInner.innerHTML=once+once;sourceOffset=0;codeInner.style.transform='translate3d(0,0,0)';return;
     }
     // The panel displays real source from the animation and ecology engines.
     const chunks=[
@@ -828,39 +828,15 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     ];
     const fullSource=chunks.join('\n');
     const lines=fullSource.split('\n');
-    traceRanges={};
-    for(const [key,fn] of [['weather',environment.effects],['physics',swim],['ropes',advanceRopes],['ecosystem',ecosystem.update],['render',render]]){
-      const body=fn.toString(),idx=fullSource.indexOf(body);
-      if(idx>=0){const start=fullSource.slice(0,idx).split('\n').length-1;traceRanges[key]={start,end:start+body.split('\n').length-1};}
-    }
-    traceStage='physics';traceStageIndex=0;traceStageOffset=0;traceSeen=new Set();
     const lineHeight=15;
     sourceHeight=lines.length*lineHeight;
     const once=lines.map((line,i)=>`<div class="line"><span class="ln">${String(i+1).padStart(3,'0')}</span><span class="src">${escapeHTML(line)||'&nbsp;'}</span></div>`).join('');
-    codeInner.innerHTML=once;sourceLines=lines.length;traceIndex=0;traceLast=-1;sourceOffset=0;codeInner.style.transform='translate3d(0,0,0)';
+    codeInner.innerHTML=once+once;sourceOffset=0;codeInner.style.transform='translate3d(0,0,0)';
   }
-  function markExecuted(name){traceSeen.add(name);}
-  function updateCodeTrace(delta){
-    if(!sourceLines||!devPanel.hidden)return;
-    traceTimer+=delta*speed;
-    if(traceTimer<.14)return;
-    traceTimer%=.14;
-    if(traceLast>=0&&codeInner.children[traceLast])codeInner.children[traceLast].classList.remove('active-code');
-    const available=(currentScene==='greenwood'?['forest']:['physics','ropes','ecosystem','render','weather'])
-      .filter(key=>traceSeen.has(key)&&traceRanges[key]);
-    if(!available.length)return;
-    if(!available.includes(traceStage)||traceStageOffset>(traceRanges[traceStage].end-traceRanges[traceStage].start)){
-      traceStageIndex=(traceStageIndex+1)%available.length;
-      traceStage=available[traceStageIndex];traceStageOffset=0;
-    }
-    const area=traceRanges[traceStage];
-    traceIndex=Math.min(area.end,area.start+traceStageOffset++);
-    traceLast=traceIndex;
-    const current=codeInner.children[traceIndex];
-    if(current)current.classList.add('active-code');
-    // Active lines belong to functions executed by the current engine.
-    // The line-by-line animation is sampled, not a JavaScript VM instruction pointer.
-    sourceOffset=Math.max(0,traceIndex*15-Math.max(30,codeBox.clientHeight)*.66);
+  // Move the readable source upward slowly; duplicate markup loops seamlessly.
+  function scrollCode(delta){
+    if(!devPanel.hidden||!sourceHeight)return;
+    sourceOffset=(sourceOffset+delta*speed*12)%sourceHeight;
     codeInner.style.transform=`translate3d(0,${-sourceOffset}px,0)`;
   }
   function changePalette(){
@@ -875,7 +851,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     try{localStorage.setItem('pelagic.scene',currentScene);}catch(_){ }
     const forest=currentScene==='greenwood';
     document.getElementById('sceneName').textContent=forest?'◇ GREENWOOD':'◌ PELAGIC';
-    document.querySelector('.hud.top-left').innerHTML=forest?'GREENWOOD <strong>/</strong> 002<br>CINEMATIC CLEARING':'PELAGIC <strong>/</strong> 013<br>LIVING ECOSYSTEM';
+    document.querySelector('.hud.top-left').innerHTML=forest?'GREENWOOD <strong>/</strong> 002<br>CINEMATIC CLEARING':'PELAGIC <strong>/</strong> 014<br>LIVING ECOSYSTEM';
     document.querySelector('.hud.bottom-left').innerHTML=forest?'THE <strong>OLD GROVE</strong>':'MEDUSA <strong>ASTRALIS</strong>';
     document.querySelector('.hud.bottom-right').innerHTML=forest?'FIELD STUDY <strong>01</strong><br>LAYERS / LIGHT / WIND':'DEPTH <strong>2480 M</strong><br>PROCEDURAL MOTION';
     document.getElementById('colorName').textContent=forest?greenwood.season:palettes[paletteIndex].name;
@@ -890,8 +866,6 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
   function changeSpeed(){speed=speed===1?1.5:speed===1.5?.65:1;document.getElementById('speedName').textContent=speed===.65?'0.65×':speed+'×';}
   function togglePause(){
     paused=!paused;
-    document.getElementById('pauseName').textContent=paused?'▶':'Ⅱ';
-    document.getElementById('pause').setAttribute('aria-label',paused?'Resume animation':'Pause animation');
     document.getElementById('led').classList.toggle('off',paused);
     document.getElementById('status').textContent=paused?'PAUSED':'LIVE';
     document.getElementById('liveDot').classList.toggle('off',paused);
@@ -1060,19 +1034,19 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     const delta=Math.min((now-last)/1000,.075);last=now;
     if(!paused){
       t+=delta*speed;
-      markExecuted('weather');environment.tick(delta);
+      environment.tick(delta);
       weatherStatusTimer+=delta;
       if(weatherStatusTimer>3){weatherStatusTimer=0;if(!devPanel.hidden && !devPanel.classList.contains('life-mode')){syncDeveloperControls();}}
       environmentalFx=environment.effects();
-      if(currentScene==='pelagic'){markExecuted('physics');swim(delta*speed,t);}
+      if(currentScene==='pelagic'){swim(delta*speed,t);}
       ropeDebt+=delta*speed;
       let steps=0;
-      while(ropeDebt>=1/60&&steps++<5){if(currentScene==='pelagic'){markExecuted('ropes');advanceRopes(1/60,t-ropeDebt+1/60);}ropeDebt-=1/60;}
+      while(ropeDebt>=1/60&&steps++<5){if(currentScene==='pelagic'){advanceRopes(1/60,t-ropeDebt+1/60);}ropeDebt-=1/60;}
       if(steps>5)ropeDebt=0;
-      if(currentScene==='pelagic'){markExecuted('ecosystem');ecosystem.update(delta*speed,t,swimmer,ropes,{width,height,radius,scale:bodyScale()},environmentalFx);}
-      updateCodeTrace(delta);
+      if(currentScene==='pelagic'){ecosystem.update(delta*speed,t,swimmer,ropes,{width,height,radius,scale:bodyScale()},environmentalFx);}
+      scrollCode(delta);
       drawDebt+=delta;
-      if(drawDebt>=1/30){markExecuted(currentScene==='greenwood'?'forest':'render');render(t);drawDebt=0;
+      if(drawDebt>=1/30){render(t);drawDebt=0;
         if(!devPanel.hidden)document.getElementById('devReadout').textContent=currentScene==='greenwood'?`GROVE · ${greenwood.season}`:devPanel.classList.contains('life-mode')?`CATCH ${ecosystem.state().counts.preyCaught}`:`Z ${swimmer.z.toFixed(1)} · ${swimmer.behaviour.slice(0,5).toUpperCase()}`;
       }
     }
@@ -1082,7 +1056,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
   document.getElementById('color').addEventListener('click',changePalette);
   document.getElementById('density').addEventListener('click',toggleDetail);
   document.getElementById('speed').addEventListener('click',changeSpeed);
-  document.getElementById('pause').addEventListener('click',togglePause);
+  document.getElementById('expandArt').addEventListener('click',()=>toggleInstallation(true));
   document.addEventListener('keydown',e=>{if(e.code==='Space'&&!['BUTTON','INPUT'].includes(document.activeElement.tagName)){e.preventDefault();togglePause();}if(e.key==='c')changePalette();if(e.key==='d')toggleDetail();if(e.key==='`')toggleDeveloper();if(e.key==='Escape'){toggleDeveloper(false);if(app.classList.contains('installation'))toggleInstallation(false);}});
   let resizePending=0;
   window.addEventListener('resize',()=>{cancelAnimationFrame(resizePending);resizePending=requestAnimationFrame(()=>{resize();buildSource();swim(0,t);advanceRopes(0,t);render(t);});},{passive:true});
