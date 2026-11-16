@@ -134,7 +134,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
 <main class="app" aria-label="Procedural ASCII art experiment">
   <section class="art" id="art" aria-label="Animated ASCII jellyfish with bioluminescent tentacles and moving ASCII sea life">
     <canvas id="sea" role="img" aria-label="Colourful animated ASCII jellyfish in a dark deep-sea scene"></canvas>
-    <div class="hud top-left">PELAGIC <strong>/</strong> 016.2<br>LIVING ECOSYSTEM</div>
+    <div class="hud top-left">PELAGIC <strong>/</strong> 016.3<br>LIVING ECOSYSTEM</div>
     <div class="hud top-right"><span id="status">LIVE</span> <span id="liveDot" class="live-indicator" aria-label="Animation running"></span></div>
     <div class="hud bottom-left">MEDUSA <strong>ASTRALIS</strong></div>
     <div class="hud bottom-right">DEPTH <strong>2480 M</strong><br>PROCEDURAL MOTION</div>
@@ -210,7 +210,9 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     const u=f*f*f*(f*(f*6-15)+10);
     return 2*(rand(cell*11.71+seed)*(1-u)+rand((cell+1)*11.71+seed)*u)-1;
   };
-  const bodyScale=()=>clamp(Math.exp(-swimmer.z*.57),.34,2.40);
+  // Z changes distance/atmosphere, not apparent specimen dimensions. Keep its
+  // anatomy, collision silhouette and oral-arm lengths stable at every depth.
+  const bodyScale=()=>1;
   // Independent wildlife and feeding logic live in ecosystem.js.
   const wake=[];
   const ropes=[];
@@ -329,7 +331,8 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     const xx=x*cy+z*sy, zz=z*cy-x*sy;
     const cp=Math.cos(a.pitch),sp=Math.sin(a.pitch);
     const yy=y*cp-zz*sp, depth=y*sp+zz*cp;
-    const perspective=bodyScale()*clamp(1+depth/(radius*6.7),.75,1.30);
+    // Very shallow local parallax lets the bell turn without a lens-like zoom.
+    const perspective=clamp(1+depth/(radius*37),.979,1.021);
     const px=xx*perspective,py=yy*perspective;
     const c=Math.cos(a.angle),si=Math.sin(a.angle);
     return {x:a.x+px*c-py*si,y:a.y+px*si+py*c,z:depth};
@@ -569,8 +572,8 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
         const density=clamp(.23+.20*crest+.12*near+.17*ribs+.10*grain+.10*embroidered
           +.09*shimmer+.10*rand(k*61+j*123),0,.999);
         const band=glyphs[Math.min(glyphs.length-1,Math.floor(density*glyphs.length))];
-        const detail=clamp(1-Math.max(0,swimmer.z)*.23,.53,1);
-        if(swimmer.z>.52&&rand(k*71+j*99)<(swimmer.z-.52)*.19)continue;
+        // Retain glyph coverage at distance; atmosphere may dim but never erode shape.
+        const detail=1;
         const ch=band[Math.floor(rand(k*43+j*73+17)*band.length)];
         cells.set(key,{x:swimmer.x+gx*letter,y:swimmer.y+gy*row,z:pos.z,
           ch,progress:chroma,light:44+density*37+8*near,
@@ -705,52 +708,89 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
   // Oral arms are heavy, semi-rigid sheets rather than free-folding ropes.
   // Their spine relaxes towards an elongated hanging shape, with a stronger
   // gravitational/rest-length bias than the marginal filaments.
+  // Weighted but flexible oral tissue: delayed root motion propagates into
+  // free-moving ribbon spines. Minimum vertical hang prevents the old knot,
+  // while Verlet inertia and bending let the arms flow instead of freezing.
   function advanceOralArm(r,anchor,dt,time){
     const a=swimmer,scale=bodyScale(),length=r.length*scale,segment=r.step*scale;
     const current=clamp(environmentalFx.windX||0,-24,24);
-    const drift=clamp(-a.vx*.25+current*.31,-27,27);
     const target=(i)=>{
-      const u=i/r.n,slowWave=Math.sin(time*.62+r.seed*.64-u*3.0);
-      const flex=Math.pow(u,1.6)*(.083*length*slowWave+drift*.82);
-      const x=anchor.x+length*u*Math.sin(a.angle)*.16+flex
-        +length*.018*u*u*Math.sin(time*.76+u*4+r.seed);
-      const y=anchor.y+length*u*(.975+.013*Math.sin(time*.56+r.seed-u*1.7));
-      return {x,y};
+      const u=i/r.n;
+      const wave=Math.sin(time*.66-u*4.2+r.seed*.61);
+      const secondary=Math.sin(time*.37-u*7.3+r.seed*1.13);
+      const lag=clamp(-a.vx*.45+current*.36,-42,42);
+      const sideways=Math.pow(u,1.38)*(.12*length*wave+.034*length*secondary+lag*.90);
+      return {
+        x:anchor.x+length*u*Math.sin(a.angle)*.21+sideways,
+        y:anchor.y+length*u*(.976+.014*Math.sin(time*.55-u*2+r.seed))
+      };
     };
     if(!r.points||r.points.length!==r.n+1){
       r.points=Array.from({length:r.n+1},(_,i)=>{
-        const pt=target(i);return {...pt,px:pt.x,py:pt.y};
+        const rest=target(i);return {x:rest.x,y:rest.y,px:rest.x,py:rest.y};
       });
     }
-    const p=r.points;
-    p[0].x=anchor.x;p[0].y=anchor.y;p[0].px=anchor.x;p[0].py=anchor.y;
-    if(!dt)return;
-    // Weighted, strongly damped recovery prevents the "bright knot" that
-    // arose when oral joints were allowed to compress like thin filaments.
-    const stepDt=Math.min(.08,Math.max(0,dt));
+    const p=r.points,stepDt=clamp(dt,0,.06),dt2=stepDt*stepDt;
+    const shiftX=anchor.x-p[0].x,shiftY=anchor.y-p[0].y;
+    p[0].x=anchor.x;p[0].y=anchor.y;
+    p[0].px=anchor.x;p[0].py=anchor.y;
+    if(!stepDt)return;
     for(let i=1;i<p.length;i++){
       const u=i/r.n,pt=p[i],rest=target(i);
-      const response=1-Math.exp(-stepDt*(10-5*u));
-      pt.x+=(rest.x-pt.x)*response;
-      pt.y+=(rest.y-pt.y)*response;
-      // A heavier oral arm hangs down even during rapid bell contractions.
-      const prior=p[i-1];
-      const minimumY=Math.max(anchor.y+length*u*.80,prior.y+segment*.74);
-      if(pt.y<minimumY)pt.y=minimumY;
-      // Preserve strand length and avoid uncontrolled pinching or stretching.
-      let dx=pt.x-prior.x,dy=pt.y-prior.y;
-      let dist=Math.hypot(dx,dy)||.0001;
-      const maximum=segment*(i<=3?1.06:1.14);
-      if(dist>maximum){
-        const f=maximum/dist;
-        pt.x=prior.x+dx*f;pt.y=prior.y+dy*f;
-      }
-      dx=pt.x-prior.x;dy=pt.y-prior.y;dist=Math.hypot(dx,dy)||.0001;
-      if(dist<segment*.76){
-        // Bend locally instead of allowing folds to stack at the bell base.
-        pt.y=Math.max(pt.y,prior.y+segment*.76);
-      }
+      const follow=Math.pow(1-u,2.7)*.76;
+      // Motion from the bell arrives progressively later towards the tips.
+      pt.x+=shiftX*follow;pt.y+=shiftY*follow;
+      pt.px+=shiftX*follow;pt.py+=shiftY*follow;
+      const vx=(pt.x-pt.px)*.83,vy=(pt.y-pt.py)*.83;
       pt.px=pt.x;pt.py=pt.y;
+      // The spring is deliberately weak: the arm does not snap to a template.
+      const restoring=5.5-3.4*u;
+      const flow=Math.sin(time*.92-u*5+r.seed)*22*u;
+      pt.x+=vx+(rest.x-pt.x)*restoring*dt2+flow*dt2;
+      pt.y+=vy+(rest.y-pt.y)*4.0*dt2+78*dt2;
+    }
+    // Shape-preserving constraints resist accordion-like collapse without
+    // imposing a rigid straight rod. Local curvature can still travel.
+    for(let iteration=0;iteration<5;iteration++){
+      p[0].x=anchor.x;p[0].y=anchor.y;
+      for(let i=1;i<p.length;i++){
+        const prev=p[i-1],pt=p[i],dx=pt.x-prev.x,dy=pt.y-prev.y;
+        const d=Math.hypot(dx,dy)||.0001;
+        const min=segment*.81,max=segment*(i<=3?1.06:1.12);
+        if(d<min||d>max){
+          const targetLength=clamp(d,min,max);
+          const theta=(targetLength-d)/d;
+          const correctionX=dx*theta,correctionY=dy*theta;
+          if(i===1){pt.x+=correctionX;pt.y+=correctionY;}
+          else{
+            pt.x+=correctionX*.68;pt.y+=correctionY*.68;
+            prev.x-=correctionX*.32;prev.y-=correctionY*.32;
+          }
+        }
+        // Keep oral tissue hanging while allowing broad lateral deflections.
+        const minimumY=anchor.y+length*(i/r.n)*.72;
+        if(pt.y<minimumY)pt.y+=(minimumY-pt.y)*.72;
+      }
+      for(let i=2;i<r.n;i++){
+        const left=p[i-1],right=p[i+1],mid=p[i];
+        // Weak bending stiffness distributes sharp kinks over several joints.
+        const straighten=.08;
+        mid.x+=(.5*(left.x+right.x)-mid.x)*straighten;
+        mid.y+=(.5*(left.y+right.y)-mid.y)*straighten;
+      }
+    }
+    // Re-anchor after solving; keep positional corrections out of velocity.
+    p[0].x=anchor.x;p[0].y=anchor.y;
+    for(let i=1;i<p.length;i++){
+      const pt=p[i],prev=p[i-1],dist=Math.hypot(pt.x-prev.x,pt.y-prev.y);
+      if(i<=3&&dist>segment*1.07){
+        const factor=(segment*1.07)/dist;
+        pt.x=prev.x+(pt.x-prev.x)*factor;
+        pt.y=prev.y+(pt.y-prev.y)*factor;
+      }
+      // Let the solved displacement create momentum but bound velocity spikes.
+      pt.px=pt.x-clamp(pt.x-pt.px,-segment*.75,segment*.75);
+      pt.py=pt.y-clamp(pt.y-pt.py,-segment*.75,segment*.75);
     }
   }
   function advanceRopes(dt,time){
@@ -780,17 +820,19 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
       }
       for(let i=1;i<p.length;i++){
         const u=i/r.n,pt=p[i];
-        const drag=.920;
+        const drag=.913;
         const dx=(pt.x-pt.px)*drag,dy=(pt.y-pt.py)*drag;
         pt.px=pt.x;pt.py=pt.y;
         // Travelling current varies along each arm; drag pulls against the
         // moving bell. A soft tailward bias prevents implausible tangling.
         const wave=time*1.15-u*6+r.seed;
-        const flowX=54*Math.sin(wave)+32*Math.sin(time*.52+u*9+r.seed*1.3)+environmentalFx.windX*.60;
-        const flowY=42*Math.cos(wave*.83)+30*Math.sin(time*.77-u*8+r.seed)+environmentalFx.windY*.50;
-        const pull=34+19*u;
-        pt.x+=dx+(flowX*u+tailX*pull-a.vx*.24)*dt*dt;
-        pt.y+=dy+(flowY*u+tailY*pull-a.vy*.24)*dt*dt;
+        const flowX=38*Math.sin(wave)+24*Math.sin(time*.52+u*9+r.seed*1.3)+environmentalFx.windX*.50;
+        const flowY=31*Math.cos(wave*.83)+19*Math.sin(time*.77-u*8+r.seed)+environmentalFx.windY*.42;
+        // Directional settling is stronger than the sideways current: a folded
+        // filament descends and gently uncoils rather than hovering.
+        const pull=20+13*u,settle=185+65*u;
+        pt.x+=dx+(flowX*u+tailX*pull-a.vx*.30)*dt*dt;
+        pt.y+=dy+(flowY*u+tailY*pull-a.vy*.22+settle)*dt*dt;
       }
       // Maximum-distance constraints keep the soft ropes attached while
       // allowing them to fold, flutter and curl rather than standing straight.
@@ -802,9 +844,9 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
           // Near the root, preserve a little minimum separation to avoid
           // physically impossible collapse into the umbrella.
           const actualStep=r.step*bodyScale();
-          const undershoot=dist<actualStep*(i<=4?.57:.40);
+          const undershoot=dist<actualStep*(i<=4?.74:.68);
           if(dist>actualStep||undershoot){
-            const target=undershoot?actualStep*(i<=4?.57:.40):actualStep;
+            const target=undershoot?actualStep*(i<=4?.74:.68):actualStep;
             const stretch=(dist-target)/dist;
             if(i===1){cur.x-=dx*stretch;cur.y-=dy*stretch;}
             else {const half=.5*stretch;
@@ -812,8 +854,15 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
               prev.x+=dx*half;prev.y+=dy*half;}
           }
         }
-        // No straightening correction: the rim anchor is fixed, but every
-        // marginal joint bends under currents and body movement immediately.
+        // Prevent a compressed loop from levitating. Keep the first four
+        // joints free to turn at the bell instead of forcing a straight stalk.
+        for(let i=2;i<p.length;i++){
+          const pt=p[i],prev=p[i-1],minDrop=r.step*bodyScale()*(i<5?.12:.34);
+          if(pt.y<prev.y+minDrop){
+            const correction=(prev.y+minDrop-pt.y)*.60;
+            pt.y+=correction;pt.py+=correction*.75;
+          }
+        }
         for(let i=1;i<p.length;i++)pushOutsideBell(p[i],bellHull,font*.35);
       }
       // Finally bound the visible joints to the root after hull correction.
@@ -1020,7 +1069,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     try{localStorage.setItem('pelagic.scene',currentScene);}catch(_){ }
     const forest=currentScene==='greenwood';
     document.getElementById('sceneName').textContent=forest?'◇ GREENWOOD':'◌ PELAGIC';
-    document.querySelector('.hud.top-left').innerHTML=forest?'GREENWOOD <strong>/</strong> 002<br>CINEMATIC CLEARING':'PELAGIC <strong>/</strong> 016.2<br>LIVING ECOSYSTEM';
+    document.querySelector('.hud.top-left').innerHTML=forest?'GREENWOOD <strong>/</strong> 002<br>CINEMATIC CLEARING':'PELAGIC <strong>/</strong> 016.3<br>LIVING ECOSYSTEM';
     document.querySelector('.hud.bottom-left').innerHTML=forest?'THE <strong>OLD GROVE</strong>':'MEDUSA <strong>ASTRALIS</strong>';
     document.querySelector('.hud.bottom-right').innerHTML=forest?'FIELD STUDY <strong>01</strong><br>LAYERS / LIGHT / WIND':'DEPTH <strong>2480 M</strong><br>PROCEDURAL MOTION';
     document.getElementById('colorName').textContent=forest?greenwood.season:palettes[paletteIndex].name;

@@ -1,5 +1,15 @@
 # PELAGIC - Living ASCII
 
+## PELAGIC 016.3 — flowing tentacle dynamics with stable specimen scale
+
+- **Oral arms:** Replaced the overly prescriptive per-point pose follower with a lightly shape-restored, damped Verlet spine. Broad travelling waves, inherited root motion, stronger inertia and mild bending stiffness give the central ribbons visible delayed movement, while length/vertical constraints prevent an accordion-like knot.
+- **Marginal tentacles:** Increased downward settling relative to lateral currents, added stronger segment compression resistance and gradual anti-hover recovery, and preserved flexible attachment straight from the moving bell rim. This reduces weightless lateral bunching without reinstating an artificial straight shaft.
+- **Consistent main-jellyfish size:** The hero's overall scale is now fixed at **1.0** throughout its Z range; local bell perspective varies by no more than approximately ±2.1% rather than zooming dramatically. Natural rotations still change its silhouette, but movement through depth no longer grows or shrinks its anatomy.
+- Preserved automatic LIFE encounters, rare visitors, feeding, live weather, DEV controls and GREENWOOD.
+- **Regression evidence:** A simulated 1,500-frame portrait runtime comparison, with forced near/far Z positions, confirmed fixed scale, near-vertical settling of marginal strands, no collapsed marginal segments in sampled frames and attached roots (maximum root gap 1.07×). Oral arms retained at least 0.817× their intended hanging length while achieving a wider lateral swing than V16.2.
+- This test uses a mocked browser/canvas, not a verified Safari screenshot or full browser visual acceptance test.
+
+
 ## PELAGIC 016.2 — balanced tentacle rigidity and attachment
 
 - **Central oral arms:** Increased length relative to all marginal filaments. Slightly reduced shape-restoring stiffness, strengthened slow lateral waves and body-current response, and kept the downward weighted posture that prevents bunching.
