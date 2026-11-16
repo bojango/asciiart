@@ -1,5 +1,20 @@
 # PELAGIC - Living ASCII
 
+## PELAGIC 015 — living behaviour, stronger 3D depth and feeding
+
+- More pronounced **near/far Z movement** with atmospheric perspective: particle parallax, changing scale, brightness and ASCII character detail. The swimmer can approach the viewer or retreat further into the tank.
+- A slow-changing behaviour model now differentiates **drifting, exploring, curious, investigating, feeding, digesting and startled** states. Hunger, energy, temperament and curiosity influence decisions, but the jellyfish can still ignore encounters.
+- Small prey can **freeze, flee or drift** when the jellyfish approaches. Prey must physically meet a moving tentacle at compatible depth to be captured. Once caught, it remains visibly entangled before being drawn inward along that strand; only successful consumption increases energy and reduces hunger.
+- A successful meal creates a brief **cyan/pearl bioluminescent shimmer** across the jellyfish and visible tentacles. There is no guaranteed feeding or forced targeting.
+- Independently moving fish now exhibit light schooling and startle/escape behaviour. Snow, fish, prey and plankton blooms have stronger distance-based size and visibility. Some prey may appear near (but not on) a tentacle, leaving the outcome to the existing physics.
+- Removed the four decorative/background jellyfish silhouettes. The background retains drifting ASCII glyphs, snow, plankton and living ecosystem elements.
+- DEV → LIFE adds a **FEED** encounter test button. Existing manual controls and automatic events remain. `window.PELAGIC.debug()` exposes mood, hunger and feed glow.
+
+### Validation
+
+The JavaScript syntax was checked and a timed ecosystem simulation verified a real tentacle contact, entanglement, transport and consumption after approximately 3.3 simulated seconds. Fish and plankton updates completed without errors. No independent Safari/Chromium render test was performed for this commit.
+
+
 ## Version 14: minimalist source and expanded artwork HUD
 
 - Removed the grey execution-trace highlight and abrupt line jumps. Source now scrolls continuously at a gentle pace.

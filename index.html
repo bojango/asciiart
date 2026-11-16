@@ -130,7 +130,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
 <main class="app" aria-label="Procedural ASCII art experiment">
   <section class="art" id="art" aria-label="Animated ASCII jellyfish with bioluminescent tentacles and moving ASCII sea life">
     <canvas id="sea" role="img" aria-label="Colourful animated ASCII jellyfish in a dark deep-sea scene"></canvas>
-    <div class="hud top-left">PELAGIC <strong>/</strong> 014<br>LIVING ECOSYSTEM</div>
+    <div class="hud top-left">PELAGIC <strong>/</strong> 015<br>LIVING ECOSYSTEM</div>
     <div class="hud top-right"><span id="status">LIVE</span> <span id="liveDot" class="live-indicator" aria-label="Animation running"></span></div>
     <div class="hud bottom-left">MEDUSA <strong>ASTRALIS</strong></div>
     <div class="hud bottom-right">DEPTH <strong>2480 M</strong><br>PROCEDURAL MOTION</div>
@@ -163,7 +163,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
         <div class="eco-summary">AUTOMATIC • Rare encounters are live. Use the buttons below for manual testing.</div>
         <div class="eco-grid" id="ecosystemControls"></div>
         <div class="eco-tools"><label>Activity <input id="ecoRate" aria-label="Ecosystem event frequency" type="range" min="0.55" max="2" step="0.05" value="1"></label><output id="ecoRateValue">1.00×</output></div>
-        <div class="eco-tools eco-actions"><button type="button" data-spawn="bloom">BLOOM</button><button type="button" data-spawn="prey">PREY</button><button type="button" data-spawn="fish">FISH</button><button type="button" id="ecoReset">CLEAR</button><small>Simulated encounters</small></div>
+        <div class="eco-tools eco-actions"><button type="button" data-spawn="bloom">BLOOM</button><button type="button" data-spawn="prey">PREY</button><button type="button" data-spawn="fish">FISH</button><button type="button" data-spawn="feeding">FEED</button><button type="button" id="ecoReset">CLEAR</button><small>Simulated encounters</small></div>
       </section>
       <div class="dev-footer"><button type="button" id="simulatePresence">PRESENCE</button><button type="button" id="simulateTouch">TOUCH</button><button type="button" id="installationMode">FULL ART</button><span class="readout" id="devReadout">Z —</span></div>
     </aside>
@@ -196,14 +196,17 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     z:.20,vz:0,energy:.7,curiousUntil:0,startledUntil:0,interest:0,startle:0,behaviour:'exploring',
     burstUntil:0,burstPower:0,nextBurstAt:8,streamline:0,
     depthGoal:.20,nextDepthDecision:15,depthChanges:0,
-    ceilingGlide:false,glideDirection:1,glideStart:0 };
+    ceilingGlide:false,glideDirection:1,glideStart:0,
+    hunger:.52,feedGlow:0,feedingUntil:0,digestUntil:0,
+    mood:'exploring',moodUntil:0,nextMoodDecision:0,curiosity:.52,
+    encounterId:null,investigatingUntil:0,nextInvestigateDecision:0 };
   // Smooth, seeded random motion: no teleporting targets, no repeating L/R loop.
   const noise=(time,seed)=>{
     const cell=Math.floor(time),f=time-cell;
     const u=f*f*f*(f*(f*6-15)+10);
     return 2*(rand(cell*11.71+seed)*(1-u)+rand((cell+1)*11.71+seed)*u)-1;
   };
-  const bodyScale=()=>clamp(Math.exp(-swimmer.z*.50),.47,1.87);
+  const bodyScale=()=>clamp(Math.exp(-swimmer.z*.57),.34,2.40);
   // Independent wildlife and feeding logic live in ecosystem.js.
   const wake=[];
   const ropes=[];
@@ -220,7 +223,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
   ];
   let paletteIndex=0,highRes=true,speed=1,paused=false;
   let width=390,height=570,dpr=1,t=0,last=0,drawDebt=0,sourceOffset=0,sourceHeight=1;
-  const stars=Array.from({length:175},(_,i)=>({x:rand(i*7+1),y:rand(i*7+2),v:.3+rand(i*7+3)*1.0,s:rand(i*7+4),phase:rand(i*7+5)*TAU}));
+  const stars=Array.from({length:175},(_,i)=>({x:rand(i*7+1),y:rand(i*7+2),z:-1.6+rand(i*7+10)*3.8,v:.3+rand(i*7+3)*1.0,s:rand(i*7+4),phase:rand(i*7+5)*TAU}));
   const plankton=Array.from({length:45},(_,i)=>({x:rand(i*13+7),y:rand(i*13+8),phase:rand(i*13+9)*TAU,drift:rand(i*13+10)*2+1}));
   let font=10,letter=6,row=11,centerX=195,centerY=215,radius=150;
   const setFont=(px)=>{ctx.font=`${px}px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace`;ctx.textBaseline='middle';};
@@ -248,17 +251,19 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     // -10C is deep blue; 0C ice blue; +5C cyan; +10C orange;
     // +20C coral and +25C+ red. Crossfading RGB avoids green in transition.
     const base=p.start+p.span*clamp(progress,0,1)+(paletteIndex===3?0:t*2.8);
+    const feed=clamp(swimmer.feedGlow||0,0,1);
+    const feedShimmer=feed*(.50+.50*Math.sin(t*8+progress*17));
     const nighttime=1-environmentalFx.daylight;
-    const lumen=clamp(light+nighttime*5-environmentalFx.air*6,0,100);
+    const lumen=clamp(light+nighttime*5-environmentalFx.air*6+feedShimmer*17,0,100);
     const alpha=opacity*(1-environmentalFx.air*.22)*(1+nighttime*.055);
     if(environmentalFx.enabled?.temperature){
       const c=getTemperatureTint();
       // Moving internal bands remain visible within each temperature colour.
       const detail=1+.11*Math.sin(progress*11-t*.7)+.055*Math.cos(progress*25+t*.35);
       const illumination=clamp((lumen-38)/44,.24,1.18)*detail;
-      const r=Math.round(clamp(c.r*illumination,0,255));
-      const g=Math.round(clamp(c.g*illumination,0,255));
-      const b=Math.round(clamp(c.b*illumination,0,255));
+      const r=Math.round(clamp(c.r*illumination*(1-feedShimmer*.38)+190*feedShimmer*.42,0,255));
+      const g=Math.round(clamp(c.g*illumination*(1-feedShimmer*.38)+238*feedShimmer*.42,0,255));
+      const b=Math.round(clamp(c.b*illumination*(1-feedShimmer*.38)+252*feedShimmer*.42,0,255));
       return `rgba(${r},${g},${b},${clamp(alpha,0,1)})`;
     }
     return `hsla(${((base%360)+360)%360},${p.sat}%,${lumen}%,${clamp(alpha,0,1)})`;
@@ -291,11 +296,13 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     ctx.fillStyle=mist;ctx.fillRect(0,0,width,height);
     setFont(font);
     for(const s of stars){
-      const x=s.x*width+Math.sin(time*.2+s.phase)*5+environmentalFx.windX*time*.06%(width*.06);
-      const y=(s.y*height+time*s.v*2.4)%(height+12);
-      const strength=(.07+s.s*.22)*(.72+.28*Math.sin(time*.8+s.phase));
+      const particleScale=clamp(Math.exp(-.38*s.z),.44,1.83);
+      const x=width*.5+(s.x-.5)*width*particleScale-(swimmer.x-width*.5)*.027*particleScale
+        +Math.sin(time*.2+s.phase)*5*particleScale+environmentalFx.windX*time*.05%(width*.06);
+      const y=((height*.5+(s.y-.5)*height*particleScale+time*s.v*2.4*particleScale)%(height+22)+(height+22))%(height+22);
+      const strength=(.06+s.s*.20)*(.72+.28*Math.sin(time*.8+s.phase))*clamp(1-Math.max(0,s.z)*.32,.30,1.1);
       const char=s.s>.975?'*':s.s>.90?'+':s.s>.70?':':'.';
-      print(char,x,y,colour(.12+s.s*.62,72,strength),s.s>.92?font+1:font);
+      print(char,x,y,colour(.12+s.s*.62,72,strength),clamp(font*particleScale,5.5,font+3));
     }
     for(let i=0;i<plankton.length;i++){
       const p=plankton[i],x=p.x*width+Math.sin(time*.45+p.phase)*15;
@@ -311,34 +318,6 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
       print(i%5===0?'/':i%7===0?':':'|',x,fall,colour(.28,64,.055+q*.12),font*.78);
     }
   }
-  const miniForm=[
-    '   .-~~-.   ',
-    " .'  ::  '. ",
-    '/  .----.  \\',
-    '\\_.------._/',
-    '  ) )  ( (  ',
-    ' ( (    ) ) ',
-    '  )      (  ',
-  ];
-  function drawMini(time,index){
-    const locations=[[.13,.28,.70],[.86,.23,.84],[.13,.75,1.01],[.87,.75,.79]];
-    const [px,py,scale]=locations[index];
-    const shift=Math.sin(time*.24+index*2)*13;
-    const top=height*py+Math.sin(time*.3+index)*8;
-    const x=width*px+shift;
-    const f=clamp(font*scale,7,11.2);
-    const a=.19+(index%3)*.038;
-    setFont(f);
-    const step=f*.62;
-    miniForm.forEach((line,j)=>{
-      for(let i=0;i<line.length;i++){
-        const ch=line[i];if(ch===' ')continue;
-        const dx=j>3?(Math.sin(time*.9+j*.7+index)*Math.pow((j-3)/4,1.7)*5):0;
-        print(ch,x+(i-6)*step+dx,top+j*f*1.05,colour(.2+index*.18,68,a*(1-j*.06)),f);
-      }
-    });
-    setFont(font);
-  }
   // The bell remains one consistent size: only its scalloped edge flexes.
   // Directional travel and 3D rotation are separate, gently coupled motions.
   function project(x,y,z){
@@ -346,7 +325,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     const xx=x*cy+z*sy, zz=z*cy-x*sy;
     const cp=Math.cos(a.pitch),sp=Math.sin(a.pitch);
     const yy=y*cp-zz*sp, depth=y*sp+zz*cp;
-    const perspective=bodyScale()*clamp(1+depth/(radius*9.0),.83,1.18);
+    const perspective=bodyScale()*clamp(1+depth/(radius*6.7),.75,1.30);
     const px=xx*perspective,py=yy*perspective;
     const c=Math.cos(a.angle),si=Math.sin(a.angle);
     return {x:a.x+px*c-py*si,y:a.y+px*si+py*c,z:depth};
@@ -360,7 +339,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     const a=swimmer;
     if(!a.initialised){a.x=width*.50;a.y=height*.40;a.angle=0;a.initialised=true;}
     if(!dt){centerX=a.x;centerY=a.y;return;}
-    const scale=bodyScale(),footprint=radius*scale;
+    const scale=bodyScale(),footprint=Math.min(radius*scale,width*.34,height*.32);
     // World bounds only catch rare escapes. Swim planning starts well before
     // the visible edges, with no positional snapping inside the safe region.
     const minX=footprint*.88,maxX=Math.max(minX+1,width-footprint*.88);
@@ -380,15 +359,40 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     const topProximity=clamp((preferredTop+height*.12-a.y)/(height*.20),0,1);
     const bottomProximity=clamp((a.y-preferredBottom)/(height*.18),0,1);
 
-    // An internal, slowly varying temperament prevents identical reactions.
+    // Temperament, memory and appetite: independent of weather and rendering.
     const temper=.65+.30*noise(time*.033,901)+.17*noise(time*.11,27);
     const startleActive=time<a.startledUntil;
-    const curiousActive=time<a.curiousUntil;
-    a.behaviour=startleActive?'startled':curiousActive?'curious':temper<.48?'resting':'exploring';
-    a.energy=ease(a.energy,clamp(temper+(curiousActive?.24:0)+(startleActive?.45:0),.32,1.4),.45,dt);
+    a.hunger=clamp(a.hunger+dt*.0005,.05,1);
+    a.feedGlow=ease(a.feedGlow,0,.72,dt);
+    const encounter=ecosystem.interest(a,{width,height});
+    if(time>a.nextMoodDecision){
+      const r=rand(time*2.19+912);
+      a.mood=r<.32?'drifting':r<.72?'exploring':'curious';
+      a.moodUntil=time+15+rand(time*8.2+36)*25;
+      a.nextMoodDecision=a.moodUntil;
+      a.curiosity=clamp(.24+.58*rand(time*.89+71),.15,.95);
+    }
+    if(encounter&&time>a.nextInvestigateDecision&&!startleActive&&time>a.digestUntil){
+      const draw=rand(time*3.77+encounter.id*.017+91);
+      const chance=clamp(.15+.32*a.hunger+.25*a.curiosity+(encounter.type==='prey'?.10:0),.12,.85);
+      if(draw<chance){
+        a.encounterId=encounter.id;
+        a.investigatingUntil=time+4+rand(time+15)*7;
+      }
+      a.nextInvestigateDecision=time+4+rand(time*2.2+43)*5;
+    }
+    const investigating=!!encounter&&a.encounterId===encounter.id&&time<a.investigatingUntil;
+    const feeding=time<a.feedingUntil;
+    const digesting=time<a.digestUntil;
+    const curiousActive=time<a.curiousUntil||investigating;
+    a.behaviour=startleActive?'startled':feeding?'feeding':digesting?'digesting':
+      investigating?'investigating':curiousActive?'curious':a.mood;
+    const energyTarget=clamp(temper+(curiousActive?.22:0)+(startleActive?.42:0)
+      +(a.mood==='drifting'?-.18:0)+(digesting?-.12:0),.30,1.4);
+    a.energy=ease(a.energy,energyTarget,.40,dt);
     a.startle=ease(a.startle,startleActive?1:0,startleActive?3:1.1,dt);
     // Occasional bursts break up long glides, separated by varied quiet periods.
-    if(time>a.nextBurstAt && !startleActive){
+    if(time>a.nextBurstAt && !startleActive && !feeding && !digesting && a.mood!=='drifting'){
       startBurst(time,.72+.32*rand(time*1.3+76));
       a.nextBurstAt=time+11+rand(time*3.7+26)*16;
     }
@@ -399,21 +403,20 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     // between them. No periodic zoom and no forced path through the screen.
     if(time>=a.nextDepthDecision){
       const choice=rand(time*2.37+211);
-      a.depthGoal=choice<.41?-1.04-.19*rand(time+8):choice<.85?1.02+.41*rand(time+17):-.15;
+      a.depthGoal=choice<.35?-1.32-.42*rand(time+8):choice<.84?1.24+.65*rand(time+17):-.20;
       a.nextDepthDecision=time+20+rand(time*3.71+61)*14;
       a.depthChanges++;
     }
-    const encounter=ecosystem.interest(a,{width,height});
-    const desiredZ=clamp(curiousActive&&a.interest>.45?-1.12:
-      encounter?encounter.z:a.depthGoal,-1.25,1.50);
+    const desiredZ=clamp(curiousActive&&a.interest>.45?-1.35:
+      investigating?encounter.z:a.depthGoal,-1.85,2.05);
     const zForce=(desiredZ-a.z)*1.65-a.vz*2.10;
     a.vz=clamp(a.vz+zForce*dt,burstActive?-1.35:-.76,burstActive?1.35:.76);
-    a.z=clamp(a.z+a.vz*dt,-1.25,1.50);
+    a.z=clamp(a.z+a.vz*dt,-1.85,2.05);
 
     const prev=a.pulse;
     // Bell strokes quieten while the jellyfish coasts down from the ceiling;
     // its outer rim still breathes, but it is not producing full thrust.
-    a.strokePhase+=dt*(2.00+.40*depth+.30*a.energy+.15*noise(time*.18,42)+(burstActive?2.5:0));
+    a.strokePhase+=dt*(2.00+.40*depth+.30*a.energy+.15*noise(time*.18,42)+(burstActive?2.5:0)+(feeding?.25:0));
     const cycle=(a.strokePhase%TAU)/TAU;
     const smooth=u=>u*u*(3-2*u);
     a.pulse=cycle<.31?smooth(cycle/.31):1-smooth((cycle-.31)/.69);
@@ -432,7 +435,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     a.pitch=ease(a.pitch,.13*noise(time*.24,38)+.055*Math.sin(time*.39),.80,dt);
 
     // Real pulse propulsion, modified subtly by energy, not by the sensors.
-    const effort=(a.ceilingGlide?.16:1)*(1-.66*topProximity);
+    const effort=(a.ceilingGlide?.16:1)*(1-.66*topProximity)*(feeding?.60:digesting?.75:1);
     const thrust=92*a.stroke*(.80+.22*a.energy)*(burstActive?1.8:1)*effort;
     a.thrust=thrust;
     const currentX=15*noise(time*.12,12)+7*noise(time*.37,31)+environmentalFx.windX;
@@ -444,7 +447,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     if(environmentalFx.rain){fx+=environmentalFx.rain*12*noise(time*.73,43);}
     // A fading plankton bloom can invite investigation, but never controls
     // the animal or overrides the ceiling-avoidance system.
-    if(encounter&&!startleActive){
+    if(investigating&&!startleActive){
       const curiosity=encounter.strength*(1-topProximity*.8)*(.7+.3*a.energy);
       fx+=clamp((encounter.x-a.x)*.21,-29,29)*curiosity;
       fy+=clamp((encounter.y-a.y)*.13,-15,15)*curiosity;
@@ -489,11 +492,11 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     if(a.burstUntil>0 && time<a.burstUntil+.5)return false;
     const toward=rand(time*19.37+59)>.54;
     // A quick retreat/approach in depth, plus an upward/diagonal kick.
-    const polarity=(a.z>1.10?-1:a.z<-.98?1:toward?-1:1);
+    const polarity=(a.z>1.64?-1:a.z<-1.45?1:toward?-1:1);
     a.vz=clamp(a.vz+polarity*(.68+.48*power),-1.43,1.43);
     a.vx+=(rand(time*7.71+29)-.5)*65*power;
     // At the top, a burst goes mainly into Z or sideways, not into the wall.
-    const upper=Math.max(radius*bodyScale()*1.55,height*.31);
+    const upper=Math.min(height*.51,Math.max(radius*bodyScale()*1.4,height*.31));
     a.vy+=(a.y<upper?12*power:-(23+rand(time*13.7+44)*35)*power);
     a.burstUntil=time+.80+.48*rand(time*5.71+19);
     a.burstPower=power;
@@ -562,10 +565,12 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
         const density=clamp(.23+.20*crest+.12*near+.17*ribs+.10*grain+.10*embroidered
           +.09*shimmer+.10*rand(k*61+j*123),0,.999);
         const band=glyphs[Math.min(glyphs.length-1,Math.floor(density*glyphs.length))];
+        const detail=clamp(1-Math.max(0,swimmer.z)*.23,.53,1);
+        if(swimmer.z>.52&&rand(k*71+j*99)<(swimmer.z-.52)*.19)continue;
         const ch=band[Math.floor(rand(k*43+j*73+17)*band.length)];
         cells.set(key,{x:swimmer.x+gx*letter,y:swimmer.y+gy*row,z:pos.z,
           ch,progress:chroma,light:44+density*37+8*near,
-          alpha:clamp((.19+.68*density+.14*ribs)*depthShade,.12,.94)});
+          alpha:clamp((.19+.68*density+.14*ribs)*depthShade*detail,.08,.98)});
       }
     }
     setFont(font);
@@ -590,6 +595,20 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
         const hue=clamp(.43+.36*Math.sin(phi*2.4+polar*6-time*.43),0,1);
         print(':|/\\i.'[(rib+j)%6],p.x,p.y,colour(hue,75,.10+.23*(j/26)),font);
       }
+    }
+  }
+  // A brief glyph-based bioluminescent ripple follows genuine consumption.
+  function drawFeedGlow(time){
+    const energy=clamp(swimmer.feedGlow||0,0,1);
+    if(energy<.04)return;
+    for(let i=0;i<54;i++){
+      const polar=(.2+.68*rand(i*13+1))*PI*.5;
+      const phi=TAU*(i/54)+time*.25;
+      const q=bellSurface(polar,phi,time),p=project(q.x,q.y,q.z);
+      const sparkle=(.35+.65*Math.pow(Math.max(0,Math.sin(time*9+i*2.17)),4))*energy;
+      print(i%13===0?'✦':i%4===0?'*':'.',p.x,p.y,
+        `rgba(${i%3===0?'255,219,242':'161,242,249'},${clamp(sparkle*.75,0,.88)})`,
+        font,energy> .3&&i%9===0?3*energy:0);
     }
   }
   // Project the actual bell surface into a convex, screen-space collision
@@ -740,7 +759,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
         const q=k/steps,u=(i-1+q)/r.n;
         const x=a.x+dx*q,y=a.y+dy*q;
         const glyph=chars[Math.floor(rand(i*31+k*17+r.index*61+(oral?97:0))*chars.length)];
-        const opacity=bright*Math.pow(1-u,.24)*(.87+.13*Math.sin(time*1.2-u*9+r.seed));
+        const opacity=bright*Math.pow(1-u,.24)*(.87+.13*Math.sin(time*1.2-u*9+r.seed))*clamp(1-swimmer.z*.18,.54,1.15)*(1+.10*swimmer.feedGlow);
         const light=oral?78:back?66:73;
         const chroma=clamp(.48+.29*Math.sin(time*.45-u*5+r.seed*.36)
           +.17*Math.sin(time*.28+u*9+r.index*.7),0,1);
@@ -774,7 +793,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     centerX=swimmer.x;centerY=swimmer.y;
     drawBackground(time);
     ecosystem.draw(ctx,'behind',time,swimmer,{width,height,radius});
-    for(let i=0;i<4;i++)drawMini(time,i);
+    
     for(const w of wake){
       const light=clamp(w.life/1.8,0,1);
       print(w.seed>.7?'+':'.',w.x,w.y,colour(.42+w.seed*.20,75,.19*light),font*.80);
@@ -782,6 +801,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     setFont(font);
     for(const rope of ropes)if(rope.kind==='back')drawRope(rope,time);
     drawBell(time);
+    drawFeedGlow(time);
     for(const rope of ropes)if(rope.kind==='oral')drawRope(rope,time);
     for(const rope of ropes)if(rope.kind==='front')drawRope(rope,time);
     drawMotes(time);
@@ -816,12 +836,12 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
       pushOutsideBell.toString(),'',
       colour.toString(),'',
       environment.effects.toString(),'',
-      drawBell.toString(),'',
+      drawBell.toString(),'',drawFeedGlow.toString(),'',
       configureRopes.toString(),'',
       advanceRopes.toString(),'',
       drawRope.toString(),'',
       drawBackground.toString(),'',
-      drawMini.toString(),'',
+      
       render.toString(),'',
       '// End of source. Return to the beginning.',
       ''
@@ -851,7 +871,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     try{localStorage.setItem('pelagic.scene',currentScene);}catch(_){ }
     const forest=currentScene==='greenwood';
     document.getElementById('sceneName').textContent=forest?'◇ GREENWOOD':'◌ PELAGIC';
-    document.querySelector('.hud.top-left').innerHTML=forest?'GREENWOOD <strong>/</strong> 002<br>CINEMATIC CLEARING':'PELAGIC <strong>/</strong> 014<br>LIVING ECOSYSTEM';
+    document.querySelector('.hud.top-left').innerHTML=forest?'GREENWOOD <strong>/</strong> 002<br>CINEMATIC CLEARING':'PELAGIC <strong>/</strong> 015<br>LIVING ECOSYSTEM';
     document.querySelector('.hud.bottom-left').innerHTML=forest?'THE <strong>OLD GROVE</strong>':'MEDUSA <strong>ASTRALIS</strong>';
     document.querySelector('.hud.bottom-right').innerHTML=forest?'FIELD STUDY <strong>01</strong><br>LAYERS / LIGHT / WIND':'DEPTH <strong>2480 M</strong><br>PROCEDURAL MOTION';
     document.getElementById('colorName').textContent=forest?greenwood.season:palettes[paletteIndex].name;
@@ -1025,7 +1045,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     ecosystem: Object.freeze({setEnabled:ecosystem.setEnabled,setRate:ecosystem.setRate,spawn:ecosystem.spawn,state:ecosystem.state}),
     presence: strength=>signalPresence(strength),
     touch: (x,y)=>signalTouch(x,y),
-    debug: ()=>({x:swimmer.x,y:swimmer.y,z:swimmer.z,depthGoal:swimmer.depthGoal,depthChanges:swimmer.depthChanges,angle:swimmer.angle,scale:bodyScale(),velocity:[swimmer.vx,swimmer.vy,swimmer.vz],thrust:swimmer.thrust,ceilingGlide:swimmer.ceilingGlide,streamline:swimmer.streamline,burstActive:t<swimmer.burstUntil,ecosystem:ecosystem.state(),behaviour:swimmer.behaviour,effects:environmentalFx,penetrations:ropes.reduce((count,r)=>count+(r.points||[]).slice(1).filter(p=>!!bellPenetration(p.x,p.y)).length,0),ropeCount:ropes.length})
+    debug: ()=>({x:swimmer.x,y:swimmer.y,z:swimmer.z,depthGoal:swimmer.depthGoal,depthChanges:swimmer.depthChanges,angle:swimmer.angle,scale:bodyScale(),velocity:[swimmer.vx,swimmer.vy,swimmer.vz],thrust:swimmer.thrust,ceilingGlide:swimmer.ceilingGlide,streamline:swimmer.streamline,burstActive:t<swimmer.burstUntil,hunger:swimmer.hunger,feedGlow:swimmer.feedGlow,mood:swimmer.mood,ecosystem:ecosystem.state(),behaviour:swimmer.behaviour,effects:environmentalFx,penetrations:ropes.reduce((count,r)=>count+(r.points||[]).slice(1).filter(p=>!!bellPenetration(p.x,p.y)).length,0),ropeCount:ropes.length})
   });
   buildDeveloperControls();
   let weatherStatusTimer=0;
@@ -1043,11 +1063,15 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
       let steps=0;
       while(ropeDebt>=1/60&&steps++<5){if(currentScene==='pelagic'){advanceRopes(1/60,t-ropeDebt+1/60);}ropeDebt-=1/60;}
       if(steps>5)ropeDebt=0;
-      if(currentScene==='pelagic'){ecosystem.update(delta*speed,t,swimmer,ropes,{width,height,radius,scale:bodyScale()},environmentalFx);}
+      if(currentScene==='pelagic'){
+        const events=ecosystem.update(delta*speed,t,swimmer,ropes,{width,height,radius,scale:bodyScale()},environmentalFx);
+        if(events?.fed)swimmer.feedGlow=1;
+        if(events?.caught)swimmer.feedGlow=Math.max(swimmer.feedGlow,.18);
+      }
       scrollCode(delta);
       drawDebt+=delta;
       if(drawDebt>=1/30){render(t);drawDebt=0;
-        if(!devPanel.hidden)document.getElementById('devReadout').textContent=currentScene==='greenwood'?`GROVE · ${greenwood.season}`:devPanel.classList.contains('life-mode')?`CATCH ${ecosystem.state().counts.preyCaught}`:`Z ${swimmer.z.toFixed(1)} · ${swimmer.behaviour.slice(0,5).toUpperCase()}`;
+        if(!devPanel.hidden)document.getElementById('devReadout').textContent=currentScene==='greenwood'?`GROVE · ${greenwood.season}`:devPanel.classList.contains('life-mode')?`CATCH ${ecosystem.state().counts.preyCaught}`:`Z ${swimmer.z.toFixed(1)} · ${swimmer.behaviour.slice(0,6).toUpperCase()}`;
       }
     }
     requestAnimationFrame(frame);
