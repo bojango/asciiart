@@ -1,5 +1,14 @@
 # PELAGIC - Living ASCII
 
+## PELAGIC 016.2 — balanced tentacle rigidity and attachment
+
+- **Central oral arms:** Increased length relative to all marginal filaments. Slightly reduced shape-restoring stiffness, strengthened slow lateral waves and body-current response, and kept the downward weighted posture that prevents bunching.
+- **Thin marginal filaments:** Moderately increased damping and shortened/flatter wave forces to reduce excessive flapping, retaining independent reactive strands.
+- **Dynamic at the attachment:** Removed the forced straightening of the first three marginal joints. Bell movement translates adjacent points without forcing a vertical rod; the first joint may pivot within a broad approximately ±58° envelope, staying anatomically connected without folding backwards over the rim.
+- **Validation:** A 1,050-frame mocked portrait/mobile simulation verified the central arms were longer than every marginal filament at the same depth; oral-arm vertical extent remained 0.906–1.115× intended length, first-joint angles remained within ±1.02 radians and root extension stayed ≤1.07×.
+- **Preserved:** Physics and feeding mechanics outside the tentacle refinements, rare visitors, life controls, live/test weather, GREENWOOD and the monochrome interface. Actual iPhone Safari visual acceptance is still required.
+
+
 ## PELAGIC 016.1 — heavier, non-bunching oral arms
 
 - Corrected the over-flexible, tangled central oral arms seen in the 16 November screen recording. The central frilled arms now have their **own heavily damped, shape-restoring spine** instead of sharing the unrestricted Verlet rope solver with the marginal tentacles.
