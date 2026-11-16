@@ -31,7 +31,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
 .actions button { -webkit-tap-highlight-color:transparent; display:inline-flex; align-items:center; justify-content:center; gap:7px; background:none; border:0; color:#a4b6ca; height:35px; min-width:42px; padding:0 9px; font:500 10px/1 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; letter-spacing:.05em; cursor:pointer; border-left:1px solid rgba(123,145,169,.10); border-radius:0; }
 .actions button:hover { color:#e2f5ff; background:#132137; }
 .actions button:focus-visible { outline:2px solid #8bc8ea; outline-offset:-3px; }
-.swatch { width:10px; height:10px; flex:none; display:inline-block; border-radius:50%; background:linear-gradient(125deg,#b7faff,#7075ee); box-shadow:0 0 8px rgba(111,150,252,.35); }
+.swatch { width:10px; height:10px; flex:none; display:inline-block; border-radius:50%; background:linear-gradient(125deg,#65e4ed,#cb65d6,#fac96e); box-shadow:0 0 8px rgba(111,150,252,.35); }
 .code { position:relative; min-height:0; overflow:hidden; background:#050d0a; }
 .code:after { content:""; position:absolute; pointer-events:none; inset:0; background:repeating-linear-gradient(to bottom,transparent 0,transparent 3px,rgba(79,175,129,.018) 4px),linear-gradient(to bottom,rgba(5,13,10,.3),transparent 15%,transparent 87%,rgba(5,13,10,.3)); }
 .code-inner { will-change:transform; font-family:"Courier New",Courier,monospace; font-variant-ligatures:none; font-weight:400; text-shadow:0 0 5px rgba(102,219,152,.09); }
@@ -47,7 +47,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
 <main class="app" aria-label="Procedural ASCII art experiment">
   <section class="art" id="art" aria-label="Animated ASCII jellyfish with bioluminescent tentacles and moving ASCII sea life">
     <canvas id="sea" role="img" aria-label="Colourful animated ASCII jellyfish in a dark deep-sea scene"></canvas>
-    <div class="hud top-left">PELAGIC <strong>/</strong> 005<br>GENERATIVE SPECIMEN</div>
+    <div class="hud top-left">PELAGIC <strong>/</strong> 006<br>GENERATIVE SPECIMEN</div>
     <div class="hud top-right"><span id="status">LIVE</span> <strong>●</strong><br><span id="detailStat">192 × 92</span></div>
     <div class="hud bottom-left">MEDUSA <strong>ASTRALIS</strong><br>ALL GLYPHS / NO IMAGES</div>
     <div class="hud bottom-right">DEPTH <strong>2480 M</strong><br>PROCEDURAL MOTION</div>
@@ -55,7 +55,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
   <nav class="bar" aria-label="Animation controls">
     <div class="identity"><span id="led" class="led"></span><span>medusa.js</span><em>/ live source</em></div>
     <div class="actions">
-      <button id="color" type="button" aria-label="Change colour palette" title="Change colour palette"><i id="swatch" class="swatch"></i><span class="word" id="colorName">ABYSS</span></button>
+      <button id="color" type="button" aria-label="Change colour palette" title="Change colour palette"><i id="swatch" class="swatch"></i><span class="word" id="colorName">LUMEN</span></button>
       <button id="density" type="button" aria-label="Toggle ASCII detail" title="Toggle ASCII detail"><span id="densityName">HI-RES</span></button>
       <button id="speed" type="button" aria-label="Change animation speed" title="Change animation speed"><span id="speedName">1×</span></button>
       <button id="pause" type="button" aria-label="Pause animation" title="Pause animation"><span id="pauseName">Ⅱ</span></button>
@@ -76,7 +76,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
   const rand=(n)=>{let x=Math.sin(n*127.1+78.23)*43758.5453;return x-Math.floor(x)};
   const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
   const swimmer={x:0,y:0,vx:0,vy:0,angle:-.12,yaw:.18,pitch:-.07,
-    strokePhase:0,stroke:0,travel:0,turn:0,initialised:false};
+    strokePhase:0,stroke:0,pulse:0,pulseRate:0,travel:0,turn:0,initialised:false};
   // Smooth, seeded random motion: no teleporting targets, no repeating L/R loop.
   const noise=(time,seed)=>{
     const cell=Math.floor(time),f=time-cell;
@@ -89,10 +89,10 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
   const ease=(a,b,rate,dt)=>a+(b-a)*(1-Math.exp(-rate*dt));
 
   const palettes=[
-    {name:'ABYSS',top:190,base:256,edge:275,sat:88,swatch:'linear-gradient(125deg,#b7faff,#7075ee)'},
-    {name:'AURORA',top:153,base:203,edge:248,sat:82,swatch:'linear-gradient(125deg,#aaffbc,#2d87d5)'},
-    {name:'CORAL',top:38,base:330,edge:290,sat:88,swatch:'linear-gradient(125deg,#f7d28f,#df61c2)'},
-    {name:'GHOST',top:194,base:221,edge:244,sat:31,swatch:'linear-gradient(125deg,#eefaff,#7995b4)'},
+    {name:'LUMEN',start:172,span:233,sat:92,swatch:'linear-gradient(125deg,#65e4ed,#cb65d6,#fac96e)'},
+    {name:'AURORA',start:147,span:122,sat:85,swatch:'linear-gradient(125deg,#aaffbc,#2d87d5)'},
+    {name:'CORAL',start:284,span:149,sat:92,swatch:'linear-gradient(125deg,#f7d28f,#df61c2)'},
+    {name:'GHOST',start:183,span:54,sat:32,swatch:'linear-gradient(125deg,#eefaff,#7995b4)'},
   ];
   let paletteIndex=0,highRes=true,speed=1,paused=false;
   let width=390,height=570,dpr=1,t=0,last=0,drawDebt=0,sourceOffset=0,sourceHeight=1;
@@ -100,9 +100,11 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
   const plankton=Array.from({length:45},(_,i)=>({x:rand(i*13+7),y:rand(i*13+8),phase:rand(i*13+9)*TAU,drift:rand(i*13+10)*2+1}));
   let font=10,letter=6,row=11,centerX=195,centerY=215,radius=150;
   const setFont=(px)=>{ctx.font=`${px}px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace`;ctx.textBaseline='middle';};
+  // The base palette is spectral. A slow phase drift animates the
+  // chromatic bands without making the entire animal flash in unison.
   const colour=(progress,light,opacity=1)=>{
     const p=palettes[paletteIndex];
-    let hue=progress<.55?p.top+(p.base-p.top)*(progress/.55):p.base+(p.edge-p.base)*((progress-.55)/.45);
+    const hue=p.start+p.span*clamp(progress,0,1)+(paletteIndex===3?0:t*2.8);
     return `hsla(${((hue%360)+360)%360},${p.sat}%,${light}%,${clamp(opacity,0,1)})`;
   };
   function resize(){
@@ -185,101 +187,116 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     const c=Math.cos(a.angle),si=Math.sin(a.angle);
     return {x:a.x+px*c-py*si,y:a.y+px*si+py*c,z:depth};
   }
+  // Gently directed, upright swimming. The heading never turns through
+  // 180 degrees: the jellyfish glides and banks but does not invert.
   function swim(dt,time){
     const a=swimmer;
     if(!a.initialised){
-      a.x=width*.48; a.y=height*.39;
-      a.angle=-.13; a.initialised=true;
+      a.x=width*.50;a.y=height*.38;a.angle=0;a.initialised=true;
     }
-    // A continuous current drives the whole body along smooth, irregular
-    // arcs. Velocity has inertia, and close-to-edge steering is soft.
-    const horizontal=clamp(width*(.50+.25*noise(time*.16,12)+.045*noise(time*.37,70)),radius*1.20,width-radius*1.20);
-    const vertical=clamp(height*(.46+.20*noise(time*.135,51)+.045*noise(time*.31,86)),radius*1.25,height-radius*1.30);
-    const desiredX=(horizontal-a.x)*1.12+27*noise(time*.43,5);
-    const desiredY=(vertical-a.y)*1.05+31*noise(time*.36,93);
-    let vx=desiredX,vy=desiredY;
-    const magnitude=Math.hypot(vx,vy)||1;
-    const limit=Math.min(width,height)*.22;
-    if(magnitude>limit){vx*=limit/magnitude;vy*=limit/magnitude;}
-    a.strokePhase+=dt*(4.8+.35*noise(time*.13,42));
-    // Stroke gently changes speed, not size. This should feel like a glide,
-    // rather than an inflating and deflating object.
-    a.stroke=Math.pow(Math.max(0,Math.sin(a.strokePhase)),3);
-    const thrust=1+.18*a.stroke;
-    a.vx=ease(a.vx,vx*thrust,1.30,dt);
-    a.vy=ease(a.vy,vy*thrust,1.30,dt);
+    // Bell contraction is deliberately non-sinusoidal: quick squeeze,
+    // longer recovery. It changes the umbrella shape, never body scale.
+    const prev=a.pulse;
+    a.strokePhase+=dt*(2.65+.12*noise(time*.17,42));
+    const cycle=(a.strokePhase%TAU)/TAU;
+    const smooth=u=>u*u*(3-2*u);
+    a.pulse=cycle<.34?smooth(cycle/.34):1-smooth((cycle-.34)/.66);
+    a.pulseRate=dt>0?(a.pulse-prev)/dt:0;
+    a.stroke=Math.max(0,a.pulseRate);
+
+    const goalX=clamp(width*(.50+.20*noise(time*.18,12)+.06*noise(time*.43,70)),radius*1.06,width-radius*1.06);
+    const goalY=clamp(height*(.38+.16*noise(time*.15,51)+.06*noise(time*.34,86)),radius*1.16,height-radius*1.77);
+    const desiredX=(goalX-a.x)*1.04+20*noise(time*.39,5);
+    // Contracting gently propels the bell upwards; recovery glides.
+    const desiredY=(goalY-a.y)*1.03+18*noise(time*.32,93)-a.stroke*7.0;
+    const limit=Math.min(width,height)*.18;
+    const mag=Math.hypot(desiredX,desiredY)||1;
+    const frac=Math.min(1,limit/mag);
+    a.vx=ease(a.vx,desiredX*frac,1.45,dt);
+    a.vy=ease(a.vy,desiredY*frac,1.45,dt);
     a.x+=a.vx*dt;a.y+=a.vy*dt;
-    const minX=radius*1.10, maxX=width-radius*1.10;
-    const minY=radius*1.10,maxY=height-radius*1.13;
-    a.x=clamp(a.x,minX,maxX);
-    a.y=clamp(a.y,minY,maxY);
+    const minX=radius*1.04,maxX=width-radius*1.04;
+    const minY=radius*1.17,maxY=Math.max(minY,height-radius*1.50);
+    a.x=clamp(a.x,minX,maxX);a.y=clamp(a.y,minY,maxY);
     a.travel=Math.hypot(a.vx,a.vy);
-    const aim=Math.atan2(a.vx,-a.vy);
-    // Bank and turn with the flow, but never snap to a new heading.
-    const relax=clamp(a.travel/35,.18,1);
-    const change=shortest(aim-a.angle);
-    a.angle+=clamp(change,-dt*.92*relax,dt*.92*relax);
-    a.turn=ease(a.turn,change,1.1,dt);
-    // Modest changes of viewpoint reveal the curved, translucent umbrella.
-    a.yaw=ease(a.yaw,.68*noise(time*.20,8)+.21*Math.sin(time*.49),.90,dt);
-    a.pitch=ease(a.pitch,.21*noise(time*.24,38)+.17*Math.sin(time*.43),.84,dt);
+    // Controlled banking under 16 degrees; preserve vertical tentacles.
+    const bank=clamp(-a.vx*.0032,-.20,.20)+.025*Math.sin(time*.47);
+    a.angle=ease(a.angle,clamp(bank,-.24,.24),1.35,dt);
+    a.turn=ease(a.turn,bank-a.angle,1.1,dt);
+    // Side-to-side 3D parallax, without tumbling or upside-down poses.
+    a.yaw=ease(a.yaw,.53*noise(time*.18,8)+.20*Math.sin(time*.29),.78,dt);
+    a.pitch=ease(a.pitch,.12*noise(time*.21,38)+.07*Math.sin(time*.37),.76,dt);
     centerX=a.x;centerY=a.y;
   }
+  // Local, articulated bell geometry. Only the lip constricts on each
+  // stroke; the crown and body size remain essentially constant.
+  function bellSurface(polar,phi,time){
+    const ring=Math.sin(polar),skirt=Math.pow(ring,3);
+    const squeeze=1-.145*swimmer.pulse*skirt;
+    const fluting=.014*Math.sin(phi*13-time*1.28)+.009*Math.cos(phi*8+time*.61);
+    const r=radius*ring*squeeze*(1+fluting*skirt);
+    const x=r*Math.cos(phi)+radius*.012*ring*Math.sin(time*.64+polar*8+phi*2);
+    const z=.78*r*Math.sin(phi);
+    const y=radius*(.135-(.99+.045*swimmer.pulse)*Math.cos(polar)+(.018+.010*swimmer.pulse)*skirt)
+      +radius*skirt*.012*Math.sin(phi*8-time*1.48);
+    return {x,y,z};
+  }
   function drawBell(time){
-    const R=radius, cells=new Map();
+    const cells=new Map();
     const glyphs=['.',".,:'",':;!i',';!iI|','!iI|/\\','/\\tfjr','xvnuzXY','XYU0OQ','0Q8%#','8B%@#','$&@MW'];
-    // A dimpled translucent dome, with ripples travelling across the edge.
-    for(let j=0;j<29;j++){
-      const polar=(j+.4)/29*PI*.5, ring=Math.sin(polar);
-      const skirt=Math.pow(ring,4);
-      for(let k=0;k<108;k++){
-        const phi=TAU*k/108;
-        const wave=.020*Math.sin(phi*8-time*1.8)+.018*Math.cos(phi*13+time*.71);
-        const scallop=.021*Math.cos(phi*13-time*.9);
-        const ripple=1+(scallop+wave)*skirt;
-        const x=R*ring*Math.cos(phi)*ripple+R*ring*.014*Math.sin(time*.84+polar*9);
-        const z=R*ring*Math.sin(phi)*.78*ripple;
-        const y=R*(.125-1.0*Math.cos(polar)) + R*skirt*(.026*Math.sin(phi*8-time*1.6))+R*.009*Math.sin(time*1.25+phi*5+polar*8);
-        const pos=project(x,y,z);
+    // A dappled, translucent shell with flowing spectral bands, fine
+    // vertical ribbing, an articulated scalloped hem and a fixed crown.
+    for(let j=0;j<30;j++){
+      const polar=(j+.35)/30*PI*.5;
+      for(let k=0;k<112;k++){
+        const phi=TAU*k/112;
+        const pos=project(...Object.values(bellSurface(polar,phi,time)));
         const gx=Math.round((pos.x-swimmer.x)/letter);
         const gy=Math.round((pos.y-swimmer.y)/row);
         const key=gx+','+gy;
         const old=cells.get(key);
         if(old&&old.z>pos.z)continue;
-        const ribs=Math.pow(Math.max(0,.5+.5*Math.cos(phi*15+time*.30)),7);
-        const grain=Math.pow(Math.max(0,.5+.5*Math.cos(phi*41+polar*12-time*.28)),6);
-        const crown=1-polar/(PI*.5);
+        const crest=1-polar/(PI*.5);
         const near=.5+.5*Math.sin(phi+swimmer.yaw);
-        const light=clamp(.29+.25*crown+.15*near+.20*ribs+.07*grain+
-          .11*rand(k*61+j*123)+.04*Math.sin(time*.8+phi*9+polar*12),.06,.99);
-        const band=glyphs[Math.min(glyphs.length-1,Math.floor(light*glyphs.length))];
+        // Several moving waves create patches of cyan, lilac, magenta,
+        // amber and blue. The patterns flow across a stable surface.
+        const chroma=clamp(.48+.27*Math.sin(phi*2.4+polar*5.5-time*.43)
+          +.20*Math.sin(phi*4.8-polar*8.8+time*.34)
+          +.09*Math.cos(phi*8+polar*12-time*.51),0,1);
+        const ribs=Math.pow(Math.max(0,.5+.5*Math.cos(phi*18+polar*4-time*.28)),7);
+        const grain=Math.pow(Math.max(0,.5+.5*Math.cos(phi*46+polar*14+time*.29)),8);
+        const embroidered=Math.pow(Math.max(0,.5+.5*Math.sin(phi*9-polar*19-time*.73)),12);
+        const shimmer=.5+.5*Math.sin(time*.8+phi*11+polar*17);
+        const density=clamp(.23+.20*crest+.12*near+.17*ribs+.10*grain+.10*embroidered
+          +.09*shimmer+.10*rand(k*61+j*123),0,.999);
+        const band=glyphs[Math.min(glyphs.length-1,Math.floor(density*glyphs.length))];
         const ch=band[Math.floor(rand(k*43+j*73+17)*band.length)];
         cells.set(key,{x:swimmer.x+gx*letter,y:swimmer.y+gy*row,z:pos.z,
-          ch,progress:.10+.64*(1-crown)+.15*(1-near),light:40+light*40,
-          alpha:clamp(.22+.72*light,.15,.91)});
+          ch,progress:chroma,light:44+density*37+8*near,
+          alpha:clamp(.22+.68*density+.14*ribs,.16,.94)});
       }
     }
     setFont(font);
     for(const p of cells.values())print(p.ch,p.x,p.y,colour(p.progress,p.light,p.alpha));
-    // Curled hem and fine ribs shift independently. No radial scaling pulse.
-    for(let i=0;i<144;i++){
-      const phi=TAU*i/144;
-      const r=R*(1+.025*Math.cos(phi*13-time*.9));
-      const y=R*(.125+.023*Math.sin(phi*8-time*1.6));
-      const p=project(r*Math.cos(phi),y,.78*r*Math.sin(phi));
-      const ch=i%13===0?'*':i%7===0?'~':i%5===0?'=':i%3===0?'_':'-';
+    // Scalloped, gently contracting margin: no rubber-ball scaling.
+    for(let i=0;i<156;i++){
+      const phi=TAU*i/156;
+      const pt=bellSurface(PI*.5,phi,time);
+      const p=project(pt.x,pt.y,pt.z);
       const near=.5+.5*Math.sin(phi+swimmer.yaw);
-      print(ch,p.x,p.y,colour(.57+.25*near,75,.18+.53*near),font,i%19===0?2:0);
+      const ch=i%13===0?'*':i%7===0?'~':i%5===0?'=':i%3===0?'_':'-';
+      const hue=clamp(.48+.32*Math.sin(phi*2.3-time*.43)+.16*Math.sin(phi*5+time*.4),0,1);
+      print(ch,p.x,p.y,colour(hue,77,.22+.51*near),font,i%23===0?2:0);
     }
-    for(let rib=0;rib<15;rib++){
-      const phi=TAU*rib/15;
-      for(let j=3;j<22;j++){
-        const polar=j/22*PI*.5;
-        const x=R*Math.sin(polar)*Math.cos(phi)*.96;
-        const z=R*Math.sin(polar)*Math.sin(phi)*.75;
-        const y=R*(.125-Math.cos(polar));
-        const p=project(x,y,z);
-        print(':/\\|i'[j%5],p.x,p.y,colour(.14+polar/PI,70,.07+.18*Math.sin(polar)),font);
+    // Curved luminous ribs converge at the top; their colour is not
+    // locked to the movement of the rest of the body.
+    for(let rib=0;rib<19;rib++){
+      for(let j=4;j<26;j++){
+        const polar=j/26*PI*.5;
+        const phi=TAU*rib/19+.11*Math.sin(polar*3.4-time*.34+rib*.6);
+        const pt=bellSurface(polar,phi,time),p=project(pt.x,pt.y,pt.z);
+        const hue=clamp(.43+.36*Math.sin(phi*2.4+polar*6-time*.43),0,1);
+        print(':|/\\i.'[(rib+j)%6],p.x,p.y,colour(hue,75,.10+.23*(j/26)),font);
       }
     }
   }
@@ -307,11 +324,11 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
   function ropeAnchor(r,time){
     if(r.kind==='oral'){
       const roots=[-.29,-.13,0,.13,.29];
-      return project(radius*roots[r.index],radius*.12,radius*.15);
+      // Oral arms spring from the underside, not the top of the bell.
+      return project(radius*roots[r.index]*(1-.09*swimmer.pulse),radius*.14,radius*.15);
     }
-    const scallop=1+.02*Math.sin(r.phi*13-time*1.6);
-    return project(radius*.90*scallop*Math.cos(r.phi),radius*.13,
-      radius*.66*scallop*Math.sin(r.phi));
+    const rim=bellSurface(PI*.5,r.phi,time);
+    return project(rim.x*.91,rim.y,rim.z*.87);
   }
   function advanceRopes(dt,time){
     const a=swimmer;
@@ -375,16 +392,18 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
         const glyph=chars[Math.floor(rand(i*31+k*17+r.index*61+(oral?97:0))*chars.length)];
         const opacity=bright*Math.pow(1-u,.24)*(.87+.13*Math.sin(time*1.2-u*9+r.seed));
         const light=oral?78:back?66:73;
-        print(glyph,x,y,colour(.48+.43*u,light,opacity),font,oral&&i%11===0?1.5:0);
+        const chroma=clamp(.48+.29*Math.sin(time*.45-u*5+r.seed*.36)
+          +.17*Math.sin(time*.28+u*9+r.index*.7),0,1);
+        print(glyph,x,y,colour(chroma,light,opacity),font,oral&&i%11===0?1.5:0);
         if(oral){
           const frill=(1-u*.57)*radius*(.046+.027*Math.sin(time*1.8-u*14+r.seed));
-          print(i%3===0?'{':'(',x+nx*frill,y+ny*frill,colour(.47+.43*u,73,opacity*.72));
-          print(i%3===1?'}':')',x-nx*frill,y-ny*frill,colour(.60+.35*u,75,opacity*.65));
+          print(i%3===0?'{':'(',x+nx*frill,y+ny*frill,colour(clamp(chroma+.08*Math.sin(u*12+time*.7),0,1),73,opacity*.72));
+          print(i%3===1?'}':')',x-nx*frill,y-ny*frill,colour(clamp(chroma+.12*Math.cos(u*10-time*.5),0,1),75,opacity*.65));
           if(k===0&&i%3===0){
-            print('x',x+nx*frill*.45,y+ny*frill*.45,colour(.59+.28*u,78,opacity*.55));
+            print('x',x+nx*frill*.45,y+ny*frill*.45,colour(chroma,78,opacity*.55));
           }
         }else if(!back&&k===0&&i%3===0){
-          print('~',x+nx*font*.65,y+ny*font*.65,colour(.62+.31*u,70,opacity*.43));
+          print('~',x+nx*font*.65,y+ny*font*.65,colour(chroma,70,opacity*.43));
         }
       }
     }
@@ -416,12 +435,13 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     // The panel displays real function bodies from the running animation engine.
     const chunks=[
       '// PELAGIC / live generative source',
-      '// A free-swimming 3D jellyfish with trailing, independently moving arms.',
+      '// An upright bell, living colour fields and rippling, trailing arms.',
       'const PI = Math.PI, TAU = PI * 2;',
       '',
       noise.toString(),'',
       swim.toString(),'',
       project.toString(),'',
+      bellSurface.toString(),'',
       colour.toString(),'',
       drawBell.toString(),'',
       configureRopes.toString(),'',
