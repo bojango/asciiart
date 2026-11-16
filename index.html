@@ -47,7 +47,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
 <main class="app" aria-label="Procedural ASCII art experiment">
   <section class="art" id="art" aria-label="Animated ASCII jellyfish with bioluminescent tentacles and moving ASCII sea life">
     <canvas id="sea" role="img" aria-label="Colourful animated ASCII jellyfish in a dark deep-sea scene"></canvas>
-    <div class="hud top-left">PELAGIC <strong>/</strong> 004<br>GENERATIVE SPECIMEN</div>
+    <div class="hud top-left">PELAGIC <strong>/</strong> 005<br>GENERATIVE SPECIMEN</div>
     <div class="hud top-right"><span id="status">LIVE</span> <strong>●</strong><br><span id="detailStat">192 × 92</span></div>
     <div class="hud bottom-left">MEDUSA <strong>ASTRALIS</strong><br>ALL GLYPHS / NO IMAGES</div>
     <div class="hud bottom-right">DEPTH <strong>2480 M</strong><br>PROCEDURAL MOTION</div>
@@ -75,9 +75,16 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
   const PI=Math.PI,TAU=PI*2;
   const rand=(n)=>{let x=Math.sin(n*127.1+78.23)*43758.5453;return x-Math.floor(x)};
   const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
-  const swimmer={x:0,y:0,vx:0,vy:0,angle:-.12,yaw:.48,pitch:-.13,
-    targetX:0,targetY:0,changeIn:0,route:0,strokePhase:0,stroke:0,
-    travel:0,stepTime:0,turn:0,initialised:false};
+  const swimmer={x:0,y:0,vx:0,vy:0,angle:-.12,yaw:.18,pitch:-.07,
+    strokePhase:0,stroke:0,travel:0,turn:0,initialised:false};
+  // Smooth, seeded random motion: no teleporting targets, no repeating L/R loop.
+  const noise=(time,seed)=>{
+    const cell=Math.floor(time),f=time-cell;
+    const u=f*f*f*(f*(f*6-15)+10);
+    return 2*(rand(cell*11.71+seed)*(1-u)+rand((cell+1)*11.71+seed)*u)-1;
+  };
+  const ropes=[];
+  let ropeDebt=0;
   const shortest=(a)=>Math.atan2(Math.sin(a),Math.cos(a));
   const ease=(a,b,rate,dt)=>a+(b-a)*(1-Math.exp(-rate*dt));
 
@@ -103,10 +110,11 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     dpr=Math.min(window.devicePixelRatio||1,width<500?1.5:2);
     canvas.width=Math.round(width*dpr);canvas.height=Math.round(height*dpr);
     ctx.setTransform(dpr,0,0,dpr,0,0);
-    radius=Math.min(width*.265,height*.205,170);
+    radius=Math.min(width*.258,height*.195,165);
     font=clamp(radius*(highRes?.060:.082),highRes?8.2:11,highRes?12.5:16);
     letter=font*.614;row=font*1.08;
     document.getElementById('detailStat').textContent=`${Math.round(width/letter)} × ${Math.round(height/row)}`;
+    configureRopes();
   }
   const print=(char,x,y,color,px=font,glow=0)=>{
     if(x<-25||x>width+25||y<-25||y>height+25)return;
@@ -165,200 +173,220 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     });
     setFont(font);
   }
-  // Project a 3D body point through yaw and pitch. The heading roll is applied
-  // to the canvas once, so every ASCII glyph and attached appendage stays aligned.
+  // The bell remains one consistent size: only its scalloped edge flexes.
+  // Directional travel and 3D rotation are separate, gently coupled motions.
   function project(x,y,z){
-    const cy=Math.cos(swimmer.yaw),sy=Math.sin(swimmer.yaw);
-    const xp=x*cy+z*sy, zp=z*cy-x*sy;
-    const cp=Math.cos(swimmer.pitch),sp=Math.sin(swimmer.pitch);
-    const yp=y*cp-zp*sp, depth=y*sp+zp*cp;
-    const perspective=clamp(1+depth/(radius*8),.76,1.25);
-    return {x:centerX+xp*perspective,y:centerY+yp*perspective,z:depth};
+    const a=swimmer, cy=Math.cos(a.yaw),sy=Math.sin(a.yaw);
+    const xx=x*cy+z*sy, zz=z*cy-x*sy;
+    const cp=Math.cos(a.pitch),sp=Math.sin(a.pitch);
+    const yy=y*cp-zz*sp, depth=y*sp+zz*cp;
+    const perspective=clamp(1+depth/(radius*9.0),.83,1.18);
+    const px=xx*perspective,py=yy*perspective;
+    const c=Math.cos(a.angle),si=Math.sin(a.angle);
+    return {x:a.x+px*c-py*si,y:a.y+px*si+py*c,z:depth};
   }
-  // A smooth stroke cycle accelerates the animal at contraction and allows the
-  // soft bell to recover between impulses. No single side-to-side sine-wave path.
   function swim(dt,time){
     const a=swimmer;
     if(!a.initialised){
-      a.x=width*.51;a.y=height*.42;
-      a.targetX=width*.71;a.targetY=height*.23;
-      a.changeIn=3.6;a.initialised=true;
+      a.x=width*.48; a.y=height*.39;
+      a.angle=-.13; a.initialised=true;
     }
-    a.strokePhase+=dt*TAU*(.80+.14*Math.sin(time*.23));
-    const phase=a.strokePhase%TAU;
-    a.stroke=Math.pow(Math.max(0,Math.cos(phase)),4.5);
-    a.stepTime+=dt;
-    // The route changes before the animal stalls, but its velocity remains
-    // continuous. Occasionally the new destination lies below, causing a turn
-    // through 180 degrees and a genuine upside-down swimming phase.
-    const marginX=Math.min(radius*1.08+9,width*.30);
-    const minX=marginX,maxX=width-marginX;
-    const minY=radius*1.13+18,maxY=Math.max(minY+18,height-radius*1.20-18);
-    a.changeIn-=dt;
-    if(a.changeIn<=0||Math.hypot(a.targetX-a.x,a.targetY-a.y)<radius*.36){
-      a.route++;
-      const n=a.route;
-      const sweep=.13+.74*rand(n*23+7);
-      const depth=.10+.82*rand(n*23+19);
-      a.targetX=clamp(width*sweep,minX,maxX);
-      a.targetY=clamp(height*depth,minY,maxY);
-      a.changeIn=2.0+rand(n*13+48)*2.1;
-    }
-    let dx=a.targetX-a.x,dy=a.targetY-a.y;
-    // The body faces its destination and rotates through directional turns.
-    const targetAngle=Math.atan2(dx,-dy);
-    const deltaAngle=shortest(targetAngle-a.angle);
-    const angularSpeed=clamp(deltaAngle,-dt*2.15,dt*2.15);
-    a.angle+=angularSpeed;
-    a.turn=ease(a.turn,clamp(deltaAngle,-1.4,1.4),3.2,dt);
-    // Propel in the direction the animal faces. Contraction gives a noticeable
-    // impulse, followed by a glide and a tiny body recoil during recovery.
-    const thrust=34+115*a.stroke;
-    const desiredVX=Math.sin(a.angle)*thrust;
-    const desiredVY=-Math.cos(a.angle)*thrust;
-    const follow=1-Math.exp(-(2.0+3*a.stroke)*dt);
-    a.vx+=(desiredVX-a.vx)*follow;
-    a.vy+=(desiredVY-a.vy)*follow;
+    // A continuous current drives the whole body along smooth, irregular
+    // arcs. Velocity has inertia, and close-to-edge steering is soft.
+    const horizontal=clamp(width*(.50+.25*noise(time*.16,12)+.045*noise(time*.37,70)),radius*1.20,width-radius*1.20);
+    const vertical=clamp(height*(.46+.20*noise(time*.135,51)+.045*noise(time*.31,86)),radius*1.25,height-radius*1.30);
+    const desiredX=(horizontal-a.x)*1.12+27*noise(time*.43,5);
+    const desiredY=(vertical-a.y)*1.05+31*noise(time*.36,93);
+    let vx=desiredX,vy=desiredY;
+    const magnitude=Math.hypot(vx,vy)||1;
+    const limit=Math.min(width,height)*.22;
+    if(magnitude>limit){vx*=limit/magnitude;vy*=limit/magnitude;}
+    a.strokePhase+=dt*(4.8+.35*noise(time*.13,42));
+    // Stroke gently changes speed, not size. This should feel like a glide,
+    // rather than an inflating and deflating object.
+    a.stroke=Math.pow(Math.max(0,Math.sin(a.strokePhase)),3);
+    const thrust=1+.18*a.stroke;
+    a.vx=ease(a.vx,vx*thrust,1.30,dt);
+    a.vy=ease(a.vy,vy*thrust,1.30,dt);
     a.x+=a.vx*dt;a.y+=a.vy*dt;
-    if(a.x<minX||a.x>maxX){a.x=clamp(a.x,minX,maxX);a.vx*=-.12;a.changeIn=0;}
-    if(a.y<minY||a.y>maxY){a.y=clamp(a.y,minY,maxY);a.vy*=-.12;a.changeIn=0;}
+    const minX=radius*1.10, maxX=width-radius*1.10;
+    const minY=radius*1.10,maxY=height-radius*1.13;
+    a.x=clamp(a.x,minX,maxX);
+    a.y=clamp(a.y,minY,maxY);
     a.travel=Math.hypot(a.vx,a.vy);
-    a.yaw=ease(a.yaw,
-      .74*Math.sin(time*.51)+.33*Math.sin(time*.20+1.4)+.15*a.turn,
-      1.6,dt);
-    a.pitch=ease(a.pitch,
-      .30*Math.sin(time*.72+.6)-.20*Math.sin(time*.36)+.13*a.stroke,
-      1.4,dt);
+    const aim=Math.atan2(a.vx,-a.vy);
+    // Bank and turn with the flow, but never snap to a new heading.
+    const relax=clamp(a.travel/35,.18,1);
+    const change=shortest(aim-a.angle);
+    a.angle+=clamp(change,-dt*.92*relax,dt*.92*relax);
+    a.turn=ease(a.turn,change,1.1,dt);
+    // Modest changes of viewpoint reveal the curved, translucent umbrella.
+    a.yaw=ease(a.yaw,.68*noise(time*.20,8)+.21*Math.sin(time*.49),.90,dt);
+    a.pitch=ease(a.pitch,.21*noise(time*.24,38)+.17*Math.sin(time*.43),.84,dt);
     centerX=a.x;centerY=a.y;
   }
   function drawBell(time){
-    const a=swimmer;
-    const pulse=a.stroke;
-    const spread=1-.23*pulse;
-    const R=radius;
-    const cells=new Map();
-    const glyphGroups=['.',".,:'",':;!i',';!iI|','!iI|/\\','/\\tfjr','xvnuzXY','XYU0OQ','0Q8%#','8B%@#','$&@MW'];
-    // Parameterised 3D dome: every surface point is projected and depth-tested
-    // into one fixed ASCII cell. Yaw exposes the side; pitch exposes the crown.
-    for(let j=0;j<28;j++){
-      const polar=(j+.38)/28*PI*.50;
-      const ring=Math.sin(polar);
-      const y=R*(.105-(.98+.08*(1-pulse))*Math.cos(polar));
+    const R=radius, cells=new Map();
+    const glyphs=['.',".,:'",':;!i',';!iI|','!iI|/\\','/\\tfjr','xvnuzXY','XYU0OQ','0Q8%#','8B%@#','$&@MW'];
+    // A dimpled translucent dome, with ripples travelling across the edge.
+    for(let j=0;j<29;j++){
+      const polar=(j+.4)/29*PI*.5, ring=Math.sin(polar);
+      const skirt=Math.pow(ring,4);
       for(let k=0;k<108;k++){
         const phi=TAU*k/108;
-        const corrugation=1+.023*Math.cos(phi*15+time*.8)*Math.pow(ring,3);
-        const x=R*ring*Math.cos(phi)*spread*corrugation;
-        const z=R*ring*Math.sin(phi)*.80*spread*corrugation;
+        const wave=.020*Math.sin(phi*8-time*1.8)+.018*Math.cos(phi*13+time*.71);
+        const scallop=.021*Math.cos(phi*13-time*.9);
+        const ripple=1+(scallop+wave)*skirt;
+        const x=R*ring*Math.cos(phi)*ripple+R*ring*.014*Math.sin(time*.84+polar*9);
+        const z=R*ring*Math.sin(phi)*.78*ripple;
+        const y=R*(.125-1.0*Math.cos(polar)) + R*skirt*(.026*Math.sin(phi*8-time*1.6))+R*.009*Math.sin(time*1.25+phi*5+polar*8);
         const pos=project(x,y,z);
-        const gx=Math.round((pos.x-centerX)/letter);
-        const gy=Math.round((pos.y-centerY)/row);
+        const gx=Math.round((pos.x-swimmer.x)/letter);
+        const gy=Math.round((pos.y-swimmer.y)/row);
         const key=gx+','+gy;
-        const prev=cells.get(key);
-        if(prev&&prev.z>pos.z)continue;
-        const rib=Math.pow(Math.max(0,.5+.5*Math.cos(phi*15+time*.62)),8);
-        const bands=Math.pow(Math.max(0,.5+.5*Math.cos(phi*39+polar*10-time*.42)),7);
-        const face=clamp(.55+.45*Math.sin(phi+swimmer.yaw),0,1);
+        const old=cells.get(key);
+        if(old&&old.z>pos.z)continue;
+        const ribs=Math.pow(Math.max(0,.5+.5*Math.cos(phi*15+time*.30)),7);
+        const grain=Math.pow(Math.max(0,.5+.5*Math.cos(phi*41+polar*12-time*.28)),6);
         const crown=1-polar/(PI*.5);
-        const diffuse=.37+.18*crown+.13*face+.20*rib+.10*bands;
-        const noise=rand(k*71+j*107)*.16;
-        const shimmer=.06*Math.sin(time*1.35+phi*7+polar*11);
-        const lum=clamp(diffuse+noise+shimmer+.07*(j>22),0,.999);
-        const group=glyphGroups[Math.floor(lum*glyphGroups.length)];
-        const char=group[Math.floor(rand(k*41+j*211+17)*group.length)];
-        cells.set(key,{x:centerX+gx*letter,y:centerY+gy*row,z:pos.z,
-          ch:char,progress:.10+(1-crown)*.63+.18*(1-face),light:42+lum*38,
-          alpha:clamp(.29+lum*.71,.23,.95)});
+        const near=.5+.5*Math.sin(phi+swimmer.yaw);
+        const light=clamp(.29+.25*crown+.15*near+.20*ribs+.07*grain+
+          .11*rand(k*61+j*123)+.04*Math.sin(time*.8+phi*9+polar*12),.06,.99);
+        const band=glyphs[Math.min(glyphs.length-1,Math.floor(light*glyphs.length))];
+        const ch=band[Math.floor(rand(k*43+j*73+17)*band.length)];
+        cells.set(key,{x:swimmer.x+gx*letter,y:swimmer.y+gy*row,z:pos.z,
+          ch,progress:.10+.64*(1-crown)+.15*(1-near),light:40+light*40,
+          alpha:clamp(.22+.72*light,.15,.91)});
       }
     }
     setFont(font);
-    for(const cell of cells.values()){
-      print(cell.ch,cell.x,cell.y,colour(cell.progress,cell.light,cell.alpha));
-    }
-    // Curved luminous hem and internal radial structures follow the same yaw
-    // and pitch as the shell, instead of being painted flat over the image.
-    for(let i=0;i<156;i++){
-      const phi=TAU*i/156;
-      const rr=R*spread*(1+.035*Math.cos(phi*15+time*.8));
-      const pos=project(rr*Math.cos(phi),R*.105+R*.035*Math.sin(phi*15-time*2),rr*.80*Math.sin(phi));
+    for(const p of cells.values())print(p.ch,p.x,p.y,colour(p.progress,p.light,p.alpha));
+    // Curled hem and fine ribs shift independently. No radial scaling pulse.
+    for(let i=0;i<144;i++){
+      const phi=TAU*i/144;
+      const r=R*(1+.025*Math.cos(phi*13-time*.9));
+      const y=R*(.125+.023*Math.sin(phi*8-time*1.6));
+      const p=project(r*Math.cos(phi),y,.78*r*Math.sin(phi));
       const ch=i%13===0?'*':i%7===0?'~':i%5===0?'=':i%3===0?'_':'-';
       const near=.5+.5*Math.sin(phi+swimmer.yaw);
-      print(ch,pos.x,pos.y,colour(.58+.24*near,74,.24+.59*near),font,i%19===0?3:0);
+      print(ch,p.x,p.y,colour(.57+.25*near,75,.18+.53*near),font,i%19===0?2:0);
     }
-    for(let rib=0;rib<14;rib++){
-      const phi=TAU*rib/14;
-      for(let step=3;step<21;step++){
-        const polar=step/21*PI*.5;
-        const x=R*Math.sin(polar)*Math.cos(phi)*spread*.98;
-        const z=R*Math.sin(polar)*Math.sin(phi)*spread*.79;
-        const y=R*(.103-(.98+.08*(1-pulse))*Math.cos(polar));
-        const pos=project(x,y,z);
-        print(':/\\|i'[step%5],pos.x,pos.y,colour(.16+polar/PI,73,.08+.19*(.5+.5*Math.sin(phi))),font);
+    for(let rib=0;rib<15;rib++){
+      const phi=TAU*rib/15;
+      for(let j=3;j<22;j++){
+        const polar=j/22*PI*.5;
+        const x=R*Math.sin(polar)*Math.cos(phi)*.96;
+        const z=R*Math.sin(polar)*Math.sin(phi)*.75;
+        const y=R*(.125-Math.cos(polar));
+        const p=project(x,y,z);
+        print(':/\\|i'[j%5],p.x,p.y,colour(.14+polar/PI,70,.07+.18*Math.sin(polar)),font);
       }
     }
-    // A faint, translucent inner ring gives the cap volume when it tips.
-    for(let i=0;i<82;i++){
-      const phi=TAU*i/82;
-      const pos=project(R*.48*Math.cos(phi)*spread,-R*.12,R*.40*Math.sin(phi)*spread);
-      if(i%2===0)print(i%8===0?'+':'.',pos.x,pos.y,colour(.36,82,.13),font);
-    }
   }
-  function drawFilament(time,index,count,front){
+  // Each strand is a small, independent Verlet chain: no rigid sinusoidal
+  // tentacle mesh. Flow and body motion introduce drag, slack and lag.
+  function configureRopes(){
+    ropes.length=0;
+    const add=(kind,index,count,phi,length)=>{
+      const n=Math.max(15,Math.ceil(length/(font*.85)));
+      ropes.push({kind,index,phi,length,n,step:length/n,
+        seed:rand(130+index*13+(kind==='oral'?50:kind==='front'?100:0))*TAU,
+        points:null});
+    };
+    for(let i=0;i<19;i++){
+      const phi=TAU*(i+.28)/19;
+      add('back',i,19,phi,radius*(1.45+rand(301+i)*.65));
+    }
+    for(let i=0;i<7;i++){
+      const phi=TAU*(i+.38)/7;
+      add('front',i,7,phi,radius*(1.35+rand(401+i)*.72));
+    }
+    for(let i=0;i<5;i++)add('oral',i,5,0,radius*(1.27+rand(501+i)*.63));
+    ropeDebt=0;
+  }
+  function ropeAnchor(r,time){
+    if(r.kind==='oral'){
+      const roots=[-.29,-.13,0,.13,.29];
+      return project(radius*roots[r.index],radius*.12,radius*.15);
+    }
+    const scallop=1+.02*Math.sin(r.phi*13-time*1.6);
+    return project(radius*.90*scallop*Math.cos(r.phi),radius*.13,
+      radius*.66*scallop*Math.sin(r.phi));
+  }
+  function advanceRopes(dt,time){
     const a=swimmer;
-    const phi=TAU*(index+.32)/count;
-    const p=index*1.89+(front?2.7:0);
-    const spread=1-.23*a.stroke;
-    const rootX=radius*.86*Math.cos(phi)*spread;
-    const rootZ=radius*.67*Math.sin(phi)*spread;
-    const amount=(front?.90:1.21)+rand(index+52)*.55;
-    const length=radius*amount*(1-.13*a.stroke+.13*Math.sin(time*1.75+p));
-    const n=Math.max(17,Math.ceil(length/(font*(front?.53:.72))));
-    for(let i=0;i<=n;i++){
-      const u=i/n;
-      const delayed=time*2.4-u*10.7+p;
-      // Travelling waves tighten and release: stronger at the tips, with a
-      // delayed wake after each bell contraction and during direction changes.
-      const spiral=Math.sin(delayed)*radius*.24*Math.pow(u,1.25);
-      const current=Math.sin(time*1.23-u*8.1+p*.6)*radius*.30*u*u;
-      const curl=Math.sin(delayed*.63+phi*3)*radius*.23*Math.pow(u,1.8);
-      const x=rootX*(1-.17*u)+spiral+current-a.vx*.28*u*u;
-      const y=radius*.115+u*length*(.88+.12*Math.sin(time*2.25-u*7+p))+
-        radius*.18*u*u*Math.sin(time*2.8-u*9+p);
-      const z=rootZ+curl+Math.cos(delayed)*radius*.19*u*u;
-      const pos=project(x,y,z);
-      const glyphs=front?'|/\\;:!i(){}~':'|/\\:;!.~^';
-      const ch=glyphs[Math.floor(rand(index*91+i*17)*glyphs.length)];
-      const opacity=(front?.70:.26)*Math.pow(1-u,.20)*(.80+.20*Math.sin(time*1.6-u*9+p));
-      print(ch,pos.x,pos.y,colour(.50+.45*u,front?76:66,opacity),font,front&&i%17===0?2:0);
-      if(front&&i%5===0){
-        const fringe=project(x+radius*.07*Math.sin(delayed*1.7),y+font*.40,z+radius*.035);
-        print(i%2?'~':'.',fringe.x,fringe.y,colour(.68+.22*u,75,opacity*.46));
+    for(const r of ropes){
+      const anchor=ropeAnchor(r,time);
+      const tailX=Math.sin(a.angle),tailY=Math.cos(a.angle);
+      if(!r.points){
+        r.points=Array.from({length:r.n+1},(_,i)=>{
+          const u=i/r.n, d=u*r.length;
+          const x=anchor.x+tailX*d+Math.sin(u*7+r.seed)*u*radius*.13;
+          const y=anchor.y+tailY*d+Math.cos(u*6+r.seed)*u*radius*.10;
+          return {x,y,px:x,py:y};
+        });
       }
+      const p=r.points;
+      if(!dt){p[0].x=anchor.x;p[0].y=anchor.y;continue;}
+      for(let i=1;i<p.length;i++){
+        const u=i/r.n,pt=p[i];
+        const dx=(pt.x-pt.px)*.945,dy=(pt.y-pt.py)*.945;
+        pt.px=pt.x;pt.py=pt.y;
+        // Travelling current varies along each arm; drag pulls against the
+        // moving bell. A soft tailward bias prevents implausible tangling.
+        const wave=time*1.15-u*6+r.seed;
+        const flowX=85*Math.sin(wave)+46*Math.sin(time*.52+u*9+r.seed*1.3);
+        const flowY=63*Math.cos(wave*.83)+41*Math.sin(time*.77-u*8+r.seed);
+        const pull=25+25*u;
+        pt.x+=dx+(flowX*u+tailX*pull-a.vx*.36)*dt*dt;
+        pt.y+=dy+(flowY*u+tailY*pull-a.vy*.36)*dt*dt;
+      }
+      // Maximum-distance constraints keep the soft ropes attached while
+      // allowing them to fold, flutter and curl rather than standing straight.
+      for(let iteration=0;iteration<4;iteration++){
+        p[0].x=anchor.x;p[0].y=anchor.y;
+        for(let i=1;i<p.length;i++){
+          const prev=p[i-1],cur=p[i],dx=cur.x-prev.x,dy=cur.y-prev.y;
+          const dist=Math.hypot(dx,dy)||.001;
+          if(dist<=r.step)continue;
+          const stretch=(dist-r.step)/dist;
+          if(i===1){cur.x-=dx*stretch;cur.y-=dy*stretch;}
+          else {const half=.5*stretch;
+            cur.x-=dx*half;cur.y-=dy*half;
+            prev.x+=dx*half;prev.y+=dy*half;}
+        }
+      }
+      p[0].x=anchor.x;p[0].y=anchor.y;
     }
   }
-  function drawOralArm(time,index){
-    const root=[-.39,-.19,0,.19,.39][index];
-    const phase=index*1.33;
-    const uLength=radius*(1.25+.20*rand(index+201));
-    const n=Math.max(19,Math.ceil(uLength/(font*.64)));
-    for(let i=0;i<=n;i++){
-      const u=i/n;
-      const lag=time*2.65-u*9.2+phase;
-      const scull=Math.sin(lag)*radius*(.043+.17*u*u);
-      const ribbon=Math.sin(lag*1.13+phase)*radius*.23*Math.pow(u,1.5);
-      const x=root*radius*.58+scull+ribbon;
-      const y=radius*.08+u*uLength*(.88+.12*Math.sin(time*2.05-u*7.5+phase));
-      const z=radius*.18+Math.sin(lag*.83)*radius*.24*u*u;
-      const frill=radius*(.06+.045*Math.sin(lag*1.9))*(1-u*.56);
-      const alpha=.83*Math.pow(1-u,.18);
-      const left=project(x-frill,y,z);
-      const mid=project(x,y,z+.02*radius);
-      const right=project(x+frill,y,z);
-      print(i%2?'(':')',left.x,left.y,colour(.51+u*.42,70,alpha*.70));
-      print('|/\\x%&@'[Math.floor(rand(index*71+i*8)*7)],mid.x,mid.y,
-        colour(.56+u*.38,80,alpha),font,i%11===0?2:0);
-      print(i%3===0?'}':i%3===1?'{':'~',right.x,right.y,
-        colour(.59+u*.33,73,alpha*.68));
-      if(i%6===0){const tip=project(x+2*frill,y+3,z);print('.',tip.x,tip.y,colour(.78,72,alpha*.43));}
+  function drawRope(r,time){
+    const p=r.points;if(!p)return;
+    const back=r.kind==='back',oral=r.kind==='oral';
+    const bright=oral?.75:back?.30:.64;
+    const chars=oral?'%xVY@&i|/\\{}':'|/\\!i:;,.~';
+    for(let i=1;i<p.length;i++){
+      const a=p[i-1],b=p[i];
+      const dx=b.x-a.x,dy=b.y-a.y,seg=Math.hypot(dx,dy)||1;
+      const steps=Math.max(1,Math.ceil(seg/(font*.68)));
+      const nx=-dy/seg,ny=dx/seg;
+      for(let k=0;k<steps;k++){
+        const q=k/steps,u=(i-1+q)/r.n;
+        const x=a.x+dx*q,y=a.y+dy*q;
+        const glyph=chars[Math.floor(rand(i*31+k*17+r.index*61+(oral?97:0))*chars.length)];
+        const opacity=bright*Math.pow(1-u,.24)*(.87+.13*Math.sin(time*1.2-u*9+r.seed));
+        const light=oral?78:back?66:73;
+        print(glyph,x,y,colour(.48+.43*u,light,opacity),font,oral&&i%11===0?1.5:0);
+        if(oral){
+          const frill=(1-u*.57)*radius*(.046+.027*Math.sin(time*1.8-u*14+r.seed));
+          print(i%3===0?'{':'(',x+nx*frill,y+ny*frill,colour(.47+.43*u,73,opacity*.72));
+          print(i%3===1?'}':')',x-nx*frill,y-ny*frill,colour(.60+.35*u,75,opacity*.65));
+          if(k===0&&i%3===0){
+            print('x',x+nx*frill*.45,y+ny*frill*.45,colour(.59+.28*u,78,opacity*.55));
+          }
+        }else if(!back&&k===0&&i%3===0){
+          print('~',x+nx*font*.65,y+ny*font*.65,colour(.62+.31*u,70,opacity*.43));
+        }
+      }
     }
   }
   function drawMotes(time){
@@ -376,32 +404,29 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     centerX=swimmer.x;centerY=swimmer.y;
     drawBackground(time);
     for(let i=0;i<4;i++)drawMini(time,i);
-    ctx.save();
-    ctx.translate(centerX,centerY);
-    ctx.rotate(swimmer.angle+.06*Math.sin(time*1.7)*swimmer.stroke);
-    ctx.translate(-centerX,-centerY);
     setFont(font);
-    for(let i=0;i<23;i++)drawFilament(time,i,23,false);
+    for(const rope of ropes)if(rope.kind==='back')drawRope(rope,time);
     drawBell(time);
-    for(let i=0;i<5;i++)drawOralArm(time,i);
-    for(let i=0;i<10;i++)drawFilament(time+.17,i,10,true);
+    for(const rope of ropes)if(rope.kind==='oral')drawRope(rope,time);
+    for(const rope of ropes)if(rope.kind==='front')drawRope(rope,time);
     drawMotes(time);
-    ctx.restore();
   }
   const escapeHTML=(s)=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   function buildSource(){
     // The panel displays real function bodies from the running animation engine.
     const chunks=[
       '// PELAGIC / live generative source',
-      '// A pulsing 3D ASCII organism swims through a procedural deep sea.',
+      '// A free-swimming 3D jellyfish with trailing, independently moving arms.',
       'const PI = Math.PI, TAU = PI * 2;',
       '',
+      noise.toString(),'',
       swim.toString(),'',
       project.toString(),'',
       colour.toString(),'',
       drawBell.toString(),'',
-      drawFilament.toString(),'',
-      drawOralArm.toString(),'',
+      configureRopes.toString(),'',
+      advanceRopes.toString(),'',
+      drawRope.toString(),'',
       drawBackground.toString(),'',
       drawMini.toString(),'',
       render.toString(),'',
@@ -435,6 +460,10 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     if(!paused){
       t+=delta*speed;
       swim(delta*speed,t);
+      ropeDebt+=delta*speed;
+      let steps=0;
+      while(ropeDebt>=1/60&&steps++<5){advanceRopes(1/60,t-ropeDebt+1/60);ropeDebt-=1/60;}
+      if(steps>5)ropeDebt=0;
       sourceOffset=(sourceOffset+delta*speed*31)%sourceHeight;
       codeInner.style.transform=`translate3d(0,${-sourceOffset}px,0)`;
       drawDebt+=delta;
@@ -448,8 +477,8 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
   document.getElementById('pause').addEventListener('click',togglePause);
   document.addEventListener('keydown',e=>{if(e.code==='Space'&&!['BUTTON','INPUT'].includes(document.activeElement.tagName)){e.preventDefault();togglePause();}if(e.key==='c')changePalette();if(e.key==='d')toggleDetail();});
   let resizePending=0;
-  window.addEventListener('resize',()=>{cancelAnimationFrame(resizePending);resizePending=requestAnimationFrame(()=>{resize();buildSource();swim(0,t);render(t);});},{passive:true});
-  resize();buildSource();swim(0,0);render(0);
+  window.addEventListener('resize',()=>{cancelAnimationFrame(resizePending);resizePending=requestAnimationFrame(()=>{resize();buildSource();swim(0,t);advanceRopes(0,t);render(t);});},{passive:true});
+  resize();buildSource();swim(0,0);advanceRopes(0,0);render(0);
   if(matchMedia('(prefers-reduced-motion:reduce)').matches)togglePause();
   requestAnimationFrame(frame);
 })();
