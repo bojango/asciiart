@@ -41,26 +41,32 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
 @media(max-width:480px){ .app{grid-template-rows:minmax(0,2fr) 35px minmax(0,1fr)}.hud{font-size:9px}.hud.top-left{top:14px;left:13px}.hud.top-right{top:14px;right:13px}.hud.bottom-left{left:13px;bottom:10px}.hud.bottom-right{right:13px;bottom:10px}.bar{padding:0 6px 0 11px}.identity{font-size:10px;gap:7px}.identity em{display:none}.actions button{height:33px;min-width:36px;padding:0 7px;font-size:10px}.line{font-size:9px;line-height:15px;height:15px}.ln{flex-basis:31px;padding-right:8px} }
 @media(max-width:340px){.hud.bottom-right{display:none}.identity{letter-spacing:0}.actions button{padding:0 5px;min-width:32px}.actions button .word{display:none}}
 
-/* The environmental simulator is intentionally an overlay, never a third page column. */
-.dev-panel[hidden] { display:none !important; }
-.dev-panel { position:absolute; z-index:8; top:12px; right:12px; bottom:12px; width:min(348px,calc(100% - 24px)); overflow-y:auto; overscroll-behavior:contain; -webkit-overflow-scrolling:touch; border:1px solid #354b56; background:rgba(5,13,17,.968); color:#bfd6d0; border-radius:5px; box-shadow:0 16px 54px #000b; padding:13px; font:11px/1.45 "Courier New",monospace; }
-.dev-panel header { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:9px; }
-.dev-panel h2 { font-size:12px; margin:0; letter-spacing:.1em; color:#c5f0de; }
-.dev-panel .hint { font-size:10px; color:#829d9b; margin:4px 0 12px; }
-.dev-panel .dev-mode { padding:7px 9px; border:1px solid #294542; margin:0 0 10px; color:#83bbac; background:#091c1a; }
-.dev-panel .effect { padding:7px 0; border-top:1px solid #1b3434; }
-.dev-panel .effect-title { display:flex; justify-content:space-between; align-items:center; gap:10px; }
-.dev-panel .effect-title label { display:flex; align-items:center; gap:8px; }
-.dev-panel input[type=checkbox] { accent-color:#81d8b7; width:15px; height:15px; margin:0; }
-.dev-panel input[type=range] { width:100%; margin:7px 0 0; accent-color:#94dabd; height:16px; }
-.dev-panel input[type=range]:disabled { opacity:.24; }
-.dev-panel output { font-variant-numeric:tabular-nums; color:#c1eccb; }
-.dev-panel button, .dev-panel select { border:1px solid #385750; background:#10241f; color:#c1e8dc; font:11px "Courier New",monospace; padding:7px 9px; border-radius:2px; cursor:pointer; }
-.dev-panel button:focus-visible,.dev-panel select:focus-visible { outline:2px solid #9be2c2; outline-offset:2px; }
-.dev-panel .dev-buttons { display:flex; gap:6px; margin-top:12px; }
-.dev-panel .dev-buttons button { flex:1; }
-.dev-panel .readout { margin-top:10px; color:#7aa798; font-size:10px; }
-.dev-panel .mini { color:#829d9b; font-size:10px; }
+/* DEV replaces the live code and never covers the artwork. */
+.dev-panel[hidden]{display:none!important}
+.code.dev-active .code-inner{display:none}
+.dev-panel{position:relative;z-index:3;width:100%;height:100%;overflow:hidden;min-height:0;padding:7px 12px 5px;background:#06110f;color:#b4d7c8;font:10px/1.15 "Courier New",Courier,monospace;display:flex;flex-direction:column;gap:5px}
+.dev-panel header{display:flex;align-items:center;gap:7px;flex:0 0 auto;min-height:23px}
+.dev-panel h2{font:700 11px/1 "Courier New",monospace;letter-spacing:.08em;color:#c1f0d3;margin:0;white-space:nowrap}
+.dev-panel .dev-mode{font-size:9px;color:#588b77;white-space:nowrap}
+.dev-panel .preset-group{margin-left:auto;display:flex;gap:5px;align-items:center;min-width:0}
+.dev-panel .preset-group label{color:#83b6a0;font-size:9px}
+.dev-panel .effect-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:3px 13px;grid-template-rows:repeat(4,minmax(0,1fr));flex:1 1 auto;min-height:0;align-content:stretch}
+.dev-panel .effect{min-width:0;min-height:0;border-top:1px solid #1b3530;padding:4px 0 0;display:flex;flex-direction:column;gap:2px}
+.dev-panel .effect-title{display:flex;align-items:center;justify-content:space-between;gap:2px;min-width:0}
+.dev-panel .effect-title label{display:flex;align-items:center;gap:5px;min-width:0;white-space:nowrap}
+.dev-panel .effect-title label span{overflow:hidden;text-overflow:ellipsis}
+.dev-panel input[type=checkbox]{accent-color:#76cfaa;width:12px;height:12px;flex:none;margin:0}
+.dev-panel input[type=range]{display:block;width:100%;margin:0;accent-color:#85caa7;height:15px;min-width:0;cursor:pointer}
+.dev-panel input[type=range]:disabled{opacity:.27}
+.dev-panel output{font-variant-numeric:tabular-nums;white-space:nowrap;font-size:9px;color:#ade3bf}
+.dev-panel button,.dev-panel select{border:1px solid #35574c;border-radius:2px;background:#0d261e;color:#c1e8dc;font:10px/1 "Courier New",monospace;padding:4px 6px;cursor:pointer}
+.dev-panel select{max-width:94px}
+.dev-panel button:focus-visible,.dev-panel select:focus-visible{outline:2px solid #9be2c2;outline-offset:1px}
+.dev-panel .dev-footer{display:flex;align-items:center;gap:5px;flex:0 0 auto;min-height:22px}
+.dev-panel .dev-footer button{white-space:nowrap;padding:4px 6px}
+.dev-panel .readout{color:#82b09e;font-size:9px;margin-left:auto;min-width:0;text-align:right;white-space:nowrap}
+@media(max-width:480px){.dev-panel{padding:5px 7px 3px;gap:3px;font-size:9px}.dev-panel header{min-height:21px}.dev-panel h2{font-size:10px}.dev-panel .dev-mode{display:none}.dev-panel .effect-grid{gap:2px 9px}.dev-panel .effect{padding-top:3px}.dev-panel input[type=range]{height:14px}.dev-panel .dev-footer button{font-size:9px;padding:4px 5px}.dev-panel .readout{font-size:8px}.actions button#devToggle{min-width:34px}}
+@media(max-height:650px){.dev-panel{gap:2px;padding-top:3px;padding-bottom:2px}.dev-panel header{min-height:18px}.dev-panel .effect{padding-top:1px}.dev-panel input[type=range]{height:12px}.dev-panel .dev-footer{min-height:18px}}
  .actions button[aria-pressed="true"] { color:#b5ffde; background:#12271f; }
 .app.installation { grid-template-rows:minmax(0,1fr); }
 .app.installation > .bar,.app.installation > .code,.app.installation .hud { display:none; }
@@ -68,7 +74,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
 .exit-installation:focus-visible,.exit-installation:hover {opacity:1;}
 .app.installation .exit-installation {display:block;}
 
-@media(max-width:480px){ .dev-panel {top:5px;right:6px;bottom:5px;width:min(325px,calc(100% - 12px));font-size:11px;padding:11px;} .actions button#devToggle{min-width:34px;} }
+
 
 @media(prefers-reduced-motion:reduce){.led{box-shadow:none}}
 </style>
@@ -77,26 +83,13 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
 <main class="app" aria-label="Procedural ASCII art experiment">
   <section class="art" id="art" aria-label="Animated ASCII jellyfish with bioluminescent tentacles and moving ASCII sea life">
     <canvas id="sea" role="img" aria-label="Colourful animated ASCII jellyfish in a dark deep-sea scene"></canvas>
-    <div class="hud top-left">PELAGIC <strong>/</strong> 008<br>GENERATIVE SPECIMEN</div>
+    <div class="hud top-left">PELAGIC <strong>/</strong> 009<br>GENERATIVE SPECIMEN</div>
     <div class="hud top-right"><span id="status">LIVE</span> <strong>●</strong><br><span id="detailStat">192 × 92</span></div>
     <div class="hud bottom-left">MEDUSA <strong>ASTRALIS</strong><br>ALL GLYPHS / NO IMAGES</div>
     <div class="hud bottom-right">DEPTH <strong>2480 M</strong><br>PROCEDURAL MOTION</div>
 
     <button type="button" class="exit-installation" id="exitInstallation" aria-label="Exit installation mode">EXIT</button>
-    <aside class="dev-panel" id="devPanel" hidden aria-label="Environmental simulation developer controls">
-      <header><h2>ENVIRONMENT / SIMULATION</h2><button id="devClose" type="button" aria-label="Close developer panel">CLOSE ×</button></header>
-      <p class="dev-mode">SOURCE: SIMULATED · OFFLINE</p>
-      <p class="hint">Toggle each influence independently. Changes blend in gradually. Live weather will be connected after visual testing.</p>
-      <label for="weatherPreset">SCENARIO</label>
-      <select id="weatherPreset" aria-label="Weather preset">
-        <option value="custom">Custom</option><option value="calm">Calm</option><option value="storm">Storm</option><option value="cold">Cold</option><option value="heat">Heatwave</option><option value="night">Night</option><option value="mist">Mist</option>
-      </select>
-      <div id="weatherControls"></div>
-      <div class="dev-buttons"><button type="button" id="simulatePresence">PERSON NEARBY</button><button type="button" id="simulateTouch">TOUCH REACTION</button></div>
-      <div class="dev-buttons"><button type="button" id="installationMode">ENTER INSTALLATION MODE</button></div>
-      <p class="readout" id="devReadout">Z — / behaviour: exploring</p>
-      <p class="mini">Touch the artwork to startle the animal, not to drag it. Future sensors will use the same event interface.</p>
-    </aside>
+
   </section>
   <nav class="bar" aria-label="Animation controls">
     <div class="identity"><span id="led" class="led"></span><span>medusa.js</span><em>/ live source</em></div>
@@ -110,6 +103,11 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
   </nav>
   <section class="code" id="code" aria-label="Continuously scrolling generative animation source code">
     <div class="code-inner" id="codeInner" aria-hidden="true"></div>
+    <aside class="dev-panel" id="devPanel" hidden aria-label="Environmental simulation developer controls">
+      <header><h2>ENV / SIMULATION</h2><span class="dev-mode">OFFLINE</span><div class="preset-group"><label for="weatherPreset">PRESET</label><select id="weatherPreset" aria-label="Weather preset"><option value="custom">Custom</option><option value="calm">Calm</option><option value="storm">Storm</option><option value="cold">Cold</option><option value="heat">Heatwave</option><option value="night">Night</option><option value="mist">Mist</option></select></div><button id="devClose" type="button" aria-label="Close developer panel">×</button></header>
+      <div class="effect-grid" id="weatherControls"></div>
+      <div class="dev-footer"><button type="button" id="simulatePresence">PRESENCE</button><button type="button" id="simulateTouch">TOUCH</button><button type="button" id="installationMode">FULL ART</button><span class="readout" id="devReadout">Z —</span></div>
+    </aside>
   </section>
 </main>
 <script src="./environment.js"></script>
@@ -129,7 +127,8 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
   const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
   const swimmer={x:0,y:0,vx:0,vy:0,angle:-.12,yaw:.18,pitch:-.07,
     strokePhase:0,stroke:0,pulse:0,pulseRate:0,thrust:0,travel:0,turn:0,initialised:false,
-    z:.20,vz:0,energy:.7,curiousUntil:0,startledUntil:0,interest:0,startle:0,behaviour:'exploring' };
+    z:.20,vz:0,energy:.7,curiousUntil:0,startledUntil:0,interest:0,startle:0,behaviour:'exploring',
+    burstUntil:0,burstPower:0,nextBurstAt:9,streamline:0 };
   // Smooth, seeded random motion: no teleporting targets, no repeating L/R loop.
   const noise=(time,seed)=>{
     const cell=Math.floor(time),f=time-cell;
@@ -160,12 +159,17 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
   // chromatic bands without making the entire animal flash in unison.
   const colour=(progress,light,opacity=1)=>{
     const p=palettes[paletteIndex];
-    // Temperature tints the underlying spectral bands instead of replacing them.
-    const hue=p.start+p.span*clamp(progress,0,1)+(paletteIndex===3?0:t*2.8)+environmentalFx.temperature*48;
+    // Temperature blends spatial bands toward clearly recognisable extremes.
+    // Frozen: blue/cyan. Hot: red/coral. Effect can be disabled in DEV.
+    const base=p.start+p.span*clamp(progress,0,1)+(paletteIndex===3?0:t*2.8);
+    const cold=clamp((-environmentalFx.temperature-.12)/.67,0,1);
+    const hot=clamp((environmentalFx.temperature-.12)/.67,0,1);
+    const hue=base*(1-cold-hot)+(204+progress*26)*cold+(350+progress*28)*hot;
+    const saturation=p.sat+(94-p.sat)*Math.max(cold,hot);
     const nighttime=1-environmentalFx.daylight;
     const lumen=clamp(light+nighttime*5-environmentalFx.air*6,0,100);
     const alpha=opacity*(1-environmentalFx.air*.22)*(1+nighttime*.055);
-    return `hsla(${((hue%360)+360)%360},${p.sat}%,${lumen}%,${clamp(alpha,0,1)})`;
+    return `hsla(${((hue%360)+360)%360},${saturation}%,${lumen}%,${clamp(alpha,0,1)})`;
   };
   function resize(){
     const b=art.getBoundingClientRect();width=Math.max(200,b.width);height=Math.max(230,b.height);
@@ -276,16 +280,23 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     a.behaviour=startleActive?'startled':curiousActive?'curious':temper<.48?'resting':'exploring';
     a.energy=ease(a.energy,clamp(temper+(curiousActive?.24:0)+(startleActive?.45:0),.32,1.4),.45,dt);
     a.startle=ease(a.startle,startleActive?1:0,startleActive?3:1.1,dt);
+    // Occasional autonomous spurts, with longer calm intervals between them.
+    if(time>a.nextBurstAt && !startleActive){
+      startBurst(time,.68+.30*rand(time*1.3+76));
+      a.nextBurstAt=time+15+rand(time*3.7+26)*21;
+    }
+    const burstActive=time<a.burstUntil;
+    a.streamline=ease(a.streamline,clamp((Math.hypot(a.vx,a.vy)+Math.abs(a.vz)*65-35)/110,0,.35)+(burstActive?.20:0),burstActive?6:2.3,dt);
 
     // Z is a genuine third axis of exploration: no viewport drag/zoom.
     const wanderingZ=.17+.53*noise(time*.043,211)+.14*noise(time*.106,61);
     const desiredZ=clamp(curiousActive && a.interest>.45 ? -.67 : wanderingZ,-.70,.89);
     const zForce=(desiredZ-a.z)*1.85-a.vz*2.2;
-    a.vz=clamp(a.vz+zForce*dt,-.47,.47);
+    a.vz=clamp(a.vz+zForce*dt,burstActive?-1.12:-.60,burstActive?1.12:.60);
     a.z=clamp(a.z+a.vz*dt,-.70,.90);
 
     const prev=a.pulse;
-    a.strokePhase+=dt*(2.00+.40*depth+.30*a.energy+.15*noise(time*.18,42));
+    a.strokePhase+=dt*(2.00+.40*depth+.30*a.energy+.15*noise(time*.18,42)+(burstActive?2.5:0));
     const cycle=(a.strokePhase%TAU)/TAU;
     const smooth=u=>u*u*(3-2*u);
     a.pulse=cycle<.31?smooth(cycle/.31):1-smooth((cycle-.31)/.69);
@@ -299,7 +310,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     a.pitch=ease(a.pitch,.13*noise(time*.24,38)+.055*Math.sin(time*.39),.80,dt);
 
     // Real pulse propulsion, modified subtly by energy, not by the sensors.
-    const thrust=84*a.stroke*(.80+.22*a.energy);
+    const thrust=84*a.stroke*(.80+.22*a.energy)*(burstActive?1.65:1);
     a.thrust=thrust;
     const currentX=15*noise(time*.12,12)+7*noise(time*.37,31)+environmentalFx.windX;
     const currentY=10*noise(time*.14,59)+6*noise(time*.31,84)+environmentalFx.windY;
@@ -313,8 +324,9 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     if(a.x>maxX-zone)fx-=(a.x-maxX+zone)*4.2;
     if(a.y<minY+zone)fy+=(minY+zone-a.y)*5.0;
     if(a.y>maxY-zone)fy-=(a.y-maxY+zone)*5.0;
-    a.vx=clamp(a.vx+fx*dt,-67,67);
-    a.vy=clamp(a.vy+fy*dt,-70,70);
+    const maxSpeed=burstActive?136:82;
+    a.vx=clamp(a.vx+fx*dt,-maxSpeed,maxSpeed);
+    a.vy=clamp(a.vy+fy*dt,-maxSpeed,maxSpeed);
     a.x+=a.vx*dt;a.y+=a.vy*dt;
     if(a.x<minX){a.x=minX;a.vx=Math.max(0,a.vx)*.25;}
     if(a.x>maxX){a.x=maxX;a.vx=Math.min(0,a.vx)*.25;}
@@ -336,20 +348,41 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     a.interest=clamp((Number(strength)||0)*(.6+.4*rand(t*7+19)),0,1);
     a.curiousUntil=t+7+rand(t*12+31)*6;
   }
+  function startBurst(time,power=1){
+    const a=swimmer;
+    if(a.burstUntil>0 && time<a.burstUntil+.5)return false;
+    const toward=rand(time*19.37+59)>.54;
+    // A quick retreat/approach in depth, plus an upward/diagonal kick.
+    const polarity=(a.z>.55? -1:a.z<-.38?1:toward?-1:1);
+    a.vz=clamp(a.vz+polarity*(.63+.46*power),-1.12,1.12);
+    a.vx+=(rand(time*7.71+29)-.5)*65*power;
+    a.vy-=23*power+rand(time*13.7+44)*35*power;
+    a.burstUntil=time+.80+.48*rand(time*5.71+19);
+    a.burstPower=power;
+    a.streamline=Math.max(a.streamline,.19*power);
+    return true;
+  }
   function signalTouch(x=swimmer.x,y=swimmer.y){
     const a=swimmer;
     a.startledUntil=t+2.4;
     const dx=a.x-x,dy=a.y-y,mag=Math.hypot(dx,dy)||1;
-    a.vx+=dx/mag*21;
-    a.vy+=dy/mag*17-6;
-    a.vz+=.13; // startled animals may retreat slightly into the scene
+    // Most touches provoke a quick escape into depth; some only a flinch.
+    if(rand(t*25.7+3)>.25){
+      a.burstUntil=0;
+      startBurst(t,1.12);
+      a.vz=Math.abs(a.vz)+.18; // a short retreat, never drag-to-position
+    }else{
+      a.vx+=dx/mag*19;a.vy+=dy/mag*14-5;a.vz+=.08;
+    }
+    a.nextBurstAt=Math.max(a.nextBurstAt,t+6);
     a.curiousUntil=Math.min(a.curiousUntil,t+1);
   }
   // The propulsive stroke constricts the hem, while the central crown
   // keeps its shape. A little asymmetric curvature follows steering.
   function bellSurface(polar,phi,time){
     const ring=Math.sin(polar),skirt=Math.pow(ring,3);
-    const squeeze=1-.16*swimmer.pulse*skirt*(1+.13*Math.cos(phi)*swimmer.angle)
+    // At higher speed, the bell streamlines without a whole-body zoom.
+    const squeeze=1-(.16*swimmer.pulse+.45*swimmer.streamline)*skirt*(1+.13*Math.cos(phi)*swimmer.angle)
       +.005*swimmer.startle*Math.sin(phi*9-time*7)*skirt;
     const fluting=.014*Math.sin(phi*13-time*1.28)+.009*Math.cos(phi*8+time*.61);
     const r=radius*ring*squeeze*(1+fluting*skirt);
@@ -624,6 +657,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
       swim.toString(),'',
       signalPresence.toString(),'',
       signalTouch.toString(),'',
+      startBurst.toString(),'',
       project.toString(),'',
       bellSurface.toString(),'',
       makeBellHull.toString(),'',
@@ -668,9 +702,9 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
   const devToggle=document.getElementById('devToggle');
   const fields=[
     ['temperature','Temperature','temperatureC','°C'],
-    ['wind','Wind speed','windKmh','km/h'],
+    ['wind','Wind','windKmh','km/h'],
     ['rain','Rain','rainPct','%'],
-    ['airQuality','Air quality index','airQualityIndex','AQI'],
+    ['airQuality','Air quality','airQualityIndex','AQI'],
     ['humidity','Humidity','humidityPct','%'],
     ['daylight','Daylight','daylightPct','%']
   ];
@@ -685,7 +719,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
       controls.appendChild(el);
     }
     const direction=document.createElement('div');direction.className='effect';
-    direction.innerHTML='<div class="effect-title"><span>Wind direction</span><output data-unit="°"></output></div><input id="sim_windDirection" type="range" min="0" max="360" step="5" data-field="windDirection" aria-label="Wind current direction">';
+    direction.innerHTML='<div class="effect-title"><span>Wind dir.</span><output data-unit="°"></output></div><input id="sim_windDirection" type="range" min="0" max="360" step="5" data-field="windDirection" aria-label="Wind current direction">';
     controls.appendChild(direction);
     controls.addEventListener('input',e=>{
       const field=e.target.dataset.field;if(!field)return;
@@ -713,7 +747,8 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
   }
   function toggleDeveloper(force){
     const show=typeof force==='boolean'?force:devPanel.hidden;
-    devPanel.hidden=!show;devToggle.setAttribute('aria-expanded',String(show));
+    devPanel.hidden=!show;codeBox.classList.toggle('dev-active',show);
+    devToggle.setAttribute('aria-expanded',String(show));
     devToggle.setAttribute('aria-pressed',String(show));
     if(show)syncDeveloperControls();
   }
@@ -742,7 +777,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     environment: Object.freeze({setInput:environment.setInput,setEnabled:environment.setEnabled,preset:environment.preset}),
     presence: strength=>signalPresence(strength),
     touch: (x,y)=>signalTouch(x,y),
-    debug: ()=>({x:swimmer.x,y:swimmer.y,z:swimmer.z,scale:bodyScale(),velocity:[swimmer.vx,swimmer.vy,swimmer.vz],behaviour:swimmer.behaviour,effects:environmentalFx,penetrations:ropes.reduce((count,r)=>count+(r.points||[]).slice(1).filter(p=>!!bellPenetration(p.x,p.y)).length,0),ropeCount:ropes.length})
+    debug: ()=>({x:swimmer.x,y:swimmer.y,z:swimmer.z,scale:bodyScale(),velocity:[swimmer.vx,swimmer.vy,swimmer.vz],streamline:swimmer.streamline,burstActive:t<swimmer.burstUntil,behaviour:swimmer.behaviour,effects:environmentalFx,penetrations:ropes.reduce((count,r)=>count+(r.points||[]).slice(1).filter(p=>!!bellPenetration(p.x,p.y)).length,0),ropeCount:ropes.length})
   });
   buildDeveloperControls();
   function frame(now){
@@ -761,7 +796,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
       codeInner.style.transform=`translate3d(0,${-sourceOffset}px,0)`;
       drawDebt+=delta;
       if(drawDebt>=1/30){render(t);drawDebt=0;
-        if(!devPanel.hidden)document.getElementById('devReadout').textContent=`Z ${swimmer.z.toFixed(2)} / ×${bodyScale().toFixed(2)} / ${swimmer.behaviour.toUpperCase()}`;
+        if(!devPanel.hidden)document.getElementById('devReadout').textContent=`Z ${swimmer.z.toFixed(1)} · ${swimmer.behaviour.slice(0,5).toUpperCase()}`;
       }
     }
     requestAnimationFrame(frame);
