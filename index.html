@@ -134,7 +134,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
 <main class="app" aria-label="Procedural ASCII art experiment">
   <section class="art" id="art" aria-label="Animated ASCII jellyfish with bioluminescent tentacles and moving ASCII sea life">
     <canvas id="sea" role="img" aria-label="Colourful animated ASCII jellyfish in a dark deep-sea scene"></canvas>
-    <div class="hud top-left">PELAGIC <strong>/</strong> 016.5<br>LIVING ECOSYSTEM</div>
+    <div class="hud top-left">PELAGIC <strong>/</strong> 016.6<br>LIVING ECOSYSTEM</div>
     <div class="hud top-right"><span id="status">LIVE</span> <span id="liveDot" class="live-indicator" aria-label="Animation running"></span></div>
     <div class="hud bottom-left">MEDUSA <strong>ASTRALIS</strong></div>
     <div class="hud bottom-right">DEPTH <strong>2480 M</strong><br>PROCEDURAL MOTION</div>
@@ -200,6 +200,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     z:.20,vz:0,energy:.7,curiousUntil:0,startledUntil:0,interest:0,startle:0,behaviour:'exploring',
     burstUntil:0,burstPower:0,nextBurstAt:8,streamline:0,
     depthGoal:.20,nextDepthDecision:15,depthChanges:0,depthRushUntil:0,depthRushCount:0,
+    nextCloseVisitAt:120,closeVisitUntil:0,closeRetreatUntil:0,lastCloseVisitAt:-1000,closeVisits:0,
     ceilingGlide:false,glideDirection:1,glideStart:0,
     hunger:.52,feedGlow:0,feedingUntil:0,digestUntil:0,
     mood:'exploring',moodUntil:0,nextMoodDecision:0,curiosity:.52,
@@ -210,11 +211,13 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     const u=f*f*f*(f*(f*6-15)+10);
     return 2*(rand(cell*11.71+seed)*(1-u)+rand((cell+1)*11.71+seed)*u)-1;
   };
-  // A restrained visual depth scale makes a real approach/retreat readable.
-  // Every bell/rope/feeding coordinate shares the SAME factor, preserving
-  // anatomy. V16.3's fixed 1.0 made even large Z journeys look stationary.
-  // This range is deliberately far narrower than the old .34–2.40 zoom.
-  const bodyScale=()=>clamp(Math.exp(-swimmer.z*.175),.73,1.32);
+  // True perspective scale is shared by the bell projection, its rim anchors,
+  // oral arms, marginal filaments and feeding collision geometry. Standard
+  // exploration is restrained; the larger scale is reserved for brief visits.
+  const bodyScale=()=>{
+    const near=clamp((-swimmer.z-1.6)/1.0,0,1);
+    return clamp(Math.exp(-swimmer.z*.175)*(1+.12*near*near),.73,1.79);
+  };
   // Preserve the silhouette's apparent size while exposing depth through
   // atmospheric contrast and particles moving across the creature's plane.
   let drawingHero=false;
@@ -348,15 +351,17 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
       print(glyph,x,y,colour(.14+s.s*.58,behind?67:78,strength),px);
     }
   }
-  // The bell remains one consistent size: only its scalloped edge flexes.
-  // Directional travel and 3D rotation are separate, gently coupled motions.
+  // The bell's local geometry can pulse and turn, while its screen projection
+  // scales with genuine Z position. There is no independent camera zoom.
+  // Directional travel and 3D rotation remain separate motions.
   function project(x,y,z){
     const a=swimmer, cy=Math.cos(a.yaw),sy=Math.sin(a.yaw);
     const xx=x*cy+z*sy, zz=z*cy-x*sy;
     const cp=Math.cos(a.pitch),sp=Math.sin(a.pitch);
     const yy=y*cp-zz*sp, depth=y*sp+zz*cp;
-    // Very shallow local parallax lets the bell turn without a lens-like zoom.
-    const perspective=clamp(1+depth/(radius*37),.979,1.021);
+    // Apply the same Z scale to the bell, projected tentacle roots and
+    // collision hull. Previously bodyScale changed but the bell ignored it.
+    const perspective=bodyScale()*clamp(1+depth/(radius*37),.979,1.021);
     const px=xx*perspective,py=yy*perspective;
     const c=Math.cos(a.angle),si=Math.sin(a.angle);
     return {x:a.x+px*c-py*si,y:a.y+px*si+py*c,z:depth};
@@ -430,9 +435,23 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     const burstActive=time<a.burstUntil;
     a.streamline=ease(a.streamline,clamp((Math.hypot(a.vx,a.vy)+Math.abs(a.vz)*65-35)/110,0,.35)+(burstActive?.20:0),burstActive?6:2.3,dt);
 
-    // Depth exploration uses occasional near/far goals and time to glide
-    // between them. No periodic zoom and no forced path through the screen.
-    if(time>=a.nextDepthDecision){
+    // A rare, short close inspection feels curious rather than repetitive.
+    // It cannot persist at the near plane: every visit schedules a retreat.
+    if(a.closeVisitUntil>0 && time>=a.closeVisitUntil){
+      a.closeVisitUntil=0;
+      a.closeRetreatUntil=time+9;
+      a.depthGoal=.30+.44*rand(time*3.17+704);
+      a.depthRushUntil=time+2.8;
+      a.vz=Math.max(a.vz,.48);
+      a.nextDepthDecision=Math.max(a.nextDepthDecision,time+11);
+    }
+    if(a.closeRetreatUntil>0 && time>=a.closeRetreatUntil){
+      a.closeRetreatUntil=0;
+    }
+    const closeApproach=a.closeVisitUntil>time;
+    const closeRetreat=a.closeRetreatUntil>time;
+    // Unscripted ordinary exploration between special encounters.
+    if(time>=a.nextDepthDecision && !closeApproach && !closeRetreat){
       const choice=rand(time*2.37+211);
       // A soft return bias prevents multiple consecutive long stays at one
       // extreme, while exploration remains unpredictable and unscripted.
@@ -447,13 +466,15 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
       a.nextDepthDecision=time+23+rand(time*3.71+61)*16;
       a.depthChanges++;
     }
-    const desiredZ=clamp(curiousActive&&a.interest>.45?-1.35:
-      investigating?encounter.z:a.depthGoal,-1.85,2.05);
+    const desiredZ=clamp(closeApproach?-2.60:
+      closeRetreat?a.depthGoal:
+      curiousActive&&a.interest>.45?-1.35:
+      investigating?encounter.z:a.depthGoal,-2.70,2.05);
     const depthRush=time<a.depthRushUntil;
     const zForce=(desiredZ-a.z)*(depthRush?3.05:1.65)-a.vz*(depthRush?1.26:2.10);
     const zLimit=depthRush?1.42:burstActive?1.04:.76;
     a.vz=clamp(a.vz+zForce*dt,-zLimit,zLimit);
-    a.z=clamp(a.z+a.vz*dt,-1.85,2.05);
+    a.z=clamp(a.z+a.vz*dt,-2.70,2.05);
 
     const prev=a.pulse;
     // Bell strokes quieten while the jellyfish coasts down from the ceiling;
@@ -528,15 +549,39 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     const a=swimmer;
     a.interest=clamp((Number(strength)||0)*(.6+.4*rand(t*7+19)),0,1);
     a.curiousUntil=t+7+rand(t*12+31)*6;
+    // A future presence sensor may gently increase interest in approaching;
+    // this only advances a chance, never guarantees a close encounter.
+    if(strength>.65 && t-a.lastCloseVisitAt>120 && t>a.closeRetreatUntil && rand(t*6.19+91)<.36){
+      a.nextCloseVisitAt=Math.min(a.nextCloseVisitAt,t+8+rand(t*3.1+98)*8);
+    }
   }
   function startBurst(time,power=1){
     const a=swimmer;
     if(a.burstUntil>0 && time<a.burstUntil+.5)return false;
     const toward=rand(time*19.37+59)>.54;
-    // Most bursts are ordinary strokes. Occasionally the animal commits to
-    // an actual 3D approach/retreat lasting a few seconds, not a camera zoom.
+    // Occasionally inspect the viewer up close, then retreat automatically.
+    // The next opportunity is well separated: not a repeated zoom cycle.
+    const eligibleVisit=time>=a.nextCloseVisitAt && time>a.closeRetreatUntil
+      && time>a.closeVisitUntil && time>a.digestUntil && time>a.startledUntil;
+    const closeVisit=eligibleVisit && rand(time*12.81+416)<.49;
+    if(eligibleVisit){
+      a.nextCloseVisitAt=time+(closeVisit?160:33)+rand(time*4.17+887)*(closeVisit?155:43);
+    }
+    if(closeVisit){
+      a.closeVisits++;
+      a.lastCloseVisitAt=time;
+      a.closeVisitUntil=time+6.8+rand(time*3.19+297)*1.6;
+      a.closeRetreatUntil=0;
+      a.depthGoal=-2.60;
+      a.depthRushUntil=time+3.9;
+      a.nextDepthDecision=Math.max(a.nextDepthDecision,a.closeVisitUntil+12);
+      a.vz=clamp(a.vz-1.05,-1.54,.8);
+    }
+    // Ordinary bursts may still change depth, but they must not interrupt a
+    // close visit or its return to the mid-distance swimming range.
     const polarity=(a.z>1.45?-1:a.z<-1.31?1:toward?-1:1);
-    const depthSurge=rand(time*8.91+207)<.52;
+    const depthSurge=!closeVisit && time>=a.closeVisitUntil &&
+      time>=a.closeRetreatUntil && rand(time*8.91+207)<.52;
     if(depthSurge){
       const distance=1.45+.43*rand(time*5.8+41);
       a.depthGoal=clamp(a.z+polarity*distance,-1.76,1.97);
@@ -544,7 +589,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
       a.depthRushUntil=time+2.5+rand(time*1.91+66)*.8;
       a.depthRushCount++;
       a.vz=clamp(a.vz+polarity*(.90+.32*power),-1.42,1.42);
-    }else{
+    }else if(!closeVisit && time>=a.closeVisitUntil && time>=a.closeRetreatUntil){
       a.vz=clamp(a.vz+polarity*(.40+.28*power),-1.18,1.18);
     }
     a.vx+=(rand(time*7.71+29)-.5)*65*power;
@@ -1118,7 +1163,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     try{localStorage.setItem('pelagic.scene',currentScene);}catch(_){ }
     const forest=currentScene==='greenwood';
     document.getElementById('sceneName').textContent=forest?'◇ GREENWOOD':'◌ PELAGIC';
-    document.querySelector('.hud.top-left').innerHTML=forest?'GREENWOOD <strong>/</strong> 002<br>CINEMATIC CLEARING':'PELAGIC <strong>/</strong> 016.5<br>LIVING ECOSYSTEM';
+    document.querySelector('.hud.top-left').innerHTML=forest?'GREENWOOD <strong>/</strong> 002<br>CINEMATIC CLEARING':'PELAGIC <strong>/</strong> 016.6<br>LIVING ECOSYSTEM';
     document.querySelector('.hud.bottom-left').innerHTML=forest?'THE <strong>OLD GROVE</strong>':'MEDUSA <strong>ASTRALIS</strong>';
     document.querySelector('.hud.bottom-right').innerHTML=forest?'FIELD STUDY <strong>01</strong><br>LAYERS / LIGHT / WIND':'DEPTH <strong>2480 M</strong><br>PROCEDURAL MOTION';
     document.getElementById('colorName').textContent=forest?greenwood.season:palettes[paletteIndex].name;
@@ -1297,7 +1342,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     ecosystem: Object.freeze({setEnabled:ecosystem.setEnabled,setRate:ecosystem.setRate,spawn:ecosystem.spawn,state:ecosystem.state}),
     presence: strength=>signalPresence(strength),
     touch: (x,y)=>signalTouch(x,y),
-    debug: ()=>({x:swimmer.x,y:swimmer.y,z:swimmer.z,depthGoal:swimmer.depthGoal,depthChanges:swimmer.depthChanges,depthFog:distanceFog(),depthRush:t<swimmer.depthRushUntil,depthRushCount:swimmer.depthRushCount,depthLayers:{behind:stars.filter(s=>s.z>swimmer.z).length,front:stars.filter(s=>s.z<=swimmer.z).length},angle:swimmer.angle,scale:bodyScale(),velocity:[swimmer.vx,swimmer.vy,swimmer.vz],thrust:swimmer.thrust,ceilingGlide:swimmer.ceilingGlide,streamline:swimmer.streamline,burstActive:t<swimmer.burstUntil,hunger:swimmer.hunger,feedGlow:swimmer.feedGlow,mood:swimmer.mood,ecosystem:ecosystem.state(),behaviour:swimmer.behaviour,effects:environmentalFx,penetrations:ropes.reduce((count,r)=>count+(r.points||[]).slice(1).filter(p=>!!bellPenetration(p.x,p.y)).length,0),ropeCount:ropes.length,ropeKinds:{marginal:ropes.filter(r=>r.kind!=='oral').length,oral:ropes.filter(r=>r.kind==='oral').length},oralHang:ropes.filter(r=>r.kind==='oral'&&r.points?.length>1).map(r=>({verticalRatio:(r.points[r.n].y-r.points[0].y)/(r.length*bodyScale()),horizontalOffset:(r.points[r.n].x-r.points[0].x)/(r.length*bodyScale())})),maxRootGap:Math.max(0,...ropes.map(r=>!r.points?.length?0:Math.hypot(r.points[1].x-r.points[0].x,r.points[1].y-r.points[0].y)/(r.step*bodyScale())))})
+    debug: ()=>({x:swimmer.x,y:swimmer.y,z:swimmer.z,depthGoal:swimmer.depthGoal,depthChanges:swimmer.depthChanges,depthFog:distanceFog(),depthRush:t<swimmer.depthRushUntil,depthRushCount:swimmer.depthRushCount,closeVisits:swimmer.closeVisits,closeApproach:t<swimmer.closeVisitUntil,closeRetreat:t<swimmer.closeRetreatUntil,depthLayers:{behind:stars.filter(s=>s.z>swimmer.z).length,front:stars.filter(s=>s.z<=swimmer.z).length},angle:swimmer.angle,scale:bodyScale(),velocity:[swimmer.vx,swimmer.vy,swimmer.vz],thrust:swimmer.thrust,ceilingGlide:swimmer.ceilingGlide,streamline:swimmer.streamline,burstActive:t<swimmer.burstUntil,hunger:swimmer.hunger,feedGlow:swimmer.feedGlow,mood:swimmer.mood,ecosystem:ecosystem.state(),behaviour:swimmer.behaviour,effects:environmentalFx,penetrations:ropes.reduce((count,r)=>count+(r.points||[]).slice(1).filter(p=>!!bellPenetration(p.x,p.y)).length,0),ropeCount:ropes.length,ropeKinds:{marginal:ropes.filter(r=>r.kind!=='oral').length,oral:ropes.filter(r=>r.kind==='oral').length},oralHang:ropes.filter(r=>r.kind==='oral'&&r.points?.length>1).map(r=>({verticalRatio:(r.points[r.n].y-r.points[0].y)/(r.length*bodyScale()),horizontalOffset:(r.points[r.n].x-r.points[0].x)/(r.length*bodyScale())})),maxRootGap:Math.max(0,...ropes.map(r=>!r.points?.length?0:Math.hypot(r.points[1].x-r.points[0].x,r.points[1].y-r.points[0].y)/(r.step*bodyScale())))})
   });
   buildDeveloperControls();
   let weatherStatusTimer=0;
@@ -1323,7 +1368,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
       scrollCode(delta);
       drawDebt+=delta;
       if(drawDebt>=1/30){render(t);drawDebt=0;
-        if(!devPanel.hidden)document.getElementById('devReadout').textContent=currentScene==='greenwood'?`GROVE · ${greenwood.season}`:devPanel.classList.contains('life-mode')?`CATCH ${ecosystem.state().counts.preyCaught} · VISIT ${ecosystem.state().counts.visitors}`:`Z ${swimmer.z.toFixed(1)} · ${swimmer.behaviour.slice(0,6).toUpperCase()}`;
+        if(!devPanel.hidden)document.getElementById('devReadout').textContent=currentScene==='greenwood'?`GROVE · ${greenwood.season}`:devPanel.classList.contains('life-mode')?`CATCH ${ecosystem.state().counts.preyCaught} · VISIT ${ecosystem.state().counts.visitors}`:`Z ${swimmer.z.toFixed(1)} · ${bodyScale().toFixed(2)}× · ${t<swimmer.closeVisitUntil?'NEAR':t<swimmer.closeRetreatUntil?'RETURN':swimmer.behaviour.slice(0,5).toUpperCase()}`;
       }
     }
     requestAnimationFrame(frame);

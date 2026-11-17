@@ -1,5 +1,17 @@
 # PELAGIC - Living ASCII
 
+## PELAGIC 016.6 — genuine Z projection, rare friendly close-ups and measurable regression tests
+
+- **Root cause repaired:** V16.5 calculated `bodyScale()` but never applied it in the bell's `project()` function. The entire bell therefore stayed a constant size while some tentacle dimensions changed. `project()` now multiplies the complete local bell geometry by the same Z-derived factor used for tentacle lengths, rim anchors, oral arms and collision geometry.
+- **Normal depth movement is visibly three-dimensional**, with the same autonomous Z goals, temporary swimming bursts, depth-sorted particles and atmospheric light changes as before.
+- **Rare brief close-up visits** now let the jellyfish approach the screen more closely, using a smooth extra near-plane perspective boost. A visit lasts roughly 7–8 seconds including the approach; its return to an ordinary distance is automatically triggered and temporarily protected from other depth decisions. Ordinary activity can still be ignored or investigated independently.
+- **Cooldown:** Close-up opportunities are separated by several minutes. The existing `PELAGIC.presence()` integration seam may modestly advance a future opportunity with a probability, without guaranteeing a visitor response. No sensor permissions or hardware integration are added.
+- **DEV status:** Weather tab readout includes real Z position, actual applied scale and whether a close approach/retreat is occurring. `PELAGIC.debug()` now includes visit count and current approach/retreat flags.
+- **Automated regression test:** `node --test tests/depth-regression.test.cjs` compares measured pixel-space bell geometry at six different Z positions against the effective scale, then simulates seven minutes of autonomous movement to check near encounters, forced retreat and tentacle-root integrity. No packages or build step required.
+- **Validation:** In a 390 px test viewport the actual projected bell width measured **357 px near** (Z −2.6) versus **148 px far** (Z +2), exactly matching the depth scaling ratios. A simulated 12-minute run produced **three** brief visits with full retreats, maximum extreme near dwell **7.1 seconds**, and maximum tentacle root stretch **1.07×**. The two persistent regression tests passed against the staged GitHub source.
+- **Preserved:** GREENWOOD, live Open-Meteo weather, LIFE ecosystem, prey feeding and tentacle dynamics. iPhone Safari visual acceptance remains a separate check.
+
+
 ## PELAGIC 016.5 — perceptible 3D approaches and retreats
 
 - **Why 016.4 looked static:** The Z state was changing, but `bodyScale()` had been frozen at 1.0 to avoid V16's extreme zooms. Very subtle fog and particles alone were insufficient to signal the jellyfish moving forwards/backwards on mobile.
