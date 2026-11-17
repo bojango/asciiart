@@ -1,5 +1,29 @@
 # PELAGIC - Living ASCII
 
+## PELAGIC 017 — sensory awareness for iPhone
+
+### What changed
+- Added **DEV → SENSE** with explicit opt-in toggles for motion/tilt and the front camera, plus a toggle to disable touch. Existing WEATHER/LIFE, gallery view, live environment and ecosystem controls remain independent.
+- **Tilt** (iPhone DeviceOrientation/DeviceMotion APIs): the device's angle creates gentle left/right and fore/aft currents. An abrupt shake sometimes causes a brief startle, but never directly moves the jellyfish to the phone's position. iPhone Safari permission is requested **only from an ENABLE tap**; denied/unsupported states are shown.
+- **Camera presence:** starting the camera requests permission explicitly. When a native FaceDetector implementation exists it can detect a nearby face; otherwise it falls back to coarse low-resolution frame motion. The jellyfish may investigate, ignore or become curious. **There is no guaranteed face detection on iPhone Safari.**
+- **Touch interactions:** single tap creates a small ASCII ripple, hold establishes a temporary curiosity point, drag swirls the water, and **double tap offers one tiny plankton-like prey** at the location touched. Offered prey lives in the normal ecosystem and must physically encounter a marginal tentacle to be captured and eaten. The LIFE prey switch is respected.
+- Sensor readings bias existing autonomy, water currents and attention; there is no direct joystick, scripted pursuit or forced consumption.
+
+### Privacy, compatibility and limits
+- Motion and camera **start disabled**. Touch works without permissions. Camera requests **video only** using the preferred front-facing camera, never audio.
+- Camera data is processed entirely in the browser at approximately 64×48 pixels. Only the immediately previous coarse frame is kept transiently in memory for motion comparison; images/face identities are **not recorded, stored persistently or uploaded**.
+- The camera and motion listeners stop on page/tab hide. Both sensors also stop when switching to GREENWOOD. Permissions and stream availability may differ by browser and system settings.
+- Requires secure HTTPS for camera and motion sensor APIs. The GitHub Pages URL supplies HTTPS; embedded webviews may impose additional restrictions.
+- Camera movement detection does not guarantee that a person is present; background motion and changing light can create false positives.
+- No remote phone-to-wall pairing is implemented in V17. The later QR-controlled installation will require a shared real-time service and session security, rather than assuming GitHub Pages alone can connect separate viewers.
+
+### Testing
+- `node --test tests/*.test.cjs` runs the new sensor tests plus the existing depth tests; zero third-party packages.
+- Tests cover opt-in behaviour, motion permission sequence, tilt currents, camera-only/no-audio capture, stopping camera when hidden, touch gestures, genuine offered prey and perspective/close-visit regressions.
+- Additional mocked mobile-size UI smoke testing verified SENSE tab navigation, WEATHER/LIFE hiding, touch toggle and double-tap prey integration.
+- Physical **iPhone Safari permission prompts, device motion values and camera responsiveness still require live-device acceptance**.
+
+
 ## PELAGIC 016.6 — genuine Z projection, rare friendly close-ups and measurable regression tests
 
 - **Root cause repaired:** V16.5 calculated `bodyScale()` but never applied it in the bell's `project()` function. The entire bell therefore stayed a constant size while some tentacle dimensions changed. `project()` now multiplies the complete local bell geometry by the same Z-derived factor used for tentacle lengths, rim anchors, oral arms and collision geometry.

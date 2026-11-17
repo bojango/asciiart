@@ -8,6 +8,7 @@ const path = require('node:path');
 const root = path.join(__dirname, '..');
 const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 const ecosystemSource = fs.readFileSync(path.join(root, 'ecosystem.js'), 'utf8');
+const sensesSource = fs.readFileSync(path.join(root, 'senses.js'), 'utf8');
 
 function createSimulation() {
   const nodes = new Map();
@@ -44,6 +45,7 @@ function createSimulation() {
   const localStorage = { getItem: () => null, setItem() {} };
   const window = { devicePixelRatio: 1, location: { search: '?scene=pelagic' }, addEventListener() {} };
   new Function('window', 'localStorage', ecosystemSource)(window, localStorage);
+  new Function('window', 'document', 'navigator', sensesSource)(window, document, {});
   window.PelagicGreenwood = {
     draw() {}, source() { return '// test'; }, cycleSeason() { return 'SUMMER'; },
     get season() { return 'SUMMER'; },

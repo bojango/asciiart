@@ -1,4 +1,4 @@
-/* PELAGIC / 016 — an occasional living ecosystem, independent of the renderer.
+/* PELAGIC / 017 — an occasional living ecosystem, independent of the renderer.
    Plankton glows when disturbed; small copepods can only be caught by an actual
    moving tentacle. Fish are wildlife, not scripted prey. All species explore Z.
    The scenes, weather input and smart-home seam remain separate modules.
@@ -10,7 +10,7 @@
   const rand=(x)=>{let k=Math.sin(x*127.119+54.29)*43758.5453;return k-Math.floor(k);};
   const mix=(a,b,t)=>a+(b-a)*t;
   const switches={snow:true,blooms:true,prey:true,fish:true,rare:true};
-  const counts={blooms:0,bloomDisturbances:0,preyCaught:0,preyEaten:0,preyEscapes:0,fishVisits:0,fishScatters:0,visitors:0,visitorReactions:0};
+  const counts={blooms:0,bloomDisturbances:0,preyCaught:0,preyEaten:0,preyEscapes:0,fishVisits:0,fishScatters:0,visitors:0,visitorReactions:0,offered:0};
   let lastFedAt=-1000;
   const snow=Array.from({length:76},(_,i)=>({x:rand(i*5+13),y:rand(i*7+29),z:mix(-1.3,1.6,rand(i*11+57)),speed:2+rand(i*9+30)*9,phase:rand(i+51)*TAU}));
   const prey=[];
@@ -33,8 +33,29 @@
     const scale=clamp(Math.exp(-.57*v.z),.30,2.65);
     return {x:w*(.5+(v.x-.5)*scale),y:h*(.5+(v.y-.5)*scale),scale};
   }
-  function spawn(type){
+  function spawn(type,options={}){
     const w=activeSize.width,h=activeSize.height;
+    if(type==='offered'){
+      // A double tap offers actual drifting food at the selected screen point.
+      // It can be ignored, avoided or caught by real marginal tentacle contact.
+      // Respect LIFE's prey switch: turning it off disables food entirely.
+      if(!switches.prey||!activeAnimal||prey.length>26)return false;
+      const seed=now*71.13+counts.offered*17.31+31;
+      const z=clamp(Number.isFinite(options.z)?options.z:
+        activeAnimal.z+(rand(seed+12)-.5)*.26,-1.8,2.0);
+      const sc=project({x:.5,y:.5,z},w,h).scale;
+      const x=clamp(Number(options.x)||w*.5,10,w-10);
+      const y=clamp(Number(options.y)||h*.5,10,h-10);
+      prey.push({
+        x:.5+(x/w-.5)/sc,y:.5+(y/h-.5)/sc,z,
+        vx:(rand(seed+5)-.5)*.018,vy:(rand(seed+6)-.5)*.011,
+        seed,born:now,ttl:now+19,
+        capturedAt:-1,rope:-1,segment:0,curious:true,
+        reactionUntil:0,reaction:'drifting',reactionCooldown:now+1,
+        hold:.70+.46*rand(seed+7)
+      });
+      counts.offered++;return true;
+    }
     if(type==='feeding' && activeAnimal && activeRopes.length){
       // Debug-only placement near a real moving tentacle; collision remains physical.
       const available=activeRopes.filter(r=>r.kind!=='oral'&&r.points?.length>9);

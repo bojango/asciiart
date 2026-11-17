@@ -14,7 +14,7 @@ html,body { width:100%; height:100%; margin:0; padding:0; overflow:hidden; backg
 body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono",monospace; -webkit-font-smoothing:antialiased; }
 .app { display:grid; grid-template-rows:minmax(0,3fr) 37px minmax(0,1fr); height:100vh; height:100dvh; width:100%; background:var(--bg); overflow:hidden; }
 .art { width:100%; position:relative; min-height:0; overflow:hidden; background:#03060b; }
-.art canvas { display:block; width:100%; height:100%; touch-action:manipulation; }
+.art canvas { display:block; width:100%; height:100%; touch-action:none; -webkit-user-select:none; user-select:none; }
 .art:after { content:""; position:absolute; inset:0; pointer-events:none; background:radial-gradient(ellipse 75% 85% at 50% 46%,transparent 40%,rgba(1,3,8,.34) 100%); }
 .hud { position:absolute; z-index:2; color:rgba(156,178,202,.45); font-size:10px; letter-spacing:.13em; line-height:1.8; pointer-events:none; text-transform:uppercase; }
 .hud.top-left { top:17px; left:20px; }
@@ -85,12 +85,12 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
 
 
 
-/* Independent LIFE/WEATHER developer tabs occupy the existing lower panel. */
+/* Independent WEATHER / LIFE / SENSE tabs use the same compact lower panel. */
 .dev-tabs{display:flex;gap:3px;align-items:center;flex:0 0 auto}
 .dev-tabs button{font-size:9px;padding:4px 5px;background:transparent;border:1px solid #24453d;color:#8cb6a6}
 .dev-tabs button[aria-pressed="true"]{color:#d5f4e4;background:#214b3b}
-.dev-panel .effect-grid[hidden],.eco-panel[hidden]{display:none!important}
-.dev-panel.life-mode .preset-group{display:none}
+.dev-panel .effect-grid[hidden],.eco-panel[hidden],.sense-panel[hidden]{display:none!important}
+.dev-panel.life-mode .preset-group,.dev-panel.sense-mode .preset-group{display:none}
 .eco-panel{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;gap:5px;color:#9ec8b8}
 .eco-summary{font-size:9px;white-space:normal;flex:none;line-height:1.2}
 .eco-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(3,1fr);flex:1;gap:3px 10px;min-height:0}
@@ -107,6 +107,17 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
 .eco-tools.eco-actions small{display:none}
 .eco-panel{overflow-y:auto;scrollbar-width:thin;flex-shrink:0;min-height:140px}
 @media(max-width:480px){.eco-tools.eco-actions button{min-width:35px;padding:3px 4px}}
+.sense-panel{min-height:0;flex:1;overflow-y:auto;overscroll-behavior:contain;display:flex;flex-direction:column;gap:6px;font-size:10px;scrollbar-width:thin}
+.sense-description{font:9px/1.35 ui-monospace,monospace;color:#a0c0b5}
+.sense-row{display:flex;align-items:center;gap:8px;min-height:26px;padding:2px 0;border-top:1px solid #23372e}
+.sense-row strong{font-weight:600;min-width:63px;color:#c6e7d8}
+.sense-row button{background:#000;border-color:#627b71;color:#ddd;padding:5px 8px;min-width:64px}
+.sense-row button[aria-pressed="true"]{background:#fff;color:#000;border-color:#fff}
+.sense-row output{font-size:9px;white-space:nowrap;color:#9cbcab}
+.sense-row label{display:flex;align-items:center;gap:7px}
+.sense-guide{font-size:9px;line-height:1.4;color:#bddbcf}
+.sense-privacy{font-size:8px;line-height:1.25;color:#82a397}
+@media(max-width:480px){.sense-panel{gap:3px;font-size:9px}.sense-description,.sense-guide{font-size:8px}.sense-row{min-height:23px;padding:1px 0;gap:5px}.sense-row strong{min-width:55px}.sense-row button{min-width:57px;padding:4px 6px}.sense-row output{font-size:8px}.sense-privacy{font-size:8px}}
 @media(prefers-reduced-motion:reduce){.led{box-shadow:none}}
 
 .live-indicator{display:inline-block;width:6px;height:6px;border-radius:50%;background:#39ed70;vertical-align:middle;box-shadow:0 0 9px rgba(65,255,113,.48);animation:liveBlink 1.5s ease-in-out infinite}
@@ -134,7 +145,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
 <main class="app" aria-label="Procedural ASCII art experiment">
   <section class="art" id="art" aria-label="Animated ASCII jellyfish with bioluminescent tentacles and moving ASCII sea life">
     <canvas id="sea" role="img" aria-label="Colourful animated ASCII jellyfish in a dark deep-sea scene"></canvas>
-    <div class="hud top-left">PELAGIC <strong>/</strong> 016.6<br>LIVING ECOSYSTEM</div>
+    <div class="hud top-left">PELAGIC <strong>/</strong> 017<br>SENSORY ECOSYSTEM</div>
     <div class="hud top-right"><span id="status">LIVE</span> <span id="liveDot" class="live-indicator" aria-label="Animation running"></span></div>
     <div class="hud bottom-left">MEDUSA <strong>ASTRALIS</strong></div>
     <div class="hud bottom-right">DEPTH <strong>2480 M</strong><br>PROCEDURAL MOTION</div>
@@ -156,7 +167,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
   <section class="code" id="code" aria-label="Continuously scrolling generative animation source code">
     <div class="code-inner" id="codeInner" aria-hidden="true"></div>
     <aside class="dev-panel" id="devPanel" hidden aria-label="Environmental simulation developer controls">
-      <header><h2>DEV / CONTROL</h2><div class="dev-tabs"><button id="devTabWeather" type="button" aria-pressed="true">WEATHER</button><button id="devTabLife" type="button" aria-pressed="false">LIFE</button></div><span class="dev-mode" id="weatherModeBadge">LIVE WEATHER</span><div class="preset-group"><label for="weatherPreset">PRESET</label><select id="weatherPreset" aria-label="Weather preset"><option value="custom">Custom</option><option value="calm">Calm</option><option value="storm">Storm</option><option value="cold">Cold</option><option value="heat">Heatwave</option><option value="night">Night</option><option value="mist">Mist</option></select></div><button id="devClose" type="button" aria-label="Close developer panel">×</button></header>
+      <header><h2>DEV / CONTROL</h2><div class="dev-tabs"><button id="devTabWeather" type="button" aria-pressed="true">WEATHER</button><button id="devTabLife" type="button" aria-pressed="false">LIFE</button><button id="devTabSense" type="button" aria-pressed="false">SENSE</button></div><span class="dev-mode" id="weatherModeBadge">LIVE WEATHER</span><div class="preset-group"><label for="weatherPreset">PRESET</label><select id="weatherPreset" aria-label="Weather preset"><option value="custom">Custom</option><option value="calm">Calm</option><option value="storm">Storm</option><option value="cold">Cold</option><option value="heat">Heatwave</option><option value="night">Night</option><option value="mist">Mist</option></select></div><button id="devClose" type="button" aria-label="Close developer panel">×</button></header>
       <div class="weather-source" id="weatherSource">
         <div class="source-row"><button id="weatherModeLive" type="button" aria-pressed="true">LIVE</button><button id="weatherModeTest" type="button" aria-pressed="false">TEST</button><span class="source-status" id="weatherStatus" aria-live="polite">Connecting…</span></div>
         <div class="source-row"><input class="location-entry" id="weatherCity" aria-label="Weather location" placeholder="Town or city" value="Lancaster"><button id="setWeatherCity" type="button">SET</button><button id="weatherUseGPS" type="button" aria-label="Use device location">GPS</button><button id="weatherRefresh" type="button" aria-label="Refresh live weather">↻</button></div>
@@ -169,6 +180,14 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
         <div class="eco-tools"><label>Activity <input id="ecoRate" aria-label="Ecosystem event frequency" type="range" min="0.55" max="2" step="0.05" value="1"></label><output id="ecoRateValue">1.00×</output></div>
         <div class="eco-tools eco-actions"><button type="button" data-spawn="bloom">BLOOM</button><button type="button" data-spawn="prey">PREY</button><button type="button" data-spawn="fish">FISH</button><button type="button" data-spawn="feeding">FEED</button><button type="button" data-spawn="jellyfish">JELLY</button><button type="button" data-spawn="octopus">OCTO</button><button type="button" id="ecoReset">CLEAR</button><small>Simulated encounters</small></div>
       </section>
+      <section class="sense-panel" id="sensePanel" hidden aria-label="Device sensory interactions">
+        <div class="sense-description">A living creature, not a remote control. Sensor input changes currents and curiosity; reactions aren't guaranteed.</div>
+        <div class="sense-row"><strong>TILT</strong><button id="senseMotion" type="button" aria-pressed="false">ENABLE</button><output id="senseMotionStatus" aria-live="polite">OFF</output></div>
+        <div class="sense-row"><strong>CAMERA</strong><button id="senseCamera" type="button" aria-pressed="false">ENABLE</button><output id="senseCameraStatus" aria-live="polite">OFF</output></div>
+        <div class="sense-row"><label><input id="senseTouch" type="checkbox" checked><strong>TOUCH</strong></label><output id="senseTouchStatus">ACTIVE</output></div>
+        <div class="sense-guide">TAP = ripple · HOLD = invite curiosity · DRAG = current · DOUBLE TAP = offer tiny prey</div>
+        <div class="sense-privacy">Motion and camera are opt-in. Camera movement/face cues are analysed only on this device. Only a tiny previous frame is held briefly in memory to detect movement. Nothing is saved or uploaded. Sensors stop when you leave the page.</div>
+      </section>
       <div class="dev-footer"><button type="button" id="simulatePresence">PRESENCE</button><button type="button" id="simulateTouch">TOUCH</button><button type="button" id="installationMode">FULL ART</button><span class="readout" id="devReadout">Z —</span></div>
     </aside>
   </section>
@@ -176,6 +195,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
 <script src="./environment.js"></script>
 <script src="./greenwood.js"></script>
 <script src="./ecosystem.js"></script>
+<script src="./senses.js"></script>
 <script>
 (()=>{'use strict';
   const canvas=document.getElementById('sea');
@@ -187,7 +207,9 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
   const environment=window.PelagicEnvironment;
   const greenwood=window.PelagicGreenwood;
   const ecosystem=window.PelagicEcosystem;
+  const senses=window.PelagicSenses;
   if(!ecosystem)throw Error('PELAGIC ecosystem module missing');
+  if(!senses)throw Error('PELAGIC sensory module missing');
   if(!greenwood)throw Error('GREENWOOD scene module missing');
   let currentScene='pelagic';try{const requested=new URLSearchParams(location.search).get('scene');currentScene=requested==='greenwood'?'greenwood':requested==='pelagic'?'pelagic':localStorage.getItem('pelagic.scene')==='greenwood'?'greenwood':'pelagic';}catch(_){}
   if(!environment)throw Error('Environment adapter missing');
@@ -204,7 +226,8 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     ceilingGlide:false,glideDirection:1,glideStart:0,
     hunger:.52,feedGlow:0,feedingUntil:0,digestUntil:0,
     mood:'exploring',moodUntil:0,nextMoodDecision:0,curiosity:.52,
-    encounterId:null,investigatingUntil:0,nextInvestigateDecision:0 };
+    encounterId:null,investigatingUntil:0,nextInvestigateDecision:0,
+    nextPetDecision:0,petResponseUntil:0 };
   // Smooth, seeded random motion: no teleporting targets, no repeating L/R loop.
   const noise=(time,seed)=>{
     const cell=Math.floor(time),f=time-cell;
@@ -398,6 +421,8 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     // Temperament, memory and appetite: independent of weather and rendering.
     const temper=.65+.30*noise(time*.033,901)+.17*noise(time*.11,27);
     const startleActive=time<a.startledUntil;
+    // Attention fades naturally; a single touch/camera cue cannot lock Z forever.
+    a.interest=ease(a.interest,0,.22,dt);
     a.hunger=clamp(a.hunger+dt*.0005,.05,1);
     a.feedGlow=ease(a.feedGlow,0,.72,dt);
     const encounter=ecosystem.interest(a,{width,height});
@@ -514,6 +539,18 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
       const curiosity=encounter.strength*(1-topProximity*.8)*(.7+.3*a.energy);
       fx+=clamp((encounter.x-a.x)*.21,-29,29)*curiosity;
       fy+=clamp((encounter.y-a.y)*.13,-15,15)*curiosity;
+    }
+    // A stationary hand may invite the jellyfish's attention. It chooses
+    // probabilistically and gently; the pointer never becomes a target lock.
+    const pet=senses.getInterest(time);
+    if(pet&&time>a.nextPetDecision){
+      a.petResponseUntil=Math.random()<.43?time+3.5+Math.random()*3:0;
+      a.nextPetDecision=time+5+Math.random()*4;
+    }
+    if(pet&&time<a.petResponseUntil&&!startleActive){
+      fx+=clamp((pet.x-a.x)*.075,-17,17)*pet.strength;
+      fy+=clamp((pet.y-a.y)*.067,-12,12)*pet.strength;
+      a.energy=ease(a.energy,Math.min(1.25,a.energy+.05),.7,dt);
     }
     // Distant, soft restoring currents: no sudden reversal at a hard wall.
     const meanderY=height*(.46+.09*noise(time*.055,737));
@@ -1098,6 +1135,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     drawingHero=false;
     ecosystem.draw(ctx,'front',time,swimmer,{width,height,radius});
     drawDepthParticles(time,'front');
+    senses.draw(ctx,{width,height});
     setFont(font);
   }
   const escapeHTML=(s)=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -1162,8 +1200,9 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     currentScene=force||(currentScene==='pelagic'?'greenwood':'pelagic');
     try{localStorage.setItem('pelagic.scene',currentScene);}catch(_){ }
     const forest=currentScene==='greenwood';
+    if(forest){senses.stopCamera();senses.stopMotion();} // no sensors running in another scene
     document.getElementById('sceneName').textContent=forest?'◇ GREENWOOD':'◌ PELAGIC';
-    document.querySelector('.hud.top-left').innerHTML=forest?'GREENWOOD <strong>/</strong> 002<br>CINEMATIC CLEARING':'PELAGIC <strong>/</strong> 016.6<br>LIVING ECOSYSTEM';
+    document.querySelector('.hud.top-left').innerHTML=forest?'GREENWOOD <strong>/</strong> 002<br>CINEMATIC CLEARING':'PELAGIC <strong>/</strong> 017<br>SENSORY ECOSYSTEM';
     document.querySelector('.hud.bottom-left').innerHTML=forest?'THE <strong>OLD GROVE</strong>':'MEDUSA <strong>ASTRALIS</strong>';
     document.querySelector('.hud.bottom-right').innerHTML=forest?'FIELD STUDY <strong>01</strong><br>LAYERS / LIGHT / WIND':'DEPTH <strong>2480 M</strong><br>PROCEDURAL MOTION';
     document.getElementById('colorName').textContent=forest?greenwood.season:palettes[paletteIndex].name;
@@ -1227,15 +1266,50 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     document.getElementById('ecoRate').value=state.rate;
     document.getElementById('ecoRateValue').textContent=`${state.rate.toFixed(2)}×`;
   }
-  function setDevTab(life){
-    document.getElementById('weatherControls').hidden=life;
-    document.getElementById('weatherSource').hidden=life;
+  let activeDevTab='weather';
+  function setDevTab(tab){
+    activeDevTab=tab;
+    const weather=tab==='weather',life=tab==='life',sense=tab==='sense';
+    document.getElementById('weatherControls').hidden=!weather;
+    document.getElementById('weatherSource').hidden=!weather;
     document.getElementById('ecosystemPanel').hidden=!life;
-    document.getElementById('devTabWeather').setAttribute('aria-pressed',String(!life));
-    document.getElementById('devTabLife').setAttribute('aria-pressed',String(life));
+    document.getElementById('sensePanel').hidden=!sense;
+    for(const key of ['weather','life','sense']){
+      const id='devTab'+key[0].toUpperCase()+key.slice(1);
+      document.getElementById(id).setAttribute('aria-pressed',String(tab===key));
+    }
     devPanel.classList.toggle('life-mode',life);
+    devPanel.classList.toggle('sense-mode',sense);
     if(life)syncEcosystemControls();
+    if(sense)syncSenseControls();
+    if(sense)document.getElementById('weatherModeBadge').textContent='SENSORY INPUT';
+    if(life)document.getElementById('weatherModeBadge').textContent='LIFE AUTO';
+    if(weather)updateWeatherStatus();
   }
+  function syncSenseControls(){
+    const state=senses.state();
+    document.getElementById('senseMotion').textContent=state.motionEnabled?'STOP':'ENABLE';
+    document.getElementById('senseMotion').setAttribute('aria-pressed',String(state.motionEnabled));
+    document.getElementById('senseMotionStatus').textContent=state.motion;
+    document.getElementById('senseCamera').textContent=state.cameraEnabled?'STOP':'ENABLE';
+    document.getElementById('senseCamera').setAttribute('aria-pressed',String(state.cameraEnabled));
+    document.getElementById('senseCameraStatus').textContent=state.camera;
+    document.getElementById('senseTouch').checked=state.touch;
+    document.getElementById('senseTouchStatus').textContent=state.touch?'ACTIVE':'OFF';
+  }
+  document.getElementById('senseMotion').addEventListener('click',async()=>{
+    if(senses.state().motionEnabled)senses.stopMotion();
+    else await senses.startMotion(); // Called directly inside the user's tap.
+    syncSenseControls();
+  });
+  document.getElementById('senseCamera').addEventListener('click',async()=>{
+    if(senses.state().cameraEnabled)senses.stopCamera();
+    else await senses.startCamera();
+    syncSenseControls();
+  });
+  document.getElementById('senseTouch').addEventListener('change',e=>{
+    senses.setTouchEnabled(e.target.checked);syncSenseControls();
+  });
   for(const [key,title] of [['snow','Marine snow'],['blooms','Glowing blooms'],['prey','Tiny prey'],['fish','Small fish'],['rare','Rare visitors']]){
     const label=document.createElement('label');label.className='eco-switch';
     const input=document.createElement('input');input.type='checkbox';input.dataset.species=key;input.setAttribute('aria-label',title);
@@ -1258,8 +1332,9 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     }
     else if(e.target.id==='ecoReset')ecosystem.clear();
   });
-  document.getElementById('devTabWeather').addEventListener('click',()=>setDevTab(false));
-  document.getElementById('devTabLife').addEventListener('click',()=>setDevTab(true));
+  document.getElementById('devTabWeather').addEventListener('click',()=>setDevTab('weather'));
+  document.getElementById('devTabLife').addEventListener('click',()=>setDevTab('life'));
+  document.getElementById('devTabSense').addEventListener('click',()=>setDevTab('sense'));
   function syncDeveloperControls(){
     const {values,enabled,mode}=environment.state();
     const live=mode==='live';
@@ -1314,7 +1389,11 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     devPanel.hidden=!show;codeBox.classList.toggle('dev-active',show);
     devToggle.setAttribute('aria-expanded',String(show));
     devToggle.setAttribute('aria-pressed',String(show));
-    if(show)syncDeveloperControls();
+    if(show){
+      if(activeDevTab==='weather')syncDeveloperControls();
+      if(activeDevTab==='life')syncEcosystemControls();
+      if(activeDevTab==='sense')syncSenseControls();
+    }
   }
   devToggle.addEventListener('click',()=>toggleDeveloper());
   document.getElementById('devClose').addEventListener('click',()=>toggleDeveloper(false));
@@ -1331,17 +1410,46 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
   document.getElementById('exitInstallation').addEventListener('click',()=>toggleInstallation(false));
   document.getElementById('simulatePresence').addEventListener('click',()=>signalPresence(1));
   document.getElementById('simulateTouch').addEventListener('click',()=>signalTouch(swimmer.x+radius*.3,swimmer.y+radius*.13));
-  canvas.addEventListener('pointerdown',e=>{
+  // Phone gestures disturb the surrounding water, not steer the animal.
+  const pointerCoords=e=>{
     const bounds=canvas.getBoundingClientRect();
-    signalTouch(e.clientX-bounds.left,e.clientY-bounds.top);
+    return {x:e.clientX-bounds.left,y:e.clientY-bounds.top};
+  };
+  canvas.addEventListener('pointerdown',e=>{
+    if(currentScene!=='pelagic')return;
+    if(e.pointerType==='touch')e.preventDefault();
+    const p=pointerCoords(e);
+    if(canvas.setPointerCapture)try{canvas.setPointerCapture(e.pointerId);}catch(_){}
+    senses.pointerDown(e.pointerId,p.x,p.y,t);
   });
-  // A stable integration seam for future presence, touch and smart-home input.
-  // The website never gains control over devices or stores credentials.
+  canvas.addEventListener('pointermove',e=>{
+    if(currentScene!=='pelagic')return;
+    const p=pointerCoords(e);
+    senses.pointerMove(e.pointerId,p.x,p.y,t);
+  });
+  canvas.addEventListener('pointerup',e=>{
+    const p=pointerCoords(e);
+    senses.pointerUp(e.pointerId,p.x,p.y,t);
+    if(canvas.hasPointerCapture?.(e.pointerId))canvas.releasePointerCapture(e.pointerId);
+  });
+  canvas.addEventListener('pointercancel',e=>senses.pointerCancel(e.pointerId));
+  // Local sensory events bias autonomy but never move the creature directly.
+  senses.setCallbacks({
+    onPresence:strength=>{if(currentScene==='pelagic')signalPresence(strength);},
+    onStartle:()=>{if(currentScene==='pelagic')signalTouch(swimmer.x+radius*.2,swimmer.y);},
+    onFood:({x,y})=>{
+      if(currentScene!=='pelagic')return false;
+      return ecosystem.spawn('offered',{x,y,z:swimmer.z});
+    },
+  });
+  // A stable integration seam for future presence, touch and wall pairing.
+  // No camera images or device motion values leave this browser.
   window.PELAGIC=Object.freeze({
     environment: Object.freeze({setInput:environment.setInput,setEnabled:environment.setEnabled,preset:environment.preset}),
     ecosystem: Object.freeze({setEnabled:ecosystem.setEnabled,setRate:ecosystem.setRate,spawn:ecosystem.spawn,state:ecosystem.state}),
     presence: strength=>signalPresence(strength),
     touch: (x,y)=>signalTouch(x,y),
+    senses:Object.freeze({state:senses.state,stopCamera:senses.stopCamera,stopMotion:senses.stopMotion}),
     debug: ()=>({x:swimmer.x,y:swimmer.y,z:swimmer.z,depthGoal:swimmer.depthGoal,depthChanges:swimmer.depthChanges,depthFog:distanceFog(),depthRush:t<swimmer.depthRushUntil,depthRushCount:swimmer.depthRushCount,closeVisits:swimmer.closeVisits,closeApproach:t<swimmer.closeVisitUntil,closeRetreat:t<swimmer.closeRetreatUntil,depthLayers:{behind:stars.filter(s=>s.z>swimmer.z).length,front:stars.filter(s=>s.z<=swimmer.z).length},angle:swimmer.angle,scale:bodyScale(),velocity:[swimmer.vx,swimmer.vy,swimmer.vz],thrust:swimmer.thrust,ceilingGlide:swimmer.ceilingGlide,streamline:swimmer.streamline,burstActive:t<swimmer.burstUntil,hunger:swimmer.hunger,feedGlow:swimmer.feedGlow,mood:swimmer.mood,ecosystem:ecosystem.state(),behaviour:swimmer.behaviour,effects:environmentalFx,penetrations:ropes.reduce((count,r)=>count+(r.points||[]).slice(1).filter(p=>!!bellPenetration(p.x,p.y)).length,0),ropeCount:ropes.length,ropeKinds:{marginal:ropes.filter(r=>r.kind!=='oral').length,oral:ropes.filter(r=>r.kind==='oral').length},oralHang:ropes.filter(r=>r.kind==='oral'&&r.points?.length>1).map(r=>({verticalRatio:(r.points[r.n].y-r.points[0].y)/(r.length*bodyScale()),horizontalOffset:(r.points[r.n].x-r.points[0].x)/(r.length*bodyScale())})),maxRootGap:Math.max(0,...ropes.map(r=>!r.points?.length?0:Math.hypot(r.points[1].x-r.points[0].x,r.points[1].y-r.points[0].y)/(r.step*bodyScale())))})
   });
   buildDeveloperControls();
@@ -1353,8 +1461,12 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
       t+=delta*speed;
       environment.tick(delta);
       weatherStatusTimer+=delta;
-      if(weatherStatusTimer>3){weatherStatusTimer=0;if(!devPanel.hidden && !devPanel.classList.contains('life-mode')){syncDeveloperControls();}}
+      if(weatherStatusTimer>3){weatherStatusTimer=0;if(!devPanel.hidden && activeDevTab==='weather'){syncDeveloperControls();}}
       environmentalFx=environment.effects();
+      const water=currentScene==='pelagic'?senses.update(delta*speed,t):{windX:0,windY:0};
+      environmentalFx={...environmentalFx,
+        windX:clamp((environmentalFx.windX||0)+water.windX,-50,50),
+        windY:clamp((environmentalFx.windY||0)+water.windY,-42,42)};
       if(currentScene==='pelagic'){swim(delta*speed,t);}
       ropeDebt+=delta*speed;
       let steps=0;
@@ -1368,7 +1480,8 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
       scrollCode(delta);
       drawDebt+=delta;
       if(drawDebt>=1/30){render(t);drawDebt=0;
-        if(!devPanel.hidden)document.getElementById('devReadout').textContent=currentScene==='greenwood'?`GROVE · ${greenwood.season}`:devPanel.classList.contains('life-mode')?`CATCH ${ecosystem.state().counts.preyCaught} · VISIT ${ecosystem.state().counts.visitors}`:`Z ${swimmer.z.toFixed(1)} · ${bodyScale().toFixed(2)}× · ${t<swimmer.closeVisitUntil?'NEAR':t<swimmer.closeRetreatUntil?'RETURN':swimmer.behaviour.slice(0,5).toUpperCase()}`;
+        if(!devPanel.hidden&&activeDevTab==='sense'&&Math.floor(t*2)!==Math.floor((t-delta)*2))syncSenseControls();
+        if(!devPanel.hidden)document.getElementById('devReadout').textContent=currentScene==='greenwood'?`GROVE · ${greenwood.season}`:activeDevTab==='sense'?('TILT '+senses.state().motion+' · CAM '+senses.state().camera):devPanel.classList.contains('life-mode')?`CATCH ${ecosystem.state().counts.preyCaught} · VISIT ${ecosystem.state().counts.visitors}`:`Z ${swimmer.z.toFixed(1)} · ${bodyScale().toFixed(2)}× · ${t<swimmer.closeVisitUntil?'NEAR':t<swimmer.closeRetreatUntil?'RETURN':swimmer.behaviour.slice(0,5).toUpperCase()}`;
       }
     }
     requestAnimationFrame(frame);
