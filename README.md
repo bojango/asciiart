@@ -1,5 +1,15 @@
 # PELAGIC - Living ASCII
 
+## PELAGIC 016.5 — perceptible 3D approaches and retreats
+
+- **Why 016.4 looked static:** The Z state was changing, but `bodyScale()` had been frozen at 1.0 to avoid V16's extreme zooms. Very subtle fog and particles alone were insufficient to signal the jellyfish moving forwards/backwards on mobile.
+- Reintroduced modest, real **perspective size changes**, continuously linked to the simulated Z position: `bodyScale() = clamp(exp(-0.175 * z), 0.73, 1.32)`. The bell, anchors, oral arms, marginal filaments and feeding physics receive the same scale so nothing stretches independently. This is far gentler than the old 0.34–2.40 scale range.
+- **Occasional depth surges** (about half of swimming bursts) now commit to a new, bounded Z target and use a brief increased Z force. Ordinary bursts and gradual autonomous depth exploration remain, so the animal is neither static nor locked to a repeating zoom loop.
+- Maintained V16.4's depth-sorted ASCII particles, distance lighting, creature behaviour, tentacle physics, live weather, DEV tools, rare encounters and GREENWOOD.
+- The debug API adds `depthRush` and `depthRushCount`, with `debug().z`, `debug().scale` and `debug().depthGoal` available for monitoring.
+- **Simulated QA:** 360 seconds in a portrait viewport, seven depth surges, Z reaching approximately −1.76 to +2.01, scale from 0.73 to 1.32, and oral-arm length ratio 0.825–1.116. Root attachment gaps stayed ≤1.07× physical segment length. No JavaScript exceptions. This is not yet a Safari visual acceptance test.
+
+
 ## PELAGIC 016.4 — perceptible Z-axis movement without zoom
 
 - **Cause:** Depth physics was functioning, but V16.3 fixed the specimen scale at 1.0 and flattened perspective so near/far travel became nearly invisible. No movement regression was found in the Z-force integration.

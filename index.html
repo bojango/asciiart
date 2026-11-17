@@ -134,7 +134,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
 <main class="app" aria-label="Procedural ASCII art experiment">
   <section class="art" id="art" aria-label="Animated ASCII jellyfish with bioluminescent tentacles and moving ASCII sea life">
     <canvas id="sea" role="img" aria-label="Colourful animated ASCII jellyfish in a dark deep-sea scene"></canvas>
-    <div class="hud top-left">PELAGIC <strong>/</strong> 016.4<br>LIVING ECOSYSTEM</div>
+    <div class="hud top-left">PELAGIC <strong>/</strong> 016.5<br>LIVING ECOSYSTEM</div>
     <div class="hud top-right"><span id="status">LIVE</span> <span id="liveDot" class="live-indicator" aria-label="Animation running"></span></div>
     <div class="hud bottom-left">MEDUSA <strong>ASTRALIS</strong></div>
     <div class="hud bottom-right">DEPTH <strong>2480 M</strong><br>PROCEDURAL MOTION</div>
@@ -199,7 +199,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     strokePhase:0,stroke:0,pulse:0,pulseRate:0,thrust:0,travel:0,turn:0,initialised:false,
     z:.20,vz:0,energy:.7,curiousUntil:0,startledUntil:0,interest:0,startle:0,behaviour:'exploring',
     burstUntil:0,burstPower:0,nextBurstAt:8,streamline:0,
-    depthGoal:.20,nextDepthDecision:15,depthChanges:0,
+    depthGoal:.20,nextDepthDecision:15,depthChanges:0,depthRushUntil:0,depthRushCount:0,
     ceilingGlide:false,glideDirection:1,glideStart:0,
     hunger:.52,feedGlow:0,feedingUntil:0,digestUntil:0,
     mood:'exploring',moodUntil:0,nextMoodDecision:0,curiosity:.52,
@@ -210,9 +210,11 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     const u=f*f*f*(f*(f*6-15)+10);
     return 2*(rand(cell*11.71+seed)*(1-u)+rand((cell+1)*11.71+seed)*u)-1;
   };
-  // Z changes distance/atmosphere, not apparent specimen dimensions. Keep its
-  // anatomy, collision silhouette and oral-arm lengths stable at every depth.
-  const bodyScale=()=>1;
+  // A restrained visual depth scale makes a real approach/retreat readable.
+  // Every bell/rope/feeding coordinate shares the SAME factor, preserving
+  // anatomy. V16.3's fixed 1.0 made even large Z journeys look stationary.
+  // This range is deliberately far narrower than the old .34–2.40 zoom.
+  const bodyScale=()=>clamp(Math.exp(-swimmer.z*.175),.73,1.32);
   // Preserve the silhouette's apparent size while exposing depth through
   // atmospheric contrast and particles moving across the creature's plane.
   let drawingHero=false;
@@ -447,8 +449,10 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     }
     const desiredZ=clamp(curiousActive&&a.interest>.45?-1.35:
       investigating?encounter.z:a.depthGoal,-1.85,2.05);
-    const zForce=(desiredZ-a.z)*1.65-a.vz*2.10;
-    a.vz=clamp(a.vz+zForce*dt,burstActive?-1.35:-.76,burstActive?1.35:.76);
+    const depthRush=time<a.depthRushUntil;
+    const zForce=(desiredZ-a.z)*(depthRush?3.05:1.65)-a.vz*(depthRush?1.26:2.10);
+    const zLimit=depthRush?1.42:burstActive?1.04:.76;
+    a.vz=clamp(a.vz+zForce*dt,-zLimit,zLimit);
     a.z=clamp(a.z+a.vz*dt,-1.85,2.05);
 
     const prev=a.pulse;
@@ -529,9 +533,20 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     const a=swimmer;
     if(a.burstUntil>0 && time<a.burstUntil+.5)return false;
     const toward=rand(time*19.37+59)>.54;
-    // A quick retreat/approach in depth, plus an upward/diagonal kick.
-    const polarity=(a.z>1.64?-1:a.z<-1.45?1:toward?-1:1);
-    a.vz=clamp(a.vz+polarity*(.68+.48*power),-1.43,1.43);
+    // Most bursts are ordinary strokes. Occasionally the animal commits to
+    // an actual 3D approach/retreat lasting a few seconds, not a camera zoom.
+    const polarity=(a.z>1.45?-1:a.z<-1.31?1:toward?-1:1);
+    const depthSurge=rand(time*8.91+207)<.52;
+    if(depthSurge){
+      const distance=1.45+.43*rand(time*5.8+41);
+      a.depthGoal=clamp(a.z+polarity*distance,-1.76,1.97);
+      a.nextDepthDecision=Math.max(a.nextDepthDecision,time+8.5+rand(time+118)*4);
+      a.depthRushUntil=time+2.5+rand(time*1.91+66)*.8;
+      a.depthRushCount++;
+      a.vz=clamp(a.vz+polarity*(.90+.32*power),-1.42,1.42);
+    }else{
+      a.vz=clamp(a.vz+polarity*(.40+.28*power),-1.18,1.18);
+    }
     a.vx+=(rand(time*7.71+29)-.5)*65*power;
     // At the top, a burst goes mainly into Z or sideways, not into the wall.
     const upper=Math.min(height*.51,Math.max(radius*bodyScale()*1.4,height*.31));
@@ -1103,7 +1118,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     try{localStorage.setItem('pelagic.scene',currentScene);}catch(_){ }
     const forest=currentScene==='greenwood';
     document.getElementById('sceneName').textContent=forest?'◇ GREENWOOD':'◌ PELAGIC';
-    document.querySelector('.hud.top-left').innerHTML=forest?'GREENWOOD <strong>/</strong> 002<br>CINEMATIC CLEARING':'PELAGIC <strong>/</strong> 016.4<br>LIVING ECOSYSTEM';
+    document.querySelector('.hud.top-left').innerHTML=forest?'GREENWOOD <strong>/</strong> 002<br>CINEMATIC CLEARING':'PELAGIC <strong>/</strong> 016.5<br>LIVING ECOSYSTEM';
     document.querySelector('.hud.bottom-left').innerHTML=forest?'THE <strong>OLD GROVE</strong>':'MEDUSA <strong>ASTRALIS</strong>';
     document.querySelector('.hud.bottom-right').innerHTML=forest?'FIELD STUDY <strong>01</strong><br>LAYERS / LIGHT / WIND':'DEPTH <strong>2480 M</strong><br>PROCEDURAL MOTION';
     document.getElementById('colorName').textContent=forest?greenwood.season:palettes[paletteIndex].name;
@@ -1282,7 +1297,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     ecosystem: Object.freeze({setEnabled:ecosystem.setEnabled,setRate:ecosystem.setRate,spawn:ecosystem.spawn,state:ecosystem.state}),
     presence: strength=>signalPresence(strength),
     touch: (x,y)=>signalTouch(x,y),
-    debug: ()=>({x:swimmer.x,y:swimmer.y,z:swimmer.z,depthGoal:swimmer.depthGoal,depthChanges:swimmer.depthChanges,depthFog:distanceFog(),depthLayers:{behind:stars.filter(s=>s.z>swimmer.z).length,front:stars.filter(s=>s.z<=swimmer.z).length},angle:swimmer.angle,scale:bodyScale(),velocity:[swimmer.vx,swimmer.vy,swimmer.vz],thrust:swimmer.thrust,ceilingGlide:swimmer.ceilingGlide,streamline:swimmer.streamline,burstActive:t<swimmer.burstUntil,hunger:swimmer.hunger,feedGlow:swimmer.feedGlow,mood:swimmer.mood,ecosystem:ecosystem.state(),behaviour:swimmer.behaviour,effects:environmentalFx,penetrations:ropes.reduce((count,r)=>count+(r.points||[]).slice(1).filter(p=>!!bellPenetration(p.x,p.y)).length,0),ropeCount:ropes.length,ropeKinds:{marginal:ropes.filter(r=>r.kind!=='oral').length,oral:ropes.filter(r=>r.kind==='oral').length},oralHang:ropes.filter(r=>r.kind==='oral'&&r.points?.length>1).map(r=>({verticalRatio:(r.points[r.n].y-r.points[0].y)/(r.length*bodyScale()),horizontalOffset:(r.points[r.n].x-r.points[0].x)/(r.length*bodyScale())})),maxRootGap:Math.max(0,...ropes.map(r=>!r.points?.length?0:Math.hypot(r.points[1].x-r.points[0].x,r.points[1].y-r.points[0].y)/(r.step*bodyScale())))})
+    debug: ()=>({x:swimmer.x,y:swimmer.y,z:swimmer.z,depthGoal:swimmer.depthGoal,depthChanges:swimmer.depthChanges,depthFog:distanceFog(),depthRush:t<swimmer.depthRushUntil,depthRushCount:swimmer.depthRushCount,depthLayers:{behind:stars.filter(s=>s.z>swimmer.z).length,front:stars.filter(s=>s.z<=swimmer.z).length},angle:swimmer.angle,scale:bodyScale(),velocity:[swimmer.vx,swimmer.vy,swimmer.vz],thrust:swimmer.thrust,ceilingGlide:swimmer.ceilingGlide,streamline:swimmer.streamline,burstActive:t<swimmer.burstUntil,hunger:swimmer.hunger,feedGlow:swimmer.feedGlow,mood:swimmer.mood,ecosystem:ecosystem.state(),behaviour:swimmer.behaviour,effects:environmentalFx,penetrations:ropes.reduce((count,r)=>count+(r.points||[]).slice(1).filter(p=>!!bellPenetration(p.x,p.y)).length,0),ropeCount:ropes.length,ropeKinds:{marginal:ropes.filter(r=>r.kind!=='oral').length,oral:ropes.filter(r=>r.kind==='oral').length},oralHang:ropes.filter(r=>r.kind==='oral'&&r.points?.length>1).map(r=>({verticalRatio:(r.points[r.n].y-r.points[0].y)/(r.length*bodyScale()),horizontalOffset:(r.points[r.n].x-r.points[0].x)/(r.length*bodyScale())})),maxRootGap:Math.max(0,...ropes.map(r=>!r.points?.length?0:Math.hypot(r.points[1].x-r.points[0].x,r.points[1].y-r.points[0].y)/(r.step*bodyScale())))})
   });
   buildDeveloperControls();
   let weatherStatusTimer=0;
