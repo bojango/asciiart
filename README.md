@@ -1,5 +1,16 @@
 # PELAGIC - Living ASCII
 
+## PELAGIC 016.4 — perceptible Z-axis movement without zoom
+
+- **Cause:** Depth physics was functioning, but V16.3 fixed the specimen scale at 1.0 and flattened perspective so near/far travel became nearly invisible. No movement regression was found in the Z-force integration.
+- Restored genuine **near/far visual cues** using depth-sorted ASCII dust: particles can now pass *behind* or *in front of* the creature as it crosses their Z plane. Their apparent positions and sizes change continuously with relative depth, providing parallax and occlusion while the main creature remains a fixed size.
+- Deep positions slightly soften and dim the jellyfish's colours/opacity; closer positions restore clarity and luminosity. The marine environment and weather continue to affect the palette independently.
+- Depth decisions now carry a gentle probability bias away from an extreme, reducing long successive periods at the same end of the tank, without introducing a fixed route or deterministic back-and-forth animation.
+- DEV debug exposes `depthFog` and particle counts by `depthLayers.front`/`depthLayers.behind`, alongside the existing real Z/goal/depthChanges counters.
+- **QA:** 270 seconds of simulated browser runtime in a portrait-sized viewport. Z traversed roughly **−1.51 to +1.69**, nine depth decisions occurred, and **3–142** dust particles became foreground as depth changed. Creature scale stayed exactly **1**. Rope-root ratios stayed at or below **1.07×**, and the scene drew without exceptions.
+- Existing oral/marginal dynamics, feeding, visitors, weather, DEV controls, and GREENWOOD were not changed. iPhone Safari visual acceptance remains outstanding.
+
+
 ## PELAGIC 016.3 — flowing tentacle dynamics with stable specimen scale
 
 - **Oral arms:** Replaced the overly prescriptive per-point pose follower with a lightly shape-restored, damped Verlet spine. Broad travelling waves, inherited root motion, stronger inertia and mild bending stiffness give the central ribbons visible delayed movement, while length/vertical constraints prevent an accordion-like knot.

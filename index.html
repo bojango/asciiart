@@ -134,7 +134,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
 <main class="app" aria-label="Procedural ASCII art experiment">
   <section class="art" id="art" aria-label="Animated ASCII jellyfish with bioluminescent tentacles and moving ASCII sea life">
     <canvas id="sea" role="img" aria-label="Colourful animated ASCII jellyfish in a dark deep-sea scene"></canvas>
-    <div class="hud top-left">PELAGIC <strong>/</strong> 016.3<br>LIVING ECOSYSTEM</div>
+    <div class="hud top-left">PELAGIC <strong>/</strong> 016.4<br>LIVING ECOSYSTEM</div>
     <div class="hud top-right"><span id="status">LIVE</span> <span id="liveDot" class="live-indicator" aria-label="Animation running"></span></div>
     <div class="hud bottom-left">MEDUSA <strong>ASTRALIS</strong></div>
     <div class="hud bottom-right">DEPTH <strong>2480 M</strong><br>PROCEDURAL MOTION</div>
@@ -213,6 +213,10 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
   // Z changes distance/atmosphere, not apparent specimen dimensions. Keep its
   // anatomy, collision silhouette and oral-arm lengths stable at every depth.
   const bodyScale=()=>1;
+  // Preserve the silhouette's apparent size while exposing depth through
+  // atmospheric contrast and particles moving across the creature's plane.
+  let drawingHero=false;
+  const distanceFog=()=>clamp((swimmer.z+.65)/2.65,0,1);
   // Independent wildlife and feeding logic live in ecosystem.js.
   const wake=[];
   const ropes=[];
@@ -260,8 +264,8 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     const feed=clamp(swimmer.feedGlow||0,0,1);
     const feedShimmer=feed*(.50+.50*Math.sin(t*8+progress*17));
     const nighttime=1-environmentalFx.daylight;
-    const lumen=clamp(light+nighttime*5-environmentalFx.air*6+feedShimmer*17,0,100);
-    const alpha=opacity*(1-environmentalFx.air*.22)*(1+nighttime*.055);
+    const lumen=clamp(light+nighttime*5-environmentalFx.air*6+feedShimmer*17-(drawingHero?distanceFog()*10:0),0,100);
+    const alpha=opacity*(1-environmentalFx.air*.22)*(1+nighttime*.055)*(drawingHero?1-distanceFog()*.29:1);
     if(environmentalFx.enabled?.temperature){
       const c=getTemperatureTint();
       // Moving internal bands remain visible within each temperature colour.
@@ -301,15 +305,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     mist.addColorStop(0,colour(.26,24,.08+haze));mist.addColorStop(.55,colour(.7,17,.036+haze*.32));mist.addColorStop(1,'rgba(0,0,0,0)');
     ctx.fillStyle=mist;ctx.fillRect(0,0,width,height);
     setFont(font);
-    for(const s of stars){
-      const particleScale=clamp(Math.exp(-.38*s.z),.44,1.83);
-      const x=width*.5+(s.x-.5)*width*particleScale-(swimmer.x-width*.5)*.027*particleScale
-        +Math.sin(time*.2+s.phase)*5*particleScale+environmentalFx.windX*time*.05%(width*.06);
-      const y=((height*.5+(s.y-.5)*height*particleScale+time*s.v*2.4*particleScale)%(height+22)+(height+22))%(height+22);
-      const strength=(.06+s.s*.20)*(.72+.28*Math.sin(time*.8+s.phase))*clamp(1-Math.max(0,s.z)*.32,.30,1.1);
-      const char=s.s>.975?'*':s.s>.90?'+':s.s>.70?':':'.';
-      print(char,x,y,colour(.12+s.s*.62,72,strength),clamp(font*particleScale,5.5,font+3));
-    }
+    drawDepthParticles(time,'behind');
     for(let i=0;i<plankton.length;i++){
       const p=plankton[i],x=p.x*width+Math.sin(time*.45+p.phase)*15;
       const y=((p.y*height-time*p.drift*3)%(height+25)+(height+25))%(height+25);
@@ -322,6 +318,32 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
       const q=rand(i*19+8),fall=(time*(40+q*85)+rand(i*19+9)*height)%height;
       const x=((rand(i*19+12)*width+environmentalFx.windX*time*.45)%(width+22)+(width+22))%(width+22);
       print(i%5===0?'/':i%7===0?':':'|',x,fall,colour(.28,64,.055+q*.12),font*.78);
+    }
+  }
+  // Static 3D dust points are projected RELATIVE to the swimmer's changing Z.
+  // Crossing their depth plane makes them pass in front of, or behind, the
+  // bell. This restores a legible near/far journey without scaling the animal.
+  function drawDepthParticles(time,layer){
+    const behind=layer==='behind';
+    const starCount=stars.length;
+    for(let i=0;i<starCount;i++){
+      const s=stars[i],isBehind=s.z>swimmer.z;
+      if(isBehind!==behind)continue;
+      const relZ=s.z-swimmer.z;
+      const scale=clamp(Math.exp(-.29*relZ),.49,2.02);
+      const parallax=(s.x-.5)*width*scale;
+      const pan=(swimmer.x-width*.5)*(behind?.025:.070)*scale;
+      const x=width*.5+parallax-pan+Math.sin(time*.21+s.phase)*5*scale
+        +environmentalFx.windX*time*.04%(width*.06);
+      const fullHeight=height+22;
+      const y=((height*.5+(s.y-.5)*height*scale+time*s.v*2.4*scale)%fullHeight+fullHeight)%fullHeight;
+      const twinkle=.72+.28*Math.sin(time*.8+s.phase);
+      const frontOpacity=behind?.20:.16;
+      const strength=(.028+s.s*frontOpacity)*twinkle
+        *clamp(1-Math.max(0,relZ)*.30,.27,1);
+      const glyph=s.s>.979?'*':s.s>.91?'+':s.s>.71?':':'.';
+      const px=clamp(font*scale,5.4,font*1.65);
+      print(glyph,x,y,colour(.14+s.s*.58,behind?67:78,strength),px);
     }
   }
   // The bell remains one consistent size: only its scalloped edge flexes.
@@ -410,8 +432,17 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     // between them. No periodic zoom and no forced path through the screen.
     if(time>=a.nextDepthDecision){
       const choice=rand(time*2.37+211);
-      a.depthGoal=choice<.35?-1.32-.42*rand(time+8):choice<.84?1.24+.65*rand(time+17):-.20;
-      a.nextDepthDecision=time+20+rand(time*3.71+61)*14;
+      // A soft return bias prevents multiple consecutive long stays at one
+      // extreme, while exploration remains unpredictable and unscripted.
+      if(a.z>.78){
+        a.depthGoal=choice<.72?-1.10-.55*rand(time+8):.04+.30*rand(time+17);
+      }else if(a.z<-.78){
+        a.depthGoal=choice<.72?1.08+.70*rand(time+17):-.15+.36*rand(time+8);
+      }else{
+        a.depthGoal=choice<.47?-1.10-.55*rand(time+8):
+          choice<.94?1.08+.70*rand(time+17):-.16;
+      }
+      a.nextDepthDecision=time+23+rand(time*3.71+61)*16;
       a.depthChanges++;
     }
     const desiredZ=clamp(curiousActive&&a.interest>.45?-1.35:
@@ -997,13 +1028,16 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
       print(w.seed>.7?'+':'.',w.x,w.y,colour(.42+w.seed*.20,75,.19*light),font*.80);
     }
     setFont(font);
+    drawingHero=true;
     for(const rope of ropes)if(rope.kind==='back')drawRope(rope,time);
     drawBell(time);
     drawFeedGlow(time);
     for(const rope of ropes)if(rope.kind==='oral')drawRope(rope,time);
     for(const rope of ropes)if(rope.kind==='front')drawRope(rope,time);
     drawMotes(time);
+    drawingHero=false;
     ecosystem.draw(ctx,'front',time,swimmer,{width,height,radius});
+    drawDepthParticles(time,'front');
     setFont(font);
   }
   const escapeHTML=(s)=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -1038,7 +1072,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
       configureRopes.toString(),'',
       advanceOralArm.toString(),'',advanceRopes.toString(),'',
       drawOralArm.toString(),'',drawRope.toString(),'',
-      drawBackground.toString(),'',
+      drawBackground.toString(),'',drawDepthParticles.toString(),'',
       
       render.toString(),'',
       '// End of source. Return to the beginning.',
@@ -1069,7 +1103,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     try{localStorage.setItem('pelagic.scene',currentScene);}catch(_){ }
     const forest=currentScene==='greenwood';
     document.getElementById('sceneName').textContent=forest?'◇ GREENWOOD':'◌ PELAGIC';
-    document.querySelector('.hud.top-left').innerHTML=forest?'GREENWOOD <strong>/</strong> 002<br>CINEMATIC CLEARING':'PELAGIC <strong>/</strong> 016.3<br>LIVING ECOSYSTEM';
+    document.querySelector('.hud.top-left').innerHTML=forest?'GREENWOOD <strong>/</strong> 002<br>CINEMATIC CLEARING':'PELAGIC <strong>/</strong> 016.4<br>LIVING ECOSYSTEM';
     document.querySelector('.hud.bottom-left').innerHTML=forest?'THE <strong>OLD GROVE</strong>':'MEDUSA <strong>ASTRALIS</strong>';
     document.querySelector('.hud.bottom-right').innerHTML=forest?'FIELD STUDY <strong>01</strong><br>LAYERS / LIGHT / WIND':'DEPTH <strong>2480 M</strong><br>PROCEDURAL MOTION';
     document.getElementById('colorName').textContent=forest?greenwood.season:palettes[paletteIndex].name;
@@ -1248,7 +1282,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     ecosystem: Object.freeze({setEnabled:ecosystem.setEnabled,setRate:ecosystem.setRate,spawn:ecosystem.spawn,state:ecosystem.state}),
     presence: strength=>signalPresence(strength),
     touch: (x,y)=>signalTouch(x,y),
-    debug: ()=>({x:swimmer.x,y:swimmer.y,z:swimmer.z,depthGoal:swimmer.depthGoal,depthChanges:swimmer.depthChanges,angle:swimmer.angle,scale:bodyScale(),velocity:[swimmer.vx,swimmer.vy,swimmer.vz],thrust:swimmer.thrust,ceilingGlide:swimmer.ceilingGlide,streamline:swimmer.streamline,burstActive:t<swimmer.burstUntil,hunger:swimmer.hunger,feedGlow:swimmer.feedGlow,mood:swimmer.mood,ecosystem:ecosystem.state(),behaviour:swimmer.behaviour,effects:environmentalFx,penetrations:ropes.reduce((count,r)=>count+(r.points||[]).slice(1).filter(p=>!!bellPenetration(p.x,p.y)).length,0),ropeCount:ropes.length,ropeKinds:{marginal:ropes.filter(r=>r.kind!=='oral').length,oral:ropes.filter(r=>r.kind==='oral').length},oralHang:ropes.filter(r=>r.kind==='oral'&&r.points?.length>1).map(r=>({verticalRatio:(r.points[r.n].y-r.points[0].y)/(r.length*bodyScale()),horizontalOffset:(r.points[r.n].x-r.points[0].x)/(r.length*bodyScale())})),maxRootGap:Math.max(0,...ropes.map(r=>!r.points?.length?0:Math.hypot(r.points[1].x-r.points[0].x,r.points[1].y-r.points[0].y)/(r.step*bodyScale())))})
+    debug: ()=>({x:swimmer.x,y:swimmer.y,z:swimmer.z,depthGoal:swimmer.depthGoal,depthChanges:swimmer.depthChanges,depthFog:distanceFog(),depthLayers:{behind:stars.filter(s=>s.z>swimmer.z).length,front:stars.filter(s=>s.z<=swimmer.z).length},angle:swimmer.angle,scale:bodyScale(),velocity:[swimmer.vx,swimmer.vy,swimmer.vz],thrust:swimmer.thrust,ceilingGlide:swimmer.ceilingGlide,streamline:swimmer.streamline,burstActive:t<swimmer.burstUntil,hunger:swimmer.hunger,feedGlow:swimmer.feedGlow,mood:swimmer.mood,ecosystem:ecosystem.state(),behaviour:swimmer.behaviour,effects:environmentalFx,penetrations:ropes.reduce((count,r)=>count+(r.points||[]).slice(1).filter(p=>!!bellPenetration(p.x,p.y)).length,0),ropeCount:ropes.length,ropeKinds:{marginal:ropes.filter(r=>r.kind!=='oral').length,oral:ropes.filter(r=>r.kind==='oral').length},oralHang:ropes.filter(r=>r.kind==='oral'&&r.points?.length>1).map(r=>({verticalRatio:(r.points[r.n].y-r.points[0].y)/(r.length*bodyScale()),horizontalOffset:(r.points[r.n].x-r.points[0].x)/(r.length*bodyScale())})),maxRootGap:Math.max(0,...ropes.map(r=>!r.points?.length?0:Math.hypot(r.points[1].x-r.points[0].x,r.points[1].y-r.points[0].y)/(r.step*bodyScale())))})
   });
   buildDeveloperControls();
   let weatherStatusTimer=0;
