@@ -1,4 +1,4 @@
-/* EVENT HORIZON / 003 — independent procedural ASCII astronomical artwork.
+/* EVENT HORIZON / 004 — independent procedural ASCII astronomical artwork.
  * All rendering code is original. The visual direction comes from a supplied
  * reference video, not from the third-party source implementation.
  * Fictional planets: orbital periods obey P^2 proportional to a^3. The black
@@ -79,16 +79,16 @@
     const p = palettes[paletteIndex];
     // A translucent bloom beneath the glyphs supplies apparent gas luminosity.
     const r = view.hole;
-    const g = ctx.createRadialGradient(view.x, view.y, r * 0.36, view.x, view.y, r * 4.9);
-    g.addColorStop(0, rgba(p.high, 0.22));
-    g.addColorStop(0.16, rgba(p.high, 0.16));
-    g.addColorStop(0.30, rgba(p.mid, 0.18));
-    g.addColorStop(0.58, rgba(p.low, 0.10));
+    // Compact light pool: strong near the black hole, black within a few radii.
+    const g = ctx.createRadialGradient(view.x, view.y, r * 0.48, view.x, view.y, r * 3.05);
+    g.addColorStop(0, rgba(p.high, 0.27));
+    g.addColorStop(0.18, rgba(p.mid, 0.16));
+    g.addColorStop(0.52, rgba(p.low, 0.042));
     g.addColorStop(1, rgba(p.low, 0));
     ctx.save(); ctx.translate(view.x, view.y); ctx.rotate(discRoll);
-    ctx.scale(1, 0.49); ctx.translate(-view.x, -view.y);
+    ctx.scale(1, 0.42); ctx.translate(-view.x, -view.y);
     ctx.fillStyle = g;
-    ctx.fillRect(view.x - r * 4.9, view.y - r * 4.9, r * 9.8, r * 9.8);
+    ctx.fillRect(view.x - r * 3.05, view.y - r * 3.05, r * 6.1, r * 6.1);
     ctx.restore();
   }
 
@@ -108,44 +108,51 @@
     const wave2 = Math.cos(discRadius * 47.0 - flowing * 4.7 + 0.8 * Math.sin(time * 0.06));
     const wave3 = Math.sin(discRadius * 7.3 + flowing * 5.1);
     const texture = clamp(0.82 + 0.18 * wave1 + 0.11 * wave2 + 0.10 * wave3, 0.20, 1.32);
-    const edge = smooth(1.16, 1.50, discRadius) * (1 - smooth(4.25, 5.05, discRadius));
-    const radial = Math.pow(1.42 / Math.max(1.42, discRadius), 0.58);
-    const approaching = clamp(1.18 - u * 0.065, 0.80, 1.52);
-    const innerBloom = 0.92 * Math.exp(-Math.pow((discRadius - 1.48) / 0.34, 2));
-    const disc = (1.82 * edge * radial * texture + innerBloom) * approaching;
+    // Accreting gas is concentrated in a white-hot inner strip; the outer edge
+    // drops into black rapidly instead of holding a similarly bright silhouette.
+    const edge = smooth(1.12, 1.50, discRadius) * (1 - smooth(4.10, 5.0, discRadius));
+    const radial = Math.pow(1.45 / Math.max(1.45, discRadius), 0.48);
+    const approaching = clamp(1.14 - u * 0.052, 0.82, 1.48);
+    const innerBloom = 2.15 * Math.exp(-Math.pow((discRadius - 1.58) / 0.38, 2));
+    const outerFalloff = Math.exp(-Math.pow(Math.max(0, discRadius - 1.75) / 1.48, 1.7));
+    const disc = (2.75 * edge * radial * texture + innerBloom) * outerFalloff * approaching;
 
     // A broad upper arch evokes the far side magnified over the shadow.
     // This is deliberately illustrative, not a relativistic lens equation.
-    const top = smooth(0.10, 1.8, -v);
+    // A broad, softly deformed upper light ribbon, fading continuously into
+    // the main disc rather than drawing two concentric, outlined arches.
+    const top = smooth(-0.55, 1.65, -v);
     const phi = Math.atan2(v, u);
-    const haloNoise = 0.80 + 0.18 * Math.sin(13.2 * shadowDistance - 1.5 * phi - time * 0.055) +
-      0.12 * Math.cos(25.1 * shadowDistance + phi * 3.2 + time * 0.045);
-    const innerArch = Math.exp(-Math.pow((shadowDistance - 1.63) / (0.49 + top * 0.34), 2));
-    const outerArch = Math.exp(-Math.pow((shadowDistance - 2.64) / 0.61, 2));
-    const joining = 0.25 + 0.75 * top;
-    const lensed = (1.34 * innerArch + 0.34 * outerArch) * joining * haloNoise *
-      (0.82 + 0.18 * Math.cos(phi * 3 + time * 0.027));
-    // A very thin, irregular near-shadow light contour.
-    const photon = 0.92 * Math.exp(-Math.pow((shadowDistance - 1.07) / 0.082, 2)) *
-      (0.64 + 0.36 * Math.sin(phi * 2.1 + 0.65));
+    const haloNoise = 0.95 + 0.065 * Math.sin(9.2 * shadowDistance - phi - time * 0.045) +
+      0.045 * Math.cos(14.5 * shadowDistance + phi * 2.1 + time * 0.036);
+    const innerArch = Math.exp(-Math.pow((shadowDistance - 1.55) / (0.65 + top * 0.17), 2));
+    const outerArch = Math.exp(-Math.pow((shadowDistance - 2.45) / 0.80, 2));
+    const joining = 0.24 + 0.76 * top;
+    const lensed = (2.10 * innerArch + 0.30 * outerArch) * joining * haloNoise;
+    // Brighter, slightly feathered near-shadow ring, without a hard outline.
+    const photon = 2.20 * Math.exp(-Math.pow((shadowDistance - 1.085) / 0.135, 2)) *
+      (0.77 + 0.23 * Math.sin(phi * 2.0 + 0.65));
     const grain = hash((Math.floor(x / view.stepX) + 1500) * 157 + Math.floor(y / view.stepY) * 79);
     return { disc, lensed, photon, near: v > 0, shadowDistance, grain, discRadius,
-      brightness: Math.min(2.15, disc + lensed * (1 - clamp(disc * 0.38)) + photon),
+      brightness: Math.min(5.1, disc + lensed * (1 - clamp(disc * 0.28)) + photon),
       v };
   }
 
   // Quantised colour atlas avoids thousands of CSS string allocations per frame.
   const inkTable = palettes.map(p => Array.from({ length: 64 }, (_, i) => {
-    const heat = i / 63 * 1.85;
-    const mixLevel = clamp((heat - 0.08) / 0.94);
-    const rgb = mixLevel < 0.58 ? lerpRGB(p.low, p.mid, mixLevel / 0.58) :
-      lerpRGB(p.mid, p.high, (mixLevel - 0.58) / 0.42);
+    const heat = i / 63 * 4.5;
+    // Deep reds stay dark; amber becomes pale-gold, then white-hot near the rim.
+    const rgb = heat < 0.95 ? lerpRGB(p.low, p.mid, smooth(0.06, 0.95, heat)) :
+      heat < 2.0 ? lerpRGB(p.mid, p.high, smooth(0.95, 2.0, heat)) :
+      lerpRGB(p.high, [255, 249, 232], smooth(2.0, 3.65, heat));
     return Array.from({ length: 16 }, (_, alpha) => rgba(rgb, alpha / 15));
   }));
   function inkForHeat(heat, radius, grain) {
-    const tint = Math.round(clamp(heat * (0.90 + 0.26 * grain) / 1.85) * 63);
-    const fade = 1 - clamp((radius - 3.3) / 3.2) * 0.18;
-    const alpha = Math.round(clamp((0.38 + heat * 0.88 + (grain - 0.5) * 0.11) * fade, 0.24, 1.0) * 15);
+    const adjusted = Math.max(0, heat * (0.94 + 0.16 * grain));
+    const tint = Math.round(clamp(adjusted / 4.5) * 63);
+    // Outer letters disappear into black; the rim and near-side gas stay luminous.
+    const fade = 1 - 0.65 * smooth(2.1, 4.65, radius);
+    const alpha = Math.round(clamp((0.15 + adjusted * 0.52) * fade, 0.045, 1) * 15);
     return inkTable[paletteIndex][tint][alpha];
   }
   function markForHeat(heat, grain) {
@@ -167,9 +174,10 @@
         const withinShadow = gas.shadowDistance < 1.015;
         const back = withinShadow ? 0 : (gas.near ? 0 : gas.disc * 0.85) + gas.lensed;
         const front = (withinShadow && (!gas.near || gas.disc < 0.23)) ? 0 :
-          (gas.near ? gas.disc * 1.12 : 0) + (withinShadow ? 0 : gas.photon);
-        const value = heat => (heat < 0.072 || (heat < 0.17 && gas.grain < 0.22)) ? null :
-          [markForHeat(heat, gas.grain), inkForHeat(heat, gas.discRadius, gas.grain)];
+          (gas.near ? gas.disc * 1.36 : 0) + (withinShadow ? 0 : gas.photon);
+        const value = heat => (heat < 0.088 || (heat < 0.25 && gas.grain < 0.28)) ? null :
+          [markForHeat(heat, gas.grain), inkForHeat(heat, gas.shadowDistance, gas.grain),
+            heat > 2.6 && gas.shadowDistance < 2.30 && gas.grain > 0.74];
         const a = value(back), b = value(front);
         if (a || b) marks.push({ x: x + (gas.grain - 0.5) * sx * 0.14, y, a, b });
       }
@@ -180,8 +188,16 @@
     setFont(ctx, view.font * (highRes ? 1 : 1.10));
     for (const m of samples) {
       const v = front ? m.b : m.a;
-      if (v) print(ctx, v[0], m.x, m.y, v[1]);
+      if (!v) continue;
+      // Selective small highlights give the central ASCII actual luminous halos
+      // without the severe cost of blurring thousands of characters each frame.
+      if (v[2]) {
+        ctx.shadowBlur = 5;
+        ctx.shadowColor = v[1];
+      } else if (ctx.shadowBlur) ctx.shadowBlur = 0;
+      print(ctx, v[0], m.x, m.y, v[1]);
     }
+    ctx.shadowBlur = 0;
   }
   function drawShadow(ctx, view) {
     const r = view.hole * 1.014;
@@ -271,7 +287,7 @@
   }
   function cyclePalette() { paletteIndex = (paletteIndex + 1) % palettes.length; return palettes[paletteIndex].name; }
   function source() { return [
-    '// EVENT HORIZON / 003 — independent procedural ASCII',
+    '// EVENT HORIZON / 004 — independent procedural ASCII',
     '// Differentially rotating gas. Eight fictional worlds on Keplerian orbits.',
     '// The near/far disc and gravitational arch are illustrative, not ray tracing.',
     orbitPosition.toString(), sampleGas.toString(), sampleFrame.toString(), drawGasField.toString(),
