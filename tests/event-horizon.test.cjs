@@ -44,6 +44,7 @@ test('ASCII rendering is finite and leaves canvas state balanced at diverse size
   let saves = 0, restores = 0, glyphs = 0;
   const ctx = {
     save() { saves++; }, restore() { restores++; },
+    translate() {}, rotate() {}, scale() {},
     beginPath() {}, fill() {},
     arc(...args) { assert.ok(args.every(Number.isFinite)); },
     fillRect(...args) { assert.ok(args.every(Number.isFinite)); },
@@ -53,15 +54,28 @@ test('ASCII rendering is finite and leaves canvas state balanced at diverse size
   for (const [w, h] of [[320, 600], [390, 690], [512, 1112], [1400, 800]]) {
     for (const t of [0, 75, 1500]) horizon.draw(ctx, w, h, t, null, true);
   }
-  assert.equal(saves, 12);
-  assert.equal(restores, 12);
-  assert.ok(glyphs > 5000);
+  assert.ok(saves >= 12);
+  assert.equal(restores, saves);
+  assert.ok(glyphs > 15000);
+});
+
+test('the accretion disc fills most of a portrait frame with ASCII', () => {
+  const width=390,height=690,points=[];
+  const ctx={save(){},restore(){},translate(){},rotate(){},scale(){},beginPath(){},arc(){},fill(){},fillRect(){},
+    createRadialGradient(){return {addColorStop(){}}},
+    fillText(char,x,y){points.push({char,x,y})}
+  };
+  horizon.draw(ctx,width,height,40,null,true);
+  const disc=points.filter(p=>Math.abs(p.y-height*.51)<55 && Math.abs(p.x-width*.5)>90);
+  assert.ok(disc.length>250,`expected a wide, textured disc, got ${disc.length} characters`);
+  const extent=disc.reduce((a,p)=>[Math.min(a[0],p.x),Math.max(a[1],p.x)],[Infinity,-Infinity]);
+  assert.ok(extent[1]-extent[0]>width*0.73);
 });
 
 test('scene is registered without changing the old renderers', () => {
   const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
   assert.match(html, /const sceneOrder=\['pelagic','greenwood','event-horizon'\]/);
-  assert.match(html, /src=".\/event-horizon.js"/);
+  assert.match(html, /src=".\/event-horizon.js(?:\?v=\d+)?"/);
   assert.match(html, /horizon.draw\(ctx,width,height,time,null,highRes\)/);
   assert.match(html, /greenwood.draw\(ctx,width,height,time,environmentalFx,highRes\)/);
   assert.match(html, /drawBell\(time\)/);
