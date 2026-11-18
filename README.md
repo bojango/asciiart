@@ -1,13 +1,13 @@
 # PELAGIC - Living ASCII
 
-## EVENT HORIZON / 001 — third independent ASCII scene
+## EVENT HORIZON / 002 — visual rebuild
 
-- Switch between **PELAGIC**, **GREENWOOD** and **EVENT HORIZON** using the existing scene button. Direct launch: `?scene=event-horizon`. The chosen scene is stored in the browser.
-- EVENT HORIZON lives entirely in `event-horizon.js`. Eight fictional, textured ASCII planets follow continuous inclined 3D circular orbits; relative orbital periods follow Kepler's third law (`P² ∝ a³`). The closest planet takes 150 seconds per revolution at default speed; outer planets move more slowly. All periods are accelerated for the artwork rather than representing a real planetary system.
-- A black central shadow, stratified moving accretion gas, Doppler-inspired brightening and stylised photon-ring / lensing arcs create the reference-inspired black hole, using warm copper and amber characters by default. The disc has two alternative palettes. Sparse twinkling ASCII stars and depth sorting create perspective.
-- The new scene reuses the artwork canvas, speed, density, source-code panel and installation mode. The WEATHER/LIFE/SENSE developer controls are hidden while viewing EVENT HORIZON because they do not apply. Existing jellyfish, woodland, environment and sensor source files have not been edited.
-- **Physics scope:** orbit-period scaling, circular orbital projection, occlusion and near/far ordering are physically informed; planet types, sizes, time scale, bright accretion disc and gravitational-lensing outline are artistic approximations, not a relativistic N-body or ray-tracing simulation.
-- Test with `node --test tests/*.test.cjs`; additional EVENT HORIZON tests cover orbital periods, scene registration and rendering across viewport sizes. Visual review on iPhone and future Raspberry Pi hardware remains advisable.
+- Completely rebuilt the third scene's independent `event-horizon.js` rendering to make the black hole the composition's focal point: a wide diagonal ASCII accretion disc stretching almost the full artwork width, layered gold/orange/red luminous gas, a dark central shadow, a bright near-side stream and an illustrated gravitationally magnified upper arch.
+- Uses a fine character field sampled once per frame, with cached colour values, slowly moving temperature filaments, subtle rotation and soft ambient light. No dramatic periodic bursts or scripted events.
+- Retains eight distinct fictional ASCII planets with 3D orbital inclination, nearer/farther depth ordering, basic terminator shading, one ringed world and periods related through Kepler's third law (`P² ∝ a³`). Orbit timing is deliberately accelerated for observation. Planetary placement and apparent sizes are artistic, not a physical N-body model.
+- Keeps sparse ASCII stars, three colour palettes, HI/LO detail, speed adjustment, fullscreen installation, scene persistence and a dedicated code panel. Works with `?scene=event-horizon`.
+- The existing PELAGIC and GREENWOOD scene implementations remain unchanged. The third-party visual inspiration is **JIN2 (@jin_22ee)**; their repository forbids AI use of the original code, which has not been copied or adapted. This renderer is independent and based on the user-supplied video as visual direction.
+- Automated tests: `node --test tests/*.test.cjs`. A local standalone simulated canvas pass verified geometry and colour distribution, but **actual browser, iPhone Safari and Raspberry Pi frame-rate acceptance remain to be checked**.
 
 ## PELAGIC 017 — sensory awareness for iPhone
 
