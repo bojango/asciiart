@@ -1,5 +1,14 @@
 # PELAGIC - Living ASCII
 
+## EVENT HORIZON / 001 — third independent ASCII scene
+
+- Switch between **PELAGIC**, **GREENWOOD** and **EVENT HORIZON** using the existing scene button. Direct launch: `?scene=event-horizon`. The chosen scene is stored in the browser.
+- EVENT HORIZON lives entirely in `event-horizon.js`. Eight fictional, textured ASCII planets follow continuous inclined 3D circular orbits; relative orbital periods follow Kepler's third law (`P² ∝ a³`). The closest planet takes 150 seconds per revolution at default speed; outer planets move more slowly. All periods are accelerated for the artwork rather than representing a real planetary system.
+- A black central shadow, stratified moving accretion gas, Doppler-inspired brightening and stylised photon-ring / lensing arcs create the reference-inspired black hole, using warm copper and amber characters by default. The disc has two alternative palettes. Sparse twinkling ASCII stars and depth sorting create perspective.
+- The new scene reuses the artwork canvas, speed, density, source-code panel and installation mode. The WEATHER/LIFE/SENSE developer controls are hidden while viewing EVENT HORIZON because they do not apply. Existing jellyfish, woodland, environment and sensor source files have not been edited.
+- **Physics scope:** orbit-period scaling, circular orbital projection, occlusion and near/far ordering are physically informed; planet types, sizes, time scale, bright accretion disc and gravitational-lensing outline are artistic approximations, not a relativistic N-body or ray-tracing simulation.
+- Test with `node --test tests/*.test.cjs`; additional EVENT HORIZON tests cover orbital periods, scene registration and rendering across viewport sizes. Visual review on iPhone and future Raspberry Pi hardware remains advisable.
+
 ## PELAGIC 017 — sensory awareness for iPhone
 
 ### What changed
