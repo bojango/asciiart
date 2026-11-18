@@ -1,14 +1,15 @@
 # PELAGIC - Living ASCII
 
-## EVENT HORIZON / 003 — visual refinement
+## EVENT HORIZON / 004 — concentrated black-hole luminosity
 
-- Independent third scene, selected by the existing button or `?scene=event-horizon`.
-- Refined the black-hole artwork: brighter gold/amber gas near the inner disc, a stronger luminous shadow contour and soft bloom, with the overall accretion disc slightly smaller and tighter than V2.
-- Eight fictional worlds remain on smoothly animated, tilted 3D orbits, with orbital periods following Kepler's third law (`P² ∝ a³`). Expanded orbital footprint allows planets to travel partly offscreen; finer glyph samples, richer surface texture and small highlights add visual detail without noticeably enlarging the planets.
-- More numerous and more visible ASCII background stars, without overwhelming the centre.
-- Existing speed, detail, palette, installation mode, source viewer and saved-scene controls remain. The `index.html` script reference uses `event-horizon.js?v=3` to bypass stale browser caches.
-- PELAGIC and GREENWOOD rendering modules were not edited. The reference video is artwork by JIN2 (@jin_22ee). JIN2's repository prohibits AI use of their code; this scene is an independent implementation without copying it.
-- Relativistic light bending and accretion light remain an artistic approximation, not ray tracing. Local standalone runtime checks were performed; real-device and GitHub Pages visual/performance acceptance is still required.
+- Scene: `?scene=event-horizon`, selected using the existing three-way scene switcher.
+- Kept the V3 planetary system, orbital periods, 3D depth, stars, three palettes and artwork composition unchanged.
+- Black-hole visual revision: substantially hotter pale-gold/white ASCII glyphs around the central shadow, a stronger near-side accretion band, and a smoother, more luminous upper gravitational-light approximation. The broad red aura is reduced: brightness now falls off sharply towards black beyond the disc's inner regions.
+- Brightness mapping uses an extended heat colour ramp, spatial fading and selective small text-glow highlights, rather than increasing all letter opacity equally. The core remains black.
+- The foreground and background gas still animate with gentle differential orbital motion. The disc and light bending remain **artistically stylised**, not relativistic ray tracing.
+- `index.html` references `event-horizon.js?v=4` to refresh the script in mobile browsers. PELAGIC and GREENWOOD modules were **not modified**.
+- Visual inspiration was supplied by the user, with JIN2 (@jin_22ee) credited as the source artwork creator. Their published code prohibits AI use, and has not been copied or adapted.
+- Local rendering checks cover portrait size, multiple animation times, output coordinates and the existence of luminous ASCII highlights. Live iPhone/browser/GitHub Pages visual confirmation is still needed.
 
 
 ## PELAGIC 017 — sensory awareness for iPhone
