@@ -155,7 +155,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
   </section>
   <nav class="bar" aria-label="Animation controls">
     <div class="identity"><span id="led" class="led"></span><span>medusa.js</span><em>/ live source</em></div>
-    <button id="sceneToggle" class="scene-switch" type="button" aria-label="Switch between PELAGIC jellyfish and GREENWOOD forest" title="Switch between living ASCII scenes"><span id="sceneName">◌ PELAGIC</span></button>
+    <button id="sceneToggle" class="scene-switch" type="button" aria-label="Cycle through PELAGIC, GREENWOOD and EVENT HORIZON" title="Cycle through living ASCII scenes"><span id="sceneName">◌ PELAGIC</span></button>
     <div class="actions">
       <button id="color" type="button" aria-label="Change colour palette" title="Change colour palette"><i id="swatch" class="swatch"></i><span class="word" id="colorName">LUMEN</span></button>
       <button id="density" type="button" aria-label="Toggle ASCII detail" title="Toggle ASCII detail"><span id="densityName">HI-RES</span></button>
@@ -194,6 +194,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
 </main>
 <script src="./environment.js"></script>
 <script src="./greenwood.js"></script>
+<script src="./event-horizon.js"></script>
 <script src="./ecosystem.js"></script>
 <script src="./senses.js"></script>
 <script>
@@ -206,12 +207,19 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
   // Environmental values are computed in environment.js and do not own the animal.
   const environment=window.PelagicEnvironment;
   const greenwood=window.PelagicGreenwood;
+  const horizon=window.PelagicEventHorizon;
   const ecosystem=window.PelagicEcosystem;
   const senses=window.PelagicSenses;
   if(!ecosystem)throw Error('PELAGIC ecosystem module missing');
   if(!senses)throw Error('PELAGIC sensory module missing');
   if(!greenwood)throw Error('GREENWOOD scene module missing');
-  let currentScene='pelagic';try{const requested=new URLSearchParams(location.search).get('scene');currentScene=requested==='greenwood'?'greenwood':requested==='pelagic'?'pelagic':localStorage.getItem('pelagic.scene')==='greenwood'?'greenwood':'pelagic';}catch(_){}
+  if(!horizon)throw Error('EVENT HORIZON scene module missing');
+  const sceneOrder=['pelagic','greenwood','event-horizon'];
+  let currentScene='pelagic';try{
+    const requested=new URLSearchParams(location.search).get('scene');
+    const remembered=localStorage.getItem('pelagic.scene');
+    currentScene=sceneOrder.includes(requested)?requested:sceneOrder.includes(remembered)?remembered:'pelagic';
+  }catch(_){}
   if(!environment)throw Error('Environment adapter missing');
   let environmentalFx=environment.effects();
   const PI=Math.PI,TAU=PI*2;
@@ -1116,6 +1124,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
   }
   function render(time){
     if(currentScene==='greenwood'){greenwood.draw(ctx,width,height,time,environmentalFx,highRes);return;}
+    if(currentScene==='event-horizon'){horizon.draw(ctx,width,height,time,null,highRes);return;}
     centerX=swimmer.x;centerY=swimmer.y;
     drawBackground(time);
     ecosystem.draw(ctx,'behind',time,swimmer,{width,height,radius});
@@ -1140,6 +1149,12 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
   }
   const escapeHTML=(s)=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   function buildSource(){
+    if(currentScene==='event-horizon'){
+      const lines=horizon.source().split('\n');
+      sourceHeight=lines.length*15;
+      const once=lines.map((line,i)=>`<div class="line"><span class="ln">${String(i+1).padStart(3,'0')}</span><span class="src">${escapeHTML(line)||'&nbsp;'}</span></div>`).join('');
+      codeInner.innerHTML=once+once;sourceOffset=0;codeInner.style.transform='translate3d(0,0,0)';return;
+    }
     if(currentScene==='greenwood'){
       const lines=greenwood.source().split('\n');
       sourceHeight=lines.length*15;
@@ -1190,6 +1205,10 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     codeInner.style.transform=`translate3d(0,${-sourceOffset}px,0)`;
   }
   function changePalette(){
+    if(currentScene==='event-horizon'){
+      document.getElementById('colorName').textContent=horizon.cyclePalette();
+      document.getElementById('swatch').style.background=horizon.swatch;return;
+    }
     if(currentScene==='greenwood'){document.getElementById('colorName').textContent=greenwood.cycleSeason();return;}
     paletteIndex=(paletteIndex+1)%palettes.length;
     const p=palettes[paletteIndex];
@@ -1197,20 +1216,22 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     document.getElementById('swatch').style.background=p.swatch;
   }
   function switchScene(force){
-    currentScene=force||(currentScene==='pelagic'?'greenwood':'pelagic');
+    currentScene=sceneOrder.includes(force)?force:sceneOrder[(sceneOrder.indexOf(currentScene)+1)%sceneOrder.length];
     try{localStorage.setItem('pelagic.scene',currentScene);}catch(_){ }
-    const forest=currentScene==='greenwood';
-    if(forest){senses.stopCamera();senses.stopMotion();} // no sensors running in another scene
-    document.getElementById('sceneName').textContent=forest?'◇ GREENWOOD':'◌ PELAGIC';
-    document.querySelector('.hud.top-left').innerHTML=forest?'GREENWOOD <strong>/</strong> 002<br>CINEMATIC CLEARING':'PELAGIC <strong>/</strong> 017<br>SENSORY ECOSYSTEM';
-    document.querySelector('.hud.bottom-left').innerHTML=forest?'THE <strong>OLD GROVE</strong>':'MEDUSA <strong>ASTRALIS</strong>';
-    document.querySelector('.hud.bottom-right').innerHTML=forest?'FIELD STUDY <strong>01</strong><br>LAYERS / LIGHT / WIND':'DEPTH <strong>2480 M</strong><br>PROCEDURAL MOTION';
-    document.getElementById('colorName').textContent=forest?greenwood.season:palettes[paletteIndex].name;
-    document.getElementById('swatch').style.background=forest?'linear-gradient(120deg,#315c4b,#a2b677,#b78d4a)':palettes[paletteIndex].swatch;
-    document.getElementById('color').setAttribute('aria-label',forest?'Change forest season':'Change colour palette');
-    document.getElementById('art').setAttribute('aria-label',forest?'Animated ASCII ancient woodland clearing':'Animated ASCII jellyfish');
-    document.getElementById('sea').setAttribute('aria-label',forest?'Living ASCII forest clearing with moving light and foliage':'Living ASCII jellyfish');
-    document.title=forest?'GREENWOOD / Living ASCII':'PELAGIC / Living ASCII';
+    const forest=currentScene==='greenwood',cosmos=currentScene==='event-horizon';
+    if(currentScene!=='pelagic'){senses.stopCamera();senses.stopMotion();}
+    if(cosmos)toggleDeveloper(false); // Weather, LIFE and SENSE controls are unrelated to astronomy.
+    document.getElementById('devToggle').style.display=cosmos?'none':'';
+    document.getElementById('sceneName').textContent=cosmos?'◎ HORIZON':forest?'◇ GREENWOOD':'◌ PELAGIC';
+    document.querySelector('.hud.top-left').innerHTML=cosmos?'EVENT HORIZON <strong>/</strong> 001<br>KEPLERIAN SYSTEM':forest?'GREENWOOD <strong>/</strong> 002<br>CINEMATIC CLEARING':'PELAGIC <strong>/</strong> 017<br>SENSORY ECOSYSTEM';
+    document.querySelector('.hud.bottom-left').innerHTML=cosmos?'EIGHT <strong>WORLDS</strong>':forest?'THE <strong>OLD GROVE</strong>':'MEDUSA <strong>ASTRALIS</strong>';
+    document.querySelector('.hud.bottom-right').innerHTML=cosmos?'ACCRETION <strong>DISC</strong><br>ORBITAL DYNAMICS':forest?'FIELD STUDY <strong>01</strong><br>LAYERS / LIGHT / WIND':'DEPTH <strong>2480 M</strong><br>PROCEDURAL MOTION';
+    document.getElementById('colorName').textContent=cosmos?horizon.palette:forest?greenwood.season:palettes[paletteIndex].name;
+    document.getElementById('swatch').style.background=cosmos?horizon.swatch:forest?'linear-gradient(120deg,#315c4b,#a2b677,#b78d4a)':palettes[paletteIndex].swatch;
+    document.getElementById('color').setAttribute('aria-label',cosmos?'Change accretion disc palette':forest?'Change forest season':'Change colour palette');
+    document.getElementById('art').setAttribute('aria-label',cosmos?'Animated ASCII black hole with eight orbiting planets':forest?'Animated ASCII ancient woodland clearing':'Animated ASCII jellyfish');
+    document.getElementById('sea').setAttribute('aria-label',cosmos?'ASCII black hole with softly glowing accretion disc and orbiting planets':forest?'Living ASCII forest clearing with moving light and foliage':'Living ASCII jellyfish');
+    document.title=cosmos?'EVENT HORIZON / Living ASCII':forest?'GREENWOOD / Living ASCII':'PELAGIC / Living ASCII';
     buildSource();render(t);
   }
   function toggleDetail(){highRes=!highRes;document.getElementById('densityName').textContent=highRes?'HI-RES':'LO-RES';resize();}
@@ -1385,6 +1406,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     weatherUIError='';environment.refresh(true).then(()=>{syncDeveloperControls();});updateWeatherStatus();
   });
   function toggleDeveloper(force){
+    if(currentScene==='event-horizon' && force!==false)return;
     const show=typeof force==='boolean'?force:devPanel.hidden;
     devPanel.hidden=!show;codeBox.classList.toggle('dev-active',show);
     devToggle.setAttribute('aria-expanded',String(show));
@@ -1481,7 +1503,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
       drawDebt+=delta;
       if(drawDebt>=1/30){render(t);drawDebt=0;
         if(!devPanel.hidden&&activeDevTab==='sense'&&Math.floor(t*2)!==Math.floor((t-delta)*2))syncSenseControls();
-        if(!devPanel.hidden)document.getElementById('devReadout').textContent=currentScene==='greenwood'?`GROVE · ${greenwood.season}`:activeDevTab==='sense'?('TILT '+senses.state().motion+' · CAM '+senses.state().camera):devPanel.classList.contains('life-mode')?`CATCH ${ecosystem.state().counts.preyCaught} · VISIT ${ecosystem.state().counts.visitors}`:`Z ${swimmer.z.toFixed(1)} · ${bodyScale().toFixed(2)}× · ${t<swimmer.closeVisitUntil?'NEAR':t<swimmer.closeRetreatUntil?'RETURN':swimmer.behaviour.slice(0,5).toUpperCase()}`;
+        if(!devPanel.hidden)document.getElementById('devReadout').textContent=currentScene==='event-horizon'?'ORBIT · 8 WORLDS':currentScene==='greenwood'?`GROVE · ${greenwood.season}`:activeDevTab==='sense'?('TILT '+senses.state().motion+' · CAM '+senses.state().camera):devPanel.classList.contains('life-mode')?`CATCH ${ecosystem.state().counts.preyCaught} · VISIT ${ecosystem.state().counts.visitors}`:`Z ${swimmer.z.toFixed(1)} · ${bodyScale().toFixed(2)}× · ${t<swimmer.closeVisitUntil?'NEAR':t<swimmer.closeRetreatUntil?'RETURN':swimmer.behaviour.slice(0,5).toUpperCase()}`;
       }
     }
     requestAnimationFrame(frame);
