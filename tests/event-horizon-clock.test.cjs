@@ -9,11 +9,12 @@ const script=fs.readFileSync(path.join(root,'event-horizon/scene-clock.js'),'utf
 const physicsSource=fs.readFileSync(path.join(root,'event-horizon/physical-system.js'),'utf8');
 const cameraSource=fs.readFileSync(path.join(root,'event-horizon/hero-camera.js'),'utf8');
 const artSource=fs.readFileSync(path.join(root,'event-horizon/planet-art.js'),'utf8');
+const compositorSource=fs.readFileSync(path.join(root,'event-horizon/source-compositor.js'),'utf8');
 const rendererSource=fs.readFileSync(path.join(root,'event-horizon/renderer.js'),'utf8');
 function make(sharedStore=new Map()){
   const localStorage={getItem:k=>sharedStore.get(k)||null,setItem:(k,v)=>sharedStore.set(k,v)};
   const shell={window:{},localStorage,console:{warn(){},error(){}},document:{}};
-  for(const source of [physicsSource,cameraSource,artSource,rendererSource])
+  for(const source of [physicsSource,cameraSource,artSource,compositorSource,rendererSource])
     vm.runInNewContext(source,shell);
   vm.runInNewContext(script,shell);
   return{clock:shell.window.EventHorizonSceneClock,store:sharedStore,shell};
