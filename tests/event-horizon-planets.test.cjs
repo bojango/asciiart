@@ -104,9 +104,47 @@ test('existing orbit mechanics and black-hole lighting remain unchanged',()=>{
   assert.ok(!fs.readFileSync(path.join(folder,'source.html'),'utf8').includes('planet-art.js'));
 });
 test('new mobile route has all render modules and accepts existing Light Studio settings',()=>{
-  assert.match(html,/planet-art\.js\?v=1/);
+  assert.match(html,/planet-art\.js\?v=2/);
   assert.match(html,/renderer-planets\.js\?v=1/);
   assert.match(html,/source-compositor\.js\?v=6/);
   assert.match(html,/eventHorizon\.lightingTuners\.v3/);
   assert.match(html,/presetVersion:3/);
+});
+
+test('light intensity falls smoothly with orbital distance, not screen location',()=>{
+  const art=moduleIn(artSource).EventHorizonPlanetArt;
+  const orbits=[.4,.51,.64,.77,.92,1.07,1.23,1.39];
+  const gains=orbits.map(v=>art.proximityLight(v));
+  for(let i=1;i<gains.length;i++)assert.ok(gains[i]<gains[i-1],'outer orbit dimmer');
+  assert.ok(gains[0]>1.1&&gains.at(-1)>.7,'compressed, readable falloff');
+  assert.equal(art.proximityLight(.92),art.proximityLight(.92),'deterministic tone map');
+});
+test('small planet outlines have a centred full circular silhouette',()=>{
+  const art=moduleIn(artSource).EventHorizonPlanetArt;
+  const cinder=planets[0],{ctx,records}=stage();
+  art.draw(ctx,{name:cinder[0],body:cinder[2],lit:cinder[3]},
+    {x:180,y:260,radius:4.8,depth:0,orbit:.4},view,44);
+  const xs=records.map(g=>g.x-180),ys=records.map(g=>g.y-260);
+  assert.ok(records.length>=7,'complete small sphere');
+  assert.ok(Math.abs(Math.max(...xs)+Math.min(...xs))<1e-7,'left/right symmetry');
+  assert.ok(Math.abs(Math.max(...ys)+Math.min(...ys))<1e-7,'top/bottom symmetry');
+});
+test('shadow side stays readable and body brightness responds to proximity',()=>{
+  const art=moduleIn(artSource).EventHorizonPlanetArt;
+  const getLuma=(orbit)=>{
+    const {ctx,records}=stage();
+    const cinder=planets[0];
+    art.draw(ctx,{name:cinder[0],body:cinder[2],lit:cinder[3]},
+      {x:180,y:260,radius:7.2,depth:.2,orbit},view,44);
+    return records.map(g=>{
+      const parts=g.colour.match(/^rgba\((\d+),(\d+),(\d+),([\d.]+)\)$/);
+      assert.ok(parts,'valid RGBA');
+      return (+parts[1]*.2126+(+parts[2])*.7152+(+parts[3])*.0722)*(+parts[4]);
+    });
+  };
+  const near=getLuma(.4),far=getLuma(1.39);
+  assert.equal(near.length,far.length,'orbital distance must not affect silhouette');
+  const avg=v=>v.reduce((a,b)=>a+b,0)/v.length;
+  assert.ok(avg(near)>avg(far)*1.13,'inner world visibly brighter');
+  assert.ok(Math.min(...far)>5,'outer world retains nonzero shadow-side detail');
 });
