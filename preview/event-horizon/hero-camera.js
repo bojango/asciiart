@@ -68,7 +68,7 @@
       magnification:projected.magnification,
       world:projected.world,
       foreground:projected.near,
-      heroLOD:radius>=22?'MID':radius>=10?'FAR':'MIN',
+      heroLOD:radius>=70?'NEAR':radius>=22?'MID':radius>=10?'FAR':'MIN',
       orbitalPhase:((angle%TAU)+TAU)%TAU
     };
   }
