@@ -261,3 +261,52 @@ and production scenes are unchanged.
 Regression checks: `tests/event-horizon-planets.test.cjs` now covers
 night/day contrast, ring hierarchy, the five deterministic local moon orbits,
 and preservation of existing orbital motion.
+
+## Phase B prototype — VERDANT close-approach camera (19 November 2026)
+
+Preview: https://bojango.github.io/asciiart/preview/event-horizon/depth.html
+
+New, isolated files:
+- `hero-camera.js`: deterministic three-dimensional illustrative circular
+  orbit with a shared pinhole camera, projected position and apparent angular
+  size. `camera(width,height)` computes a *uniform* scene scale from the
+  shorter effective screen dimension, rather than fitting the whole orbit
+  separately into each aspect ratio.
+- `planet-art-depth.js`: same eight spinning worlds and five tiny moons as
+  Phase A, with additional rotating, body-fixed surface texture and capped
+  ASCII glyph density for VERDANT at closest approach.
+- `renderer-depth.js`: the approved black-hole rendering and the seven
+  original planets, with only VERDANT routed through the perspective camera.
+- `depth.html`: independent iPhone-first page with a minimal bottom-left
+  **VIEW PASS** button and collapsible scene menu, allowing close passes to
+  remain visible instead of hiding behind the Light Studio.
+
+In the 440×736 reference viewport VERDANT's closest camera approach is
+approximately (x=281,y=654) with projected radius 108 CSS px, so it fills
+about the bottom quarter of the visible scene while leaving the event horizon
+unobstructed. The same instant at 844×390 maps through the *same world*
+camera, simply displaying a much wider lateral field of view (around 1593
+reference-world units versus 440 in the portrait reference viewport).
+
+Across a demonstration orbit, VERDANT is visible in about 45% of portrait
+frames but effectively all landscape frames. It can exit either horizontal
+edge and reappear without changing orbital phase, size logic or orbital
+period. It retains its existing one-character moon, which becomes visible
+during some foreground passes according to its own independent phase.
+
+**Do not mistake this for the finished astronomical model:**
+- The geometry is a genuine 3D circular path projected through a pinhole
+  camera, but its length and period are composition parameters, not SI values
+  inferred from a chosen black-hole mass or Keplerian orbital elements.
+- The `VIEW PASS` button jumps to seven *simulation seconds* before the next
+  visually closest pass. It is not a wall-clock schedule or a physical
+  approach prediction.
+- A future physically calibrated orbital engine will replace the camera-path
+  composition, while keeping the deterministic projection, near/far depth,
+  level-of-detail transitions and moon visibility logic.
+- The black-hole geometry, its locked 14 photometry controls, PELAGIC,
+  GREENWOOD and the production V2 scene are not modified here.
+
+Validation: `node --test tests/event-horizon-depth.test.cjs`.
+Real iPhone (portrait and landscape) review is still required before treating
+this as visually approved or merging it into the existing scene selector.
