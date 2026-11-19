@@ -88,6 +88,14 @@
     }
     return {variation:clamp(variation,-.52,.52),cloud};
   }
+  // Artistic tone map of central-source flux ~ 1 / orbit^2. Geometry is
+  // intentionally screen-scaled; use the stable orbital parameter rather than
+  // screen-space distance (which changes with projection and viewport).
+  function proximityLight(orbit){
+    const radius=clamp(Number.isFinite(orbit)?orbit:1.0,.40,1.39);
+    const relativeFlux=Math.pow(.40/radius,2);
+    return clamp(.56+.56*Math.pow(relativeFlux,.54),.70,1.12);
+  }
   function lightVector(pos,view){
     // Phase A: dominant irradiation toward the centre of the accretion disc.
     // The z component uses the projected orbital depth so the visible lit
@@ -95,7 +103,7 @@
     // gravitational bending and physical distances belong to Phase B.
     return normalize(view.x-pos.x,view.y-pos.y,clamp(pos.depth*1.22,-1,1));
   }
-  function ringPass(ctx,planet,pos,view,profile,front,light){
+  function ringPass(ctx,planet,pos,view,profile,front,light,proximity){
     const r=pos.radius,font=Math.max(5.5,Math.min(7.0,view.font*.82));
     ctx.font=font+"px 'Courier New',ui-monospace,monospace";
     ctx.textBaseline='middle';
@@ -108,9 +116,10 @@
         if((k+band*3)%3===0)continue; // deliberately sparse ASCII rings
         const x0=ca*r*mult,y0=sa*r*(.42+.08*Math.cos(inclination));
         const x=pos.x+x0*.91-y0*.41,y=pos.y+x0*.41+y0*.91;
-        const lit=clamp(.30+.56*(light[0]*ca+light[1]*sa+1)*.5);
+        const incidence=clamp((light[0]*ca+light[1]*sa+1)*.5);
+        const lit=clamp((.25+.65*incidence)*proximity);
         const col=color(planet.body,planet.lit,lit);
-        const opacity=clamp((front?.72:.40)*(.50+.50*lit),.08,.80);
+        const opacity=clamp((front?.72:.40)*(.48+.52*lit)*proximity,.08,.88);
         if(x<0||x>view.width||y<0||y>view.height)continue;
         ctx.fillStyle=rgb(col,opacity);
         ctx.fillText(k%11===0?'=':k%5===0?':':'.',x,y);
@@ -124,8 +133,8 @@
     const r=pos.radius;
     if(pos.x+2.3*r<0||pos.x-2.3*r>view.width||
        pos.y+2.3*r<0||pos.y-2.3*r>view.height)return true;
-    const light=lightVector(pos,view);
-    if(p.rings)ringPass(ctx,planet,pos,view,p,false,light);
+    const light=lightVector(pos,view),proximity=proximityLight(pos.orbit);
+    if(p.rings)ringPass(ctx,planet,pos,view,p,false,light,proximity);
     // Dense enough to read as a textured sphere, sparse enough to read as ASCII.
     // No bitmap fill or photographic layer is introduced.
     const cellX=clamp(view.stepX*.67,2.5,3.4),
@@ -134,28 +143,38 @@
     ctx.textBaseline='middle';
     let count=0;
     const shadeAlpha=clamp(1-Math.max(0,pos.depth)*.12,.73,1);
-    for(let oy=-r;oy<=r+1e-5;oy+=cellY){
-      for(let ox=-r;ox<=r+1e-5;ox+=cellX){
-        const x=ox/r,y=oy/r,inside=x*x+y*y;
+    // Centre the sample lattice on the planet, not on its leftmost edge.
+    // Tiny spheres keep a complete top/bottom and left/right silhouette.
+    const stepsX=Math.max(2,Math.round(r/cellX));
+    const stepsY=Math.max(1,Math.round(r/cellY));
+    const readability=1-smooth(5,13,r);
+    for(let iy=-stepsY;iy<=stepsY;iy++){
+      const oy=iy*r/stepsY;
+      for(let ix=-stepsX;ix<=stepsX;ix++){
+        const ox=ix*r/stepsX;
+        const x=ix/stepsX,y=iy/stepsY,inside=x*x+y*y;
         if(inside>1)continue;
         const z=Math.sqrt(Math.max(0,1-inside));
         const normal=[x,y,z];
         const incidence=dot(normal,light);
         // Small penumbra is justified by an extended emitting disc; precise
         // angular radiance integration remains a separate physics phase.
-        const diffuse=Math.pow(clamp(incidence),.80);
-        const penumbra=smooth(-.18,.18,incidence);
+        // A mild light wrap and softened terminator avoid vanishing
+        // semicircles. Neither changes the spherical surface or light vector.
+        const diffuse=Math.pow(clamp(incidence+.055),.85);
+        const penumbra=smooth(-.34,.34,incidence);
         const limb=Math.pow(clamp(1-z),1.9);
         const texture=sampleTexture({...p,name:planet.name},normal,time);
-        let illum=clamp(.055+.76*diffuse+.12*penumbra+.045*limb*Math.max(0,incidence));
-        illum*=.79+.21*z;
+        // Extra minimum reflected light for bodies with only a few glyphs.
+        const ambient=.16+.075*readability;
+        const direct=.64*diffuse+.13*penumbra+.03*limb*Math.max(0,incidence);
+        const illum=clamp((ambient+direct)*proximity*(.82+.18*z));
         const material=clamp(.52+texture.variation*p.grain*1.5,.12,.92);
-        let tone=color(planet.body.map(c=>c*.45),planet.lit,clamp(illum*(.75+.43*material)));
-        // Atmospheric clouds alter only the visible day side.
+        let tone=color(planet.body.map(c=>c*.64),planet.lit,clamp(illum*(.82+.33*material)));
         if(texture.cloud>0)tone=color(tone,[220,229,212],texture.cloud*diffuse*.20);
-        const brightness=clamp(.10+illum*.66+texture.variation*.17+.10*z);
+        const brightness=clamp(.21+illum*.55+texture.variation*.14+.095*z);
         const index=Math.min(GLYPHS.length-1,Math.floor(brightness*(GLYPHS.length-1)));
-        const opacity=clamp((.37+.60*z)*shadeAlpha*(.40+.60*penumbra),.14,.95);
+        const opacity=clamp((.51+.44*z)*shadeAlpha*(.68+.32*penumbra),.24,.96);
         ctx.fillStyle=rgb(tone,opacity);
         ctx.fillText(GLYPHS[index],pos.x+ox,pos.y+oy);
         count++;diagnostics.glyphs++;
@@ -163,7 +182,7 @@
       }
     }
     if(count<2){
-      ctx.fillStyle=rgb(planet.lit,.82);
+      ctx.fillStyle=rgb(planet.lit,.76*proximity);
       ctx.fillText('o',pos.x,pos.y);diagnostics.glyphs++;
     }
     if(p.atmosphere>0&&r>5){
@@ -174,17 +193,18 @@
         const x=Math.cos(angle),y=Math.sin(angle);
         const illumination=clamp(light[0]*x+light[1]*y+.1*light[2]);
         if(illumination<.05)continue;
-        ctx.fillStyle=rgb(planet.lit,p.atmosphere*illumination*.44);
+        ctx.fillStyle=rgb(planet.lit,p.atmosphere*illumination*.44*proximity);
         ctx.fillText(j%3===0?':':'.',pos.x+x*r*1.11,pos.y+y*r*1.11);
         diagnostics.atmosphereGlyphs++;
       }
     }
-    if(p.rings)ringPass(ctx,planet,pos,view,p,true,light);
+    if(p.rings)ringPass(ctx,planet,pos,view,p,true,light,proximity);
     return true;
   }
   const api=Object.freeze({
     draw:render,
     spinAngle,
+    proximityLight,
     textureAt(name,normal,time){
       const p=PROFILES[name];
       return p?sampleTexture({...p,name},normal,time):null;
