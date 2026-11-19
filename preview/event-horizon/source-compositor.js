@@ -13,12 +13,17 @@
     [[107,37,100],[178,67,143],[224,125,178],[246,182,215],[255,230,248]],
     [[41,78,103],[74,128,148],[125,180,189],[208,203,159],[255,233,203]]
   ];
+  // Owner-approved baseline. All new core effects default off.
   const defaults=Object.freeze({
-    brightness:1,coreExposure:1,warmth:1,saturation:1,gamma:1,contrast:1,
-    highlightRolloff:0,bloomStrength:1,bloomRadiusSmall:1.25,bloomRadiusWide:2.75
+    brightness:2,coreExposure:3.1,
+    coreBloomStrength:0,coreBloomRadius:1.10,coreThreshold:.70,coreWhiteLift:0,
+    warmth:1.7,saturation:1.15,gamma:1,contrast:.9,highlightRolloff:.2,
+    bloomStrength:2,bloomRadiusSmall:1.05,bloomRadiusWide:1.8
   });
   const limits=Object.freeze({
     brightness:[.25,16,.25],coreExposure:[.10,8,.05],
+    coreBloomStrength:[0,6,.05],coreBloomRadius:[.25,6,.05],
+    coreThreshold:[.2,1.5,.05],coreWhiteLift:[0,1,.05],
     warmth:[0,3,.05],saturation:[0,2.5,.05],
     gamma:[.25,3,.05],contrast:[.25,4,.05],
     highlightRolloff:[0,1,.05],bloomStrength:[0,4,.05],
@@ -28,7 +33,8 @@
   const getParams=()=>({...params});
   const getDefaults=()=>({...defaults});
   let sizes=null,art,actx,trail,tctx,trailData,bloomSmall,bloomWide,
-      smallCtx,wideCtx,tempSmall,tempWide,tempSmallCtx,tempWideCtx,lastTime=null;
+      smallCtx,wideCtx,tempSmall,tempWide,tempSmallCtx,tempWideCtx,
+      coreArt,coreArtCtx,coreGlow,coreGlowCtx,coreTemp,coreTempCtx,lastTime=null;
   const createCanvas=(w,h)=>{
     if(typeof OffscreenCanvas!=='undefined')return new OffscreenCanvas(w,h);
     const c=document.createElement('canvas');c.width=w;c.height=h;return c;
@@ -48,6 +54,10 @@
     [bloomWide,wideCtx]=create(Math.ceil(w/8),Math.ceil(h/8));
     [tempSmall,tempSmallCtx]=create(bloomSmall.width,bloomSmall.height);
     [tempWide,tempWideCtx]=create(bloomWide.width,bloomWide.height);
+    // Independent, spatially masked core light. Never accumulated as a trail.
+    [coreArt,coreArtCtx]=create(w,h);
+    [coreGlow,coreGlowCtx]=create(Math.ceil(w/4),Math.ceil(h/4));
+    [coreTemp,coreTempCtx]=create(coreGlow.width,coreGlow.height);
     trailData=new Uint8ClampedArray(w*h*4);
     for(let i=3;i<trailData.length;i+=4)trailData[i]=255;
     lastTime=null;
@@ -90,6 +100,13 @@
       channels=channels.map(v=>v<=knee?v:knee+width*(1-Math.exp(-(v-knee)/width)));
     }
     return channels.map(v=>Math.round(clamp(v)*255));
+  }
+  function coreMask(point,view){
+    const r=Math.hypot(point.x-view.x,point.y-view.y)/Math.max(1,view.hole);
+    if(r<.98)return 0;
+    const radial=Math.exp(-.5*Math.pow((r-1.52)/.85,2));
+    const hot=smooth((point.heat-params.coreThreshold)/.38);
+    return clamp(radial*hot);
   }
   function gaussian(srcCtx,dstCtx,w,h,sigma){
     const pixels=srcCtx.getImageData(0,0,w,h).data;
@@ -147,6 +164,8 @@
     }
     bloom(bloomSmall,.98);
     bloom(bloomWide,.62);
+    if(params.coreBloomStrength>0)
+      bloom(coreGlow,.85*params.coreBloomStrength);
     ctx.restore();
   }
   function draw(ctx,view,time,points,palette,font,shadow){
@@ -162,13 +181,29 @@
     actx.globalCompositeOperation='source-over';
     actx.fillStyle='#000';actx.fillRect(0,0,w,h);
     actx.textBaseline='middle';actx.font=font;
+    const drawCore=params.coreBloomStrength>0;
+    if(drawCore){
+      coreArtCtx.globalCompositeOperation='source-over';
+      coreArtCtx.fillStyle='#000';coreArtCtx.fillRect(0,0,w,h);
+      coreArtCtx.textBaseline='middle';coreArtCtx.font=font;
+    }
     let count=0;
     for(const point of points){
       const heat=point.heat;
       if(!(heat>.07))continue;
-      const colour=tint(heat,palette);
+      let colour=tint(heat,palette);
+      const mask=(drawCore||params.coreWhiteLift>0)?coreMask(point,view):0;
+      if(params.coreWhiteLift>0&&mask>0){
+        const lift=clamp(mask*params.coreWhiteLift),white=[255,253,243];
+        colour=colour.map((v,c)=>Math.round(v+(white[c]-v)*lift));
+      }
       actx.fillStyle='rgb('+colour.join(',')+')';
       actx.fillText(point.char,point.x-x0,point.y-y0);
+      if(drawCore&&mask>.015){
+        coreArtCtx.fillStyle='rgb('+
+          [255,249,225].map(v=>Math.round(v*mask)).join(',')+')';
+        coreArtCtx.fillText(point.char,point.x-x0,point.y-y0);
+      }
       count++;
     }
     stats.totalGlyphs=count;
@@ -188,7 +223,23 @@
     tctx.putImageData(new ImageData(trailData,w,h),0,0);
     blurAtDownscale(tempSmallCtx,smallCtx,bloomSmall,params.bloomRadiusSmall);
     blurAtDownscale(tempWideCtx,wideCtx,bloomWide,params.bloomRadiusWide);
-    // One crisp RGB art layer, then two source-equivalent BLEND_ADD glows.
+    if(drawCore){
+      const cw=coreGlow.width,ch=coreGlow.height;
+      coreTempCtx.globalCompositeOperation='source-over';
+      coreTempCtx.fillStyle='#000';coreTempCtx.fillRect(0,0,cw,ch);
+      coreTempCtx.imageSmoothingEnabled=true;
+      coreTempCtx.drawImage(coreArt,0,0,cw,ch);
+      gaussian(coreTempCtx,coreGlowCtx,cw,ch,params.coreBloomRadius);
+      // Retain the dark silhouette, even with strong selective glow.
+      coreGlowCtx.save();
+      coreGlowCtx.globalCompositeOperation='destination-out';
+      coreGlowCtx.beginPath();
+      coreGlowCtx.arc((view.x-x0)/4,(view.y-y0)/4,
+        view.hole*.93/4,0,Math.PI*2);
+      coreGlowCtx.fill();
+      coreGlowCtx.restore();
+    }
+    // Crisp RGB + two existing blooms + optional isolated core bloom.
     composite(ctx,view,shadow);
     stats.active=true;stats.reason='';lastTime=time;
     return true;
@@ -204,7 +255,9 @@
       const v=Number((Math.round((clamp(n,min,max)-min)/step)*step+min).toFixed(3));
       if(v!==params[key]){
         params[key]=v;changed=true;
-        if(!key.startsWith('bloom'))tonalChange=true;
+        if(!['bloomStrength','bloomRadiusSmall','bloomRadiusWide',
+          'coreBloomStrength','coreBloomRadius','coreThreshold'].includes(key))
+          tonalChange=true;
       }
     }
     if(changed){
