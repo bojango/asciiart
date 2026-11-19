@@ -120,7 +120,7 @@ button:disabled{opacity:.40;cursor:default}
 </div>
 <script src="../../event-horizon.js?v=20261119"></script>
 <script>window.EventHorizonBaseline=window.PelagicEventHorizon;</script>
-<script src="./source-compositor.js?v=4"></script>
+<script src="./source-compositor.js?v=5"></script>
 <script src="./renderer-reference.js?v=1"></script>
 <script>
 (() => {
@@ -148,6 +148,14 @@ button:disabled{opacity:.40;cursor:default}
       desc:'Overall black-hole RGB gain (clips at high levels)'},
     {key:'coreExposure',short:'CORE',label:'CORE EXPOSURE',min:.10,max:8,step:.05,unit:'×',
       desc:'Extra exposure for the hottest inner gas'},
+    {key:'coreBloomStrength',short:'C BLOOM',label:'CORE BLOOM STRENGTH',min:0,max:6,step:.05,unit:'×',
+      desc:'Separate white-hot glow around the inner accretion disc'},
+    {key:'coreBloomRadius',short:'C RADIUS',label:'CORE BLOOM RADIUS',min:.25,max:6,step:.05,unit:'px',
+      desc:'Spread only the core-specific light, not the full disc'},
+    {key:'coreThreshold',short:'C THRESH',label:'CORE HEAT THRESHOLD',min:.2,max:1.5,step:.05,unit:'',
+      desc:'Lower values let more inner gas contribute to core bloom'},
+    {key:'coreWhiteLift',short:'C WHITE',label:'CORE WHITE LIFT',min:0,max:1,step:.05,unit:'',
+      desc:'Move selected core letters towards near-white without global gain'},
     {key:'warmth',short:'GOLD',label:'WARMTH / GOLD',min:0,max:3,step:.05,unit:'×',
       desc:'Shift the accretion gas toward orange and gold'},
     {key:'saturation',short:'SAT',label:'SATURATION',min:0,max:2.5,step:.05,unit:'×',
@@ -166,7 +174,9 @@ button:disabled{opacity:.40;cursor:default}
       desc:'Adjust the wide soft glow outside the disc'}
   ];
   const defaults=photometry.getDefaults();
-  const settingsKey='eventHorizon.lightingTuners.v1';
+  // Separate storage key preserves earlier tuning experiments. A clean URL
+  // starts from the exact 10-control baseline supplied on 19 November 2026.
+  const settingsKey='eventHorizon.lightingTuners.v2';
   const chips=[],valueNodes=[];
   let activeIndex=0;
   function format(def,v){return Number(v).toFixed(2)+(def.unit||'')}
@@ -232,10 +242,8 @@ button:disabled{opacity:.40;cursor:default}
   try{
     const stored=JSON.parse(localStorage.getItem(settingsKey)||'null');
     if(stored&&typeof stored==='object')Object.assign(initial,stored);
-    else{
-      const remembered=localStorage.getItem('eventHorizon.previewBrightness');
-      if(remembered!==null)initial.brightness=remembered;
-    }
+    // Deliberately do not import older V1 values over the approved baseline.
+    // The old V1 localStorage data remains available, but is not modified.
   }catch(_){}
   try{
     const search=new URLSearchParams(location.search);
@@ -245,7 +253,7 @@ button:disabled{opacity:.40;cursor:default}
     }
   }catch(_){}
   updateParams(initial);
-  selectTuner(0,false);
+  selectTuner(2,false); // Begin with new selective Core Bloom strength control.
   function setStudioOpen(open){
     nodes.tunerBody.hidden=!open;
     nodes.controls.classList.toggle('studio-open',open);
@@ -267,12 +275,12 @@ button:disabled{opacity:.40;cursor:default}
   };
   nodes.resetSettings.onclick=()=>{
     updateParams(defaults,true);
-    nodes.copyStatus.textContent='All controls reset to original values.';
+    nodes.copyStatus.textContent='Restored approved 19 Nov baseline; core effects off.';
     nodes.settingsExport.hidden=true;
   };
   function exportPreset(){
     return JSON.stringify({
-      scene:'EVENT HORIZON / SOURCE RGB',presetVersion:1,
+      scene:'EVENT HORIZON / SOURCE RGB',presetVersion:2,
       palette:port.palette,detail:highDetail?'HI':'LO',
       viewport:{width:Math.round(cssWidth),height:Math.round(cssHeight)},
       settings:photometry.getParams()
