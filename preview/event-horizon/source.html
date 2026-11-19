@@ -31,48 +31,82 @@ button:disabled{opacity:.40;cursor:default}
 .footer{display:none;position:absolute;bottom:calc(env(safe-area-inset-bottom,0px) + 237px);left:0;right:0;text-align:center;color:#777078;font-size:9px;letter-spacing:1.3px;pointer-events:none}
 @media(min-width:800px){.controls{left:50%;right:auto;transform:translateX(-50%);width:430px}.top{padding:30px 36px}}
 
-/* Collapsible photometry lab: preserve as much of the artwork as possible. */
-.tune-toggle{display:flex;width:100%;align-items:center;justify-content:space-between;
-  border-color:#a97947;background:#302014;color:#ffe4ad;font-size:11px;letter-spacing:1.2px;text-align:left}
-.tune-toggle span{color:#e6a952;font-size:10px}
-.tuner-body[hidden],#settingsExport[hidden]{display:none}
-.tuner-body{max-height:min(42vh,355px);max-height:min(42dvh,355px);overflow-y:auto;overscroll-behavior:contain;
-  margin:8px 0 11px;padding:8px 7px 4px;background:#0e0b0f;border:1px solid #ffffff26;border-radius:9px;
-  -webkit-overflow-scrolling:touch}
-.tuner-intro{color:#958c8c;font-size:9px;line-height:1.5;margin-bottom:9px}
-.tuner-item{padding:9px 0 12px;border-top:1px solid #ffffff17}
-.tuner-item-head{display:flex;align-items:center;gap:10px;margin-bottom:4px}
-.tuner-item label{flex:1;font-size:10px;letter-spacing:.9px;color:#e1c8a2}
-.tuner-item output{font-size:13px;color:#ffdd9e;font-weight:bold;font-variant-numeric:tabular-nums;min-width:65px;text-align:right}
-.tuner-item input[type=range]{display:block;width:100%;height:27px;margin:0;accent-color:#f5ae55;touch-action:pan-x}
-.tuner-description{color:#8a8285;font-size:9px;margin-top:2px;line-height:1.3}
-.tuner-actions{position:sticky;bottom:0;background:#0e0b0ff2;display:flex;gap:7px;
-  padding:9px 0 5px;border-top:1px solid #ffffff25}
-.tuner-actions button{flex:1;min-height:38px}
-#copySettings{border-color:#c68f4f;color:#ffe5b0}
-#copyStatus{color:#bea985;font-size:10px;min-height:14px;margin:5px 0}
-#settingsExport{display:block;width:100%;min-height:90px;background:#1c171c;border:1px solid #777;
-  color:#fff2dc;font:11px monospace;border-radius:6px;padding:8px;resize:vertical}
-@media(max-height:700px){.tuner-body{max-height:34vh}}
+/* Mobile-first, single-control dock. Never cover the central artwork. */
+.controls{transition:padding .15s ease}
+.controls.studio-open{padding:9px 10px 10px}
+.controls.studio-open>.buttons,
+.controls.studio-open>.row{display:none}
+.tune-toggle{display:flex;width:100%;min-height:34px;padding:6px 10px;align-items:center;
+  justify-content:space-between;gap:12px;border-color:#ad8050;
+  background:#302016;color:#ffe5b6;font-size:10px;letter-spacing:1.3px;text-align:left}
+.tune-toggle span{color:#eeb877;font-size:10px}
+.tuner-body[hidden],#valuesPanel[hidden],#settingsExport[hidden],#copyStatus:empty{display:none}
+.tuner-body{padding:0;margin-top:8px}
+.tuner-tabs{display:flex;align-items:center;gap:5px;overflow-x:auto;overscroll-behavior-x:contain;
+  scrollbar-width:none;-webkit-overflow-scrolling:touch;margin:0 -1px 8px;padding:0 1px 2px}
+.tuner-tabs::-webkit-scrollbar{display:none}
+.tuner-tabs button{flex:0 0 auto;white-space:nowrap;min-height:28px;padding:5px 9px;
+  border-radius:999px;color:#a99e9b;font-size:9px;letter-spacing:.5px}
+.tuner-tabs button[aria-selected="true"]{background:#56351f;border-color:#d7a468;color:#ffe1ad}
+.tuner-main{border:1px solid #ffffff1c;border-radius:8px;background:#0e0c0f;padding:8px 8px 5px}
+.tuner-header{display:flex;align-items:center;gap:7px;min-width:0}
+.tuner-header label{flex:1;min-width:0;font-size:10px;color:#e8c999;letter-spacing:.7px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tuner-header output{color:#ffdb9c;font-size:15px;font-weight:bold;text-align:right;
+  font-variant-numeric:tabular-nums;min-width:56px}
+.tuner-nav{min-height:27px;width:28px;padding:0;border-radius:6px;font-size:17px;
+  line-height:1;border-color:#ffffff25}
+#activeSlider{display:block;width:100%;height:28px;margin:3px 0 0;accent-color:#f2b35e;touch-action:pan-x}
+.tuner-description{color:#898189;font-size:9px;line-height:1.25;min-height:12px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tuner-actions{display:grid;grid-template-columns:1fr 1.2fr 1fr;gap:6px;margin-top:7px}
+.tuner-actions button{min-height:30px;padding:5px 3px;font-size:9px;letter-spacing:.4px}
+#copySettings{border-color:#c99756;color:#ffe1a8}
+#copyStatus{color:#cdb48e;font-size:9px;line-height:1.4;padding-top:6px}
+#valuesPanel{max-height:26vh;overflow-y:auto;overscroll-behavior:contain;margin-top:7px;
+  padding:7px;background:#0e0c0f;border:1px solid #ffffff26;border-radius:7px}
+.values-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 12px}
+.value-pair{display:flex;flex-direction:column;gap:2px;font-size:9px;color:#958785}
+.value-pair strong{font-size:12px;color:#ffe0aa;font-weight:normal;font-variant-numeric:tabular-nums}
+#settingsExport{display:block;width:100%;height:110px;margin-top:6px;padding:7px;
+  background:#161116;border:1px solid #a88f76;border-radius:5px;color:#f1dfc5;font:10px monospace}
+@media(min-width:800px){
+  .controls.studio-open{width:500px}
+}
+@media(orientation:landscape) and (max-height:540px){
+  .controls.studio-open{left:auto;right:8px;bottom:8px;transform:none;width:min(380px,48vw)}
+  .tuner-description{display:none}
+}
 </style>
 </head>
 <body>
 <canvas id="art" aria-label="Experimental ASCII black hole with orbiting planets"></canvas>
 <div class="top"><div><div class="kicker">EVENT HORIZON / SOURCE RGB</div><div class="meta">JIN2 LIGHTING PORT<br>SEPARATE VISUAL REVIEW</div></div><div class="note">NOT LIVE V2<br><span id="modeLabel">EXPERIMENT</span></div></div>
 <div class="footer">PIXEL-RGB LUMINANCE · MULT/ MAX/ ADD · JIN2 REFERENCE</div>
-<div class="controls">
+<div class="controls" id="controls">
 <button id="tuneToggle" type="button" class="tune-toggle" aria-expanded="false" aria-controls="tunerBody">
-  <strong>LIGHT STUDIO · 10 CONTROLS</strong><span id="tunerState">OPEN</span>
+  <strong>LIGHT STUDIO</strong><span id="tunerState">TUNE</span>
 </button>
 <div id="tunerBody" class="tuner-body" hidden>
-  <div class="tuner-intro">Tune light, colour and glow independently. Numbers update as you drag. Collapse this panel to inspect the artwork.</div>
-  <div id="tunerList"></div>
-  <div class="tuner-actions">
-    <button type="button" id="copySettings">COPY SETTINGS</button>
-    <button type="button" id="resetSettings">RESET ALL</button>
+  <div id="tunerChips" class="tuner-tabs" role="tablist" aria-label="Lighting parameter"></div>
+  <div class="tuner-main">
+    <div class="tuner-header">
+      <button id="tunerPrev" class="tuner-nav" type="button" aria-label="Previous lighting control">‹</button>
+      <label id="activeName" for="activeSlider">BRIGHTNESS</label>
+      <output id="activeValue" for="activeSlider">1.00×</output>
+      <button id="tunerNext" class="tuner-nav" type="button" aria-label="Next lighting control">›</button>
+    </div>
+    <input id="activeSlider" type="range" min=".25" max="16" step=".25" value="1" aria-label="Brightness">
+    <div id="activeDescription" class="tuner-description"></div>
   </div>
+  <div class="tuner-actions">
+    <button id="showValues" type="button" aria-expanded="false" aria-controls="valuesPanel">VALUES</button>
+    <button id="copySettings" type="button">COPY SETTINGS</button>
+    <button id="resetSettings" type="button">RESET</button>
+  </div>
+  <div id="valuesPanel" hidden><div id="valuesList" class="values-grid"></div></div>
   <div id="copyStatus" role="status" aria-live="polite"></div>
-  <textarea id="settingsExport" readonly hidden aria-label="Select these settings to copy manually"></textarea>
+  <textarea id="settingsExport" readonly hidden aria-label="Manually copy these settings"></textarea>
 </div>
 <div class="buttons">
 <button id="engine" class="active">SOURCE / V2</button>
@@ -94,8 +128,10 @@ button:disabled{opacity:.40;cursor:default}
   const port=window.EventHorizonRebuild,baseline=window.EventHorizonBaseline,photometry=window.EventHorizonSourceCompositor;
   if(!port||!baseline||!photometry){document.getElementById('modeLabel').textContent='SCRIPT ERROR';return}
   const canvas=document.getElementById('art'),ctx=canvas.getContext('2d',{alpha:false});
-  const nodes=Object.fromEntries(['engine','planet','quality','palette','speed','pause',
-    'tuneToggle','tunerState','tunerBody','tunerList','copySettings','resetSettings','copyStatus','settingsExport']
+  const nodes=Object.fromEntries(['controls','engine','planet','quality','palette','speed','pause',
+    'tuneToggle','tunerState','tunerBody','tunerChips','tunerPrev','tunerNext',
+    'activeName','activeValue','activeSlider','activeDescription',
+    'showValues','valuesPanel','valuesList','copySettings','resetSettings','copyStatus','settingsExport']
     .map(id=>[id,document.getElementById(id)]));
   let usePort=true,showPlanets=true,highDetail=true,playing=true,speed=1,elapsed=55,previous=0;
   let cssWidth=0,cssHeight=0,frames=0,frameWindow=0,fps=0;
@@ -108,56 +144,76 @@ button:disabled{opacity:.40;cursor:default}
     document.getElementById('dimensions').textContent=Math.round(w)+' × '+Math.round(h);
   }
   const tunerDefs=[
-    {key:'brightness',label:'BRIGHTNESS',min:.25,max:16,step:.25,unit:'×',
-      desc:'Overall black-hole RGB gain (can clip at high levels)'},
-    {key:'coreExposure',label:'CORE EXPOSURE',min:.10,max:8,step:.05,unit:'×',
-      desc:'Extra light for the hottest inner gas only'},
-    {key:'warmth',label:'WARMTH / GOLD',min:0,max:3,step:.05,unit:'×',
+    {key:'brightness',short:'BRIGHT',label:'BRIGHTNESS',min:.25,max:16,step:.25,unit:'×',
+      desc:'Overall black-hole RGB gain (clips at high levels)'},
+    {key:'coreExposure',short:'CORE',label:'CORE EXPOSURE',min:.10,max:8,step:.05,unit:'×',
+      desc:'Extra exposure for the hottest inner gas'},
+    {key:'warmth',short:'GOLD',label:'WARMTH / GOLD',min:0,max:3,step:.05,unit:'×',
       desc:'Shift the accretion gas toward orange and gold'},
-    {key:'saturation',label:'SATURATION',min:0,max:2.5,step:.05,unit:'×',
-      desc:'Preserve or intensify the gold instead of flat grey'},
-    {key:'gamma',label:'GAMMA',min:.25,max:3,step:.05,unit:'',
-      desc:'Raise or lower midtones without uniform RGB gain'},
-    {key:'contrast',label:'CONTRAST',min:.25,max:4,step:.05,unit:'×',
-      desc:'Separate dim gas from intense highlights'},
-    {key:'highlightRolloff',label:'HIGHLIGHT ROLLOFF',min:0,max:1,step:.05,unit:'',
-      desc:'Gradually compress clipping to retain white/gold detail'},
-    {key:'bloomStrength',label:'BLOOM STRENGTH',min:0,max:4,step:.05,unit:'×',
-      desc:'Light spilled from the crisp ASCII characters'},
-    {key:'bloomRadiusSmall',label:'BLOOM RADIUS · NEAR',min:.25,max:6,step:.05,unit:'px',
-      desc:'Tight, bright halo around each luminous glyph'},
-    {key:'bloomRadiusWide',label:'BLOOM RADIUS · WIDE',min:.5,max:12,step:.05,unit:'px',
-      desc:'Broad, diffuse accretion-disc glow'}
+    {key:'saturation',short:'SAT',label:'SATURATION',min:0,max:2.5,step:.05,unit:'×',
+      desc:'Strengthen warm colours rather than washing into grey'},
+    {key:'gamma',short:'GAMMA',label:'GAMMA',min:.25,max:3,step:.05,unit:'',
+      desc:'Shape the midtones without uniform RGB gain'},
+    {key:'contrast',short:'CONTRAST',label:'CONTRAST',min:.25,max:4,step:.05,unit:'×',
+      desc:'Separate faint gas from bright highlights'},
+    {key:'highlightRolloff',short:'ROLLOFF',label:'HIGHLIGHT ROLLOFF',min:0,max:1,step:.05,unit:'',
+      desc:'Compress clipped highlights to retain gold and white detail'},
+    {key:'bloomStrength',short:'BLOOM',label:'BLOOM STRENGTH',min:0,max:4,step:.05,unit:'×',
+      desc:'Increase the light spilling from the ASCII'},
+    {key:'bloomRadiusSmall',short:'NEAR',label:'NEAR BLOOM RADIUS',min:.25,max:6,step:.05,unit:'px',
+      desc:'Adjust the tight light halo around bright glyphs'},
+    {key:'bloomRadiusWide',short:'WIDE',label:'WIDE BLOOM RADIUS',min:.5,max:12,step:.05,unit:'px',
+      desc:'Adjust the wide soft glow outside the disc'}
   ];
   const defaults=photometry.getDefaults();
-  const sliders={};
-  const outputs={};
-  function format(key,v){
-    const def=tunerDefs.find(x=>x.key===key);
-    return Number(v).toFixed(2)+(def.unit||'');
-  }
-  for(const def of tunerDefs){
-    const item=document.createElement('div');item.className='tuner-item';
-    const head=document.createElement('div');head.className='tuner-item-head';
-    const label=document.createElement('label');label.htmlFor='tuner-'+def.key;label.textContent=def.label;
-    const output=document.createElement('output');output.id='output-'+def.key;output.htmlFor='tuner-'+def.key;
-    const input=document.createElement('input');input.type='range';input.id='tuner-'+def.key;
-    input.min=String(def.min);input.max=String(def.max);input.step=String(def.step);
-    input.value=String(defaults[def.key]);input.setAttribute('aria-label',def.label);
-    const desc=document.createElement('div');desc.className='tuner-description';desc.textContent=def.desc;
-    head.append(label,output);item.append(head,input,desc);nodes.tunerList.appendChild(item);
-    sliders[def.key]=input;outputs[def.key]=output;
-    input.addEventListener('input',()=>updateParams({[def.key]:input.value},false));
-    input.addEventListener('change',()=>saveSettings());
+  const settingsKey='eventHorizon.lightingTuners.v1';
+  const chips=[],valueNodes=[];
+  let activeIndex=0;
+  function format(def,v){return Number(v).toFixed(2)+(def.unit||'')}
+  for(const [index,def] of tunerDefs.entries()){
+    const chip=document.createElement('button');
+    chip.type='button';chip.className='tuner-chip';chip.textContent=def.short;
+    chip.id='chip-'+def.key;chip.setAttribute('role','tab');chip.setAttribute('aria-selected','false');
+    chip.onclick=()=>selectTuner(index);
+    chips.push(chip);nodes.tunerChips.appendChild(chip);
+    const pair=document.createElement('div');pair.className='value-pair';
+    const name=document.createElement('span');name.textContent=def.label;
+    const value=document.createElement('strong');value.textContent=format(def,defaults[def.key]);
+    valueNodes.push(value);pair.append(name,value);nodes.valuesList.appendChild(pair);
   }
   function displayParams(){
     const params=photometry.getParams();
-    for(const def of tunerDefs){
-      sliders[def.key].value=String(params[def.key]);
-      outputs[def.key].textContent=format(def.key,params[def.key]);
-    }
+    const def=tunerDefs[activeIndex];
+    nodes.activeSlider.value=String(params[def.key]);
+    nodes.activeValue.textContent=format(def,params[def.key]);
+    for(const [index,item] of tunerDefs.entries())
+      valueNodes[index].textContent=format(item,params[item.key]);
   }
-  const settingsKey='eventHorizon.lightingTuners.v1';
+  function selectTuner(index,scroll=true){
+    activeIndex=(index+tunerDefs.length)%tunerDefs.length;
+    const def=tunerDefs[activeIndex];
+    nodes.activeName.textContent=def.label;
+    nodes.activeSlider.min=String(def.min);
+    nodes.activeSlider.max=String(def.max);
+    nodes.activeSlider.step=String(def.step);
+    nodes.activeSlider.setAttribute('aria-label',def.label);
+    nodes.activeDescription.textContent=def.desc;
+    for(const [i,chip] of chips.entries()){
+      const chosen=i===activeIndex;
+      chip.setAttribute('aria-selected',String(chosen));
+      chip.tabIndex=chosen?0:-1;
+    }
+    displayParams();
+    if(scroll&&chips[activeIndex].scrollIntoView)
+      chips[activeIndex].scrollIntoView({block:'nearest',inline:'center',behavior:'smooth'});
+  }
+  nodes.tunerPrev.onclick=()=>selectTuner(activeIndex-1);
+  nodes.tunerNext.onclick=()=>selectTuner(activeIndex+1);
+  nodes.activeSlider.addEventListener('input',()=>{
+    const def=tunerDefs[activeIndex];
+    updateParams({[def.key]:nodes.activeSlider.value});
+  });
+  nodes.activeSlider.addEventListener('change',()=>saveSettings());
   function updateParams(next,persist=false){
     photometry.setParams(next);
     displayParams();
@@ -172,7 +228,6 @@ button:disabled{opacity:.40;cursor:default}
       history.replaceState(null,'',url.toString());
     }catch(_){}
   }
-  // URL values override saved values; support older brightness-only links.
   const initial={};
   try{
     const stored=JSON.parse(localStorage.getItem(settingsKey)||'null');
@@ -190,11 +245,25 @@ button:disabled{opacity:.40;cursor:default}
     }
   }catch(_){}
   updateParams(initial);
-  nodes.tuneToggle.onclick=()=>{
-    const expanding=nodes.tunerBody.hidden;
-    nodes.tunerBody.hidden=!expanding;
-    nodes.tuneToggle.setAttribute('aria-expanded',String(expanding));
-    nodes.tunerState.textContent=expanding?'CLOSE':'OPEN';
+  selectTuner(0,false);
+  function setStudioOpen(open){
+    nodes.tunerBody.hidden=!open;
+    nodes.controls.classList.toggle('studio-open',open);
+    nodes.tuneToggle.setAttribute('aria-expanded',String(open));
+    nodes.tunerState.textContent=open?'CLOSE':'TUNE';
+    if(!open){
+      nodes.valuesPanel.hidden=true;
+      nodes.showValues.textContent='VALUES';
+      nodes.showValues.setAttribute('aria-expanded','false');
+      nodes.settingsExport.hidden=true;
+    }
+  }
+  nodes.tuneToggle.onclick=()=>setStudioOpen(nodes.tunerBody.hidden);
+  nodes.showValues.onclick=()=>{
+    const open=nodes.valuesPanel.hidden;
+    nodes.valuesPanel.hidden=!open;
+    nodes.showValues.setAttribute('aria-expanded',String(open));
+    nodes.showValues.textContent=open?'HIDE VALUES':'VALUES';
   };
   nodes.resetSettings.onclick=()=>{
     updateParams(defaults,true);
@@ -203,10 +272,8 @@ button:disabled{opacity:.40;cursor:default}
   };
   function exportPreset(){
     return JSON.stringify({
-      scene:'EVENT HORIZON / SOURCE RGB',
-      presetVersion:1,
-      palette:port.palette,
-      detail:highDetail?'HI':'LO',
+      scene:'EVENT HORIZON / SOURCE RGB',presetVersion:1,
+      palette:port.palette,detail:highDetail?'HI':'LO',
       viewport:{width:Math.round(cssWidth),height:Math.round(cssHeight)},
       settings:photometry.getParams()
     },null,2);
@@ -232,9 +299,12 @@ button:disabled{opacity:.40;cursor:default}
     nodes.engine.textContent=usePort?'SOURCE / V2':'V2 / SOURCE';
     nodes.engine.classList.toggle('active',usePort);
     nodes.planet.disabled=!usePort;
-    for(const input of Object.values(sliders))input.disabled=!usePort;
+    nodes.tuneToggle.disabled=!usePort;
+    nodes.activeSlider.disabled=!usePort;
+    for(const chip of chips)chip.disabled=!usePort;
     nodes.resetSettings.disabled=!usePort;
     nodes.copySettings.disabled=!usePort;
+    if(!usePort)setStudioOpen(false);
     document.getElementById('modeLabel').textContent=usePort?'SOURCE RGB':'RESTORED V2';
   };
   nodes.planet.onclick=()=>{showPlanets=!showPlanets;port.setShowPlanets(showPlanets);nodes.planet.textContent=showPlanets?'PLANETS ON':'BLACK HOLE';nodes.planet.classList.toggle('active',showPlanets)};
