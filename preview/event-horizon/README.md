@@ -197,3 +197,38 @@ physical spin-orbit relationships remain Phase B / later simulation work.
 Checks: `node --test tests/event-horizon-planets.test.cjs`.
 A real iPhone screenshot and motion inspection should be performed before
 merging the new planet renderer into the existing scene selector.
+
+## Phase A visual refinement — rounded silhouettes and depth (19 November 2026)
+
+Preview: https://bojango.github.io/asciiart/preview/event-horizon/planets.html
+
+The user requested a clearer circular outline for the small, shadowed
+worlds and brighter nearby planets with dimmer distant ones.
+
+- A centred, symmetrical planet-glyph lattice replaces sampling from the
+  left edge. Positions and apparent radii do not change, but the characters
+  now form a complete circle even on tiny planets.
+- A deliberately faint shadow-side fill, a slightly wider terminator and
+  soft wrap lighting keep full spheres legible. Smaller bodies receive
+  a modest extra ambient floor, rather than a hard half-disc cutoff.
+- A deterministic `proximityLight(orbit)` modifies the apparent intensity of
+  each planet, its atmosphere and HALO's rings. It uses the existing
+  **unprojected orbital radius**, so lighting is stable while a planet
+  passes in front of or behind the black hole, and is independent of
+  device screen size or CSS projection. Inner orbit 0.40 gets 1.12×
+  and outer orbit 1.39 gets approximately 0.71× in the compressed
+  lighting model.
+- The source still points its main light vector at the central accretion
+  region and rotates the day/night boundary as each planet orbits.
+- Orbital periods, angles, spin phases, planet geometry, per-planet material
+  and all locked black-hole Light Studio values remain unchanged.
+- The distance response is **not** claimed to be a calibrated physical
+  irradiance model. It is a visibly compressed, inverse-square-inspired
+  artistic mapping until the planned orbit and extended-disc light physics
+  work is available.
+
+Regression tests in `tests/event-horizon-planets.test.cjs` now check
+centred silhouettes, monotonic orbital-light falloff, reproducible
+planet texture, full ring layers and nonzero shadow-side visibility.
+The accepted `source.html` preview, production V2, Jellyfish and
+GREENWOOD remain unchanged.
