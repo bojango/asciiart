@@ -1,14 +1,12 @@
 # PELAGIC - Living ASCII
 
-## EVENT HORIZON / 005 — independently rebuilt black-hole illumination
+## EVENT HORIZON / 002 — restored (19 November 2026)
 
-- Select with the existing scene button or `?scene=event-horizon`.
-- A redesigned ASCII light field replaces the V4's broad, uniform halo with differential orbital gas streaks, a gently warped upper light band and concentrated pale-gold accretion light near the dark central shadow.
-- Stronger local additive highlights around the hottest characters create apparent glow without turning the entire disc into an evenly luminous ring; far-out gas fades rapidly to black.
-- The existing eight planets, Kepler-scaled orbital periods, rings, depth order, independent starfield and three palettes remain unchanged. No scripted random events yet.
-- The renderer and code panel are isolated in `event-horizon.js`, with the page referencing `event-horizon.js?v=5` to bypass Safari's cached V4.
-- Visual reference: the user's supplied video of JIN2's BLACK HOLE artwork. JIN2's published repository prohibits AI use of its code, so V5 was independently implemented from the visual brief rather than copying that code. Light bending is illustrative, not physical ray tracing.
-- Local static/runtime checks passed. Verify the published animation visually on iPhone and measure Raspberry Pi performance separately before calling the visual match final.
+- Restored the original V2 `event-horizon.js` content exactly from commit `19ff7be570a36a744606487c76e5798eeb63e4de`, after V3 through V5 failed to match the supplied visual reference. This rollback makes no changes to PELAGIC or GREENWOOD.
+- `index.html` shows EVENT HORIZON / 002 and loads `event-horizon.js?v=20261119` to bypass stale mobile browser caches.
+- V2 includes an animated, tilted ASCII black hole, eight fictional orbiting planets, a sparse star field and palette selection. Its accretion light, lensing and orbital scales are illustrative, not a scientifically accurate simulation.
+- This is a **rollback**, not an approved final visual design. Future work should be reviewed with actual browser-rendered screenshots before changing the live artwork.
+- JIN2's original reference repository expressly prohibits use of its code with AI; do not copy, port or adapt the source without the necessary permission. Any new rendering implementation should be original and independently evaluated against the visual brief.
 
 
 ## PELAGIC 017 — sensory awareness for iPhone
