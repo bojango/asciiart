@@ -14,30 +14,44 @@ function load(){
   vm.runInNewContext(source,sandbox,{filename:'source-compositor.js'});
   return sandbox.window.EventHorizonSourceCompositor;
 }
-const keys=['brightness','coreExposure','warmth','saturation','gamma','contrast',
+const keys=['brightness','coreExposure','coreBloomStrength','coreBloomRadius',
+  'coreThreshold','coreWhiteLift','warmth','saturation','gamma','contrast',
   'highlightRolloff','bloomStrength','bloomRadiusSmall','bloomRadiusWide'];
 
-test('ten independently exposed numeric tuners and original defaults',()=>{
+test('fourteen independently exposed tuners preserve the approved visual baseline',()=>{
   const p=load(),def=p.getDefaults();
   assert.deepEqual(Object.keys(def),keys);
-  assert.equal(def.brightness,1);
-  assert.equal(def.coreExposure,1);
+  assert.equal(def.brightness,2);
+  assert.equal(def.coreExposure,3.1);
+  assert.equal(def.warmth,1.7);
+  assert.equal(def.saturation,1.15);
   assert.equal(def.gamma,1);
-  assert.equal(def.highlightRolloff,0);
-  assert.equal(def.bloomRadiusSmall,1.25);
-  assert.equal(def.bloomRadiusWide,2.75);
+  assert.equal(def.contrast,.9);
+  assert.equal(def.highlightRolloff,.2);
+  assert.equal(def.bloomStrength,2);
+  assert.equal(def.bloomRadiusSmall,1.05);
+  assert.equal(def.bloomRadiusWide,1.8);
+  assert.equal(def.coreBloomStrength,0);
+  assert.equal(def.coreBloomRadius,1.1);
+  assert.equal(def.coreThreshold,.7);
+  assert.equal(def.coreWhiteLift,0);
   for(const key of keys)assert.equal(p.getParams()[key],def[key]);
 });
 test('setters clamp unsafe values, round step increments and ignore invalid inputs',()=>{
   const p=load();
   const values=p.setParams({brightness:40,coreExposure:-1,gamma:'bad',
-    bloomRadiusWide:500,warmth:1.73,saturation:1.18});
+    bloomRadiusWide:500,warmth:1.73,saturation:1.18,
+    coreBloomStrength:900,coreBloomRadius:-2,coreThreshold:8,coreWhiteLift:-1});
   assert.equal(values.brightness,16);
   assert.equal(values.coreExposure,.10);
   assert.equal(values.gamma,1);
   assert.equal(values.bloomRadiusWide,12);
   assert.equal(values.warmth,1.75);
   assert.equal(values.saturation,1.20);
+  assert.equal(values.coreBloomStrength,6);
+  assert.equal(values.coreBloomRadius,.25);
+  assert.equal(values.coreThreshold,1.5);
+  assert.equal(values.coreWhiteLift,0);
   assert.equal(p.setBrightness(.25),.25);
   p.setParams(p.getDefaults());
   assert.deepEqual({...p.getParams()},{...p.getDefaults()});
@@ -59,9 +73,29 @@ test('controls and copy workflow are confined to the experimental preview',()=>{
   assert.match(html,/setStudioOpen\(false\)/);
   assert.match(html,/navigator\.clipboard\.writeText/);
   assert.match(html,/history\.replaceState/);
-  assert.match(html,/eventHorizon\.lightingTuners\.v1/);
-  assert.match(html,/source-compositor\.js\?v=4/);
+  assert.match(html,/eventHorizon\.lightingTuners\.v2/);
+  assert.match(html,/source-compositor\.js\?v=5/);
+  assert.match(html,/selectTuner\(2,false\)/);
+  assert.match(html,/presetVersion:2/);
   const prod=fs.readFileSync(path.join(root,'index.html'),'utf8');
   assert.ok(!prod.includes('lightingTuners'));
   assert.ok(prod.includes('event-horizon.js?v=20261119'));
+});
+
+test('core bloom is additive only when explicitly enabled; dark center remains masked',()=>{
+  assert.match(source,/if\(params\.coreBloomStrength>0\)/);
+  assert.match(source,/if\(drawCore\)/);
+  assert.match(source,/function coreMask\(point,view\)/);
+  assert.match(source,/r<\.98/);
+  assert.match(source,/destination-out/);
+  const p=load();
+  assert.equal(p.getParams().coreBloomStrength,0);
+  p.setParams({coreBloomStrength:2.5,coreBloomRadius:1.4,coreThreshold:.55,coreWhiteLift:.7});
+  assert.equal(p.getParams().coreBloomStrength,2.5);
+  assert.equal(p.getParams().coreBloomRadius,1.4);
+  assert.equal(p.getParams().coreThreshold,.55);
+  assert.equal(p.getParams().coreWhiteLift,.7);
+  p.setParams(p.getDefaults());
+  assert.equal(p.getParams().coreBloomStrength,0);
+  assert.equal(p.getParams().coreWhiteLift,0);
 });
