@@ -39,10 +39,17 @@
     lastTime=null;
   }
   function tint(heat,palette){
-    // The source multiplies RGB pixels by intensity, not alpha.
+    // Keep the reference heat categories and geometry. Adjust RGB exposure
+    // only: near-white inner gas, bright gold mids, dark outermost gas.
     const base=TAGS[palette][heat<.1?0:heat<.2?1:heat<.45?2:heat<.75?3:4];
-    const lum=clamp(.42+.85*heat,0,1.3)*(.35+.65*smooth((heat-.07)/.15));
-    return base.map(v=>Math.min(255,Math.round(v*lum)));
+    const warmBoost=smooth((heat-.42)/.22);
+    const coreBoost=smooth((heat-.74)/.12);
+    const lum=clamp(.50+1.02*heat,0,1.58)*(.38+.62*smooth((heat-.07)/.15));
+    const out=base.map(v=>v*lum);
+    out[0]+=10*warmBoost+10*coreBoost;
+    out[1]+=22*warmBoost+28*coreBoost;
+    out[2]+= 8*warmBoost+54*coreBoost;
+    return out.map(v=>Math.min(255,Math.round(v)));
   }
   function gaussian(srcCtx,dstCtx,w,h,sigma){
     const pixels=srcCtx.getImageData(0,0,w,h).data;
@@ -87,8 +94,8 @@
     const [x0,y0,w,h]=sizes;
     ctx.save();ctx.globalCompositeOperation='lighter';
     ctx.globalAlpha=1;ctx.drawImage(trail,x0,y0);
-    ctx.globalAlpha=.75;ctx.drawImage(bloomSmall,x0,y0,w,h);
-    ctx.globalAlpha=.45;ctx.drawImage(bloomWide,x0,y0,w,h);
+    ctx.globalAlpha=.98;ctx.drawImage(bloomSmall,x0,y0,w,h);
+    ctx.globalAlpha=.62;ctx.drawImage(bloomWide,x0,y0,w,h);
     ctx.restore();
   }
   function draw(ctx,view,time,points,palette,font,shadow){
