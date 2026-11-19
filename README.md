@@ -1,15 +1,14 @@
 # PELAGIC - Living ASCII
 
-## EVENT HORIZON / 004 — concentrated black-hole luminosity
+## EVENT HORIZON / 005 — independently rebuilt black-hole illumination
 
-- Scene: `?scene=event-horizon`, selected using the existing three-way scene switcher.
-- Kept the V3 planetary system, orbital periods, 3D depth, stars, three palettes and artwork composition unchanged.
-- Black-hole visual revision: substantially hotter pale-gold/white ASCII glyphs around the central shadow, a stronger near-side accretion band, and a smoother, more luminous upper gravitational-light approximation. The broad red aura is reduced: brightness now falls off sharply towards black beyond the disc's inner regions.
-- Brightness mapping uses an extended heat colour ramp, spatial fading and selective small text-glow highlights, rather than increasing all letter opacity equally. The core remains black.
-- The foreground and background gas still animate with gentle differential orbital motion. The disc and light bending remain **artistically stylised**, not relativistic ray tracing.
-- `index.html` references `event-horizon.js?v=4` to refresh the script in mobile browsers. PELAGIC and GREENWOOD modules were **not modified**.
-- Visual inspiration was supplied by the user, with JIN2 (@jin_22ee) credited as the source artwork creator. Their published code prohibits AI use, and has not been copied or adapted.
-- Local rendering checks cover portrait size, multiple animation times, output coordinates and the existence of luminous ASCII highlights. Live iPhone/browser/GitHub Pages visual confirmation is still needed.
+- Select with the existing scene button or `?scene=event-horizon`.
+- A redesigned ASCII light field replaces the V4's broad, uniform halo with differential orbital gas streaks, a gently warped upper light band and concentrated pale-gold accretion light near the dark central shadow.
+- Stronger local additive highlights around the hottest characters create apparent glow without turning the entire disc into an evenly luminous ring; far-out gas fades rapidly to black.
+- The existing eight planets, Kepler-scaled orbital periods, rings, depth order, independent starfield and three palettes remain unchanged. No scripted random events yet.
+- The renderer and code panel are isolated in `event-horizon.js`, with the page referencing `event-horizon.js?v=5` to bypass Safari's cached V4.
+- Visual reference: the user's supplied video of JIN2's BLACK HOLE artwork. JIN2's published repository prohibits AI use of its code, so V5 was independently implemented from the visual brief rather than copying that code. Light bending is illustrative, not physical ray tracing.
+- Local static/runtime checks passed. Verify the published animation visually on iPhone and measure Raspberry Pi performance separately before calling the visual match final.
 
 
 ## PELAGIC 017 — sensory awareness for iPhone
