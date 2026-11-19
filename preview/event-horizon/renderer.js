@@ -25,6 +25,7 @@
       low: [47, 88, 111], mid: [117, 185, 190], high: [255, 225, 177] }
   ];
   let paletteIndex = 0;
+  let showPlanets=true;
 
   // Worlds are deliberately fictional.  The positions, phase offsets and
   // visual sizes are composed for portrait viewing, not to mimic our Sun.
@@ -214,6 +215,11 @@
         ctx.filter='blur(14px)';ctx.globalAlpha=.40;ctx.drawImage(surface,0,0);
         ctx.filter='blur(4px)';ctx.globalAlpha=.66;ctx.drawImage(surface,0,0);
         ctx.filter='none';
+      } else {
+        // Safari versions without Canvas filter still receive a glow pass.
+        ctx.shadowBlur=12;ctx.shadowColor='rgba(255,145,60,.8)';
+        ctx.globalAlpha=.6;ctx.drawImage(surface,0,0);
+        ctx.shadowBlur=0;
       }
       ctx.globalAlpha=1;ctx.drawImage(surface,0,0);ctx.restore();
     }
@@ -295,11 +301,11 @@
     drawBackground(ctx, time, view);
     drawOrbitHints(ctx, view);
     const worldPositions = planets.map(p => ({ planet: p, pos: orbitPosition(p, time, view) }));
-    for (const world of worldPositions.filter(p => p.pos.depth > 0).sort((a, b) => b.pos.depth - a.pos.depth))
+    if(showPlanets)for (const world of worldPositions.filter(p => p.pos.depth > 0).sort((a, b) => b.pos.depth - a.pos.depth))
       drawPlanet(ctx, world.planet, world.pos, view);
     renderBlackHole(ctx,view,time,highRes);
 
-    for (const world of worldPositions.filter(p => p.pos.depth <= 0).sort((a, b) => b.pos.depth - a.pos.depth))
+    if(showPlanets)for (const world of worldPositions.filter(p => p.pos.depth <= 0).sort((a, b) => b.pos.depth - a.pos.depth))
       drawPlanet(ctx, world.planet, world.pos, view);
     ctx.shadowBlur = 0; ctx.globalAlpha = 1; ctx.restore();
   }
@@ -319,6 +325,8 @@
   window.EventHorizonRebuild = Object.freeze({
     draw: drawScene, cyclePalette, source, state,
     diagnostics:()=>({...diagnostics}),
+    setShowPlanets(v){showPlanets=Boolean(v)},
+    get showPlanets(){return showPlanets},
     get palette() { return palettes[paletteIndex].name; },
     get swatch() { return palettes[paletteIndex].swatch; }
   });
