@@ -1278,8 +1278,11 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     try{localStorage.setItem('pelagic.scene',currentScene);}catch(_){ }
     const forest=currentScene==='greenwood',cosmos=currentScene==='event-horizon';
     if(currentScene!=='pelagic'){senses.stopCamera();senses.stopMotion();}
-    if(cosmos)toggleDeveloper(false); // Weather, LIFE and SENSE controls are unrelated to astronomy.
-    document.getElementById('devToggle').style.display=cosmos?'none':'';
+    if(cosmos||!horizonDevPanel.hidden)toggleDeveloper(false);
+    devToggle.style.display='';
+    devToggle.setAttribute('aria-controls',cosmos?'horizonDevPanel':'devPanel');
+    devToggle.setAttribute('aria-label',cosmos?'Open EVENT HORIZON developer controls':'Open environmental developer controls');
+    devToggle.title=cosmos?'Orbital simulation and diagnostics':'Environmental simulator';
     document.getElementById('sceneName').textContent=cosmos?'◎ HORIZON':forest?'◇ GREENWOOD':'◌ PELAGIC';
     document.querySelector('.hud.top-left').innerHTML=cosmos?'EVENT HORIZON <strong>/</strong> 002<br>KEPLERIAN SYSTEM':forest?'GREENWOOD <strong>/</strong> 002<br>CINEMATIC CLEARING':'PELAGIC <strong>/</strong> 017<br>SENSORY ECOSYSTEM';
     document.querySelector('.hud.bottom-left').innerHTML=cosmos?'EIGHT <strong>WORLDS</strong>':forest?'THE <strong>OLD GROVE</strong>':'MEDUSA <strong>ASTRALIS</strong>';
@@ -1290,10 +1293,22 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     document.getElementById('art').setAttribute('aria-label',cosmos?'Animated ASCII black hole with eight orbiting planets':forest?'Animated ASCII ancient woodland clearing':'Animated ASCII jellyfish');
     document.getElementById('sea').setAttribute('aria-label',cosmos?'ASCII black hole with softly glowing accretion disc and orbiting planets':forest?'Living ASCII forest clearing with moving light and foliage':'Living ASCII jellyfish');
     document.title=cosmos?'EVENT HORIZON / Living ASCII':forest?'GREENWOOD / Living ASCII':'PELAGIC / Living ASCII';
+    syncSpeedLabel();
+    if(!cosmos&&!paused){horizonNode('status').textContent='LIVE';horizonNode('liveDot').classList.remove('off');}
     buildSource();render(t);
+    if(cosmos)syncHorizonDev();
   }
   function toggleDetail(){highRes=!highRes;document.getElementById('densityName').textContent=highRes?'HI-RES':'LO-RES';resize();}
-  function changeSpeed(){speed=speed===1?1.5:speed===1.5?.65:1;document.getElementById('speedName').textContent=speed===.65?'0.65×':speed+'×';}
+  function changeSpeed(){
+    if(currentScene==='event-horizon'&&window.EventHorizonSceneClock){
+      const modes=['WALL','REAL','FAST','TEST','DEMO'];
+      const current=window.EventHorizonSceneClock.snapshot().mode;
+      const next=modes[(modes.indexOf(current)+1)%modes.length];
+      orbitClockAction(()=>window.EventHorizonSceneClock.setMode(next));
+      return;
+    }
+    speed=speed===1?1.5:speed===1.5?.65:1;syncSpeedLabel();
+  }
   function togglePause(){
     paused=!paused;
     document.getElementById('led').classList.toggle('off',paused);
@@ -1304,6 +1319,84 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
   const devPanel=document.getElementById('devPanel');
   const app=document.querySelector('.app');
   const devToggle=document.getElementById('devToggle');
+  const horizonClock=window.EventHorizonSceneClock;
+  const horizonDevPanel=document.getElementById('horizonDevPanel');
+  let lastHorizonDevUpdate=0;
+  const horizonNode=id=>document.getElementById(id);
+  const horizonRateLabel=()=>{
+    if(!horizonClock)return '—';
+    const rate=horizonClock.snapshot().rate;
+    return (rate>=1?rate.toLocaleString('en-GB',{maximumFractionDigits:2}):rate.toFixed(3))+'×';
+  };
+  function syncSpeedLabel(){
+    horizonNode('speedName').textContent=currentScene==='event-horizon'&&horizonClock?
+      horizonRateLabel():speed===.65?'0.65×':speed+'×';
+  }
+  function humanOrbitWait(seconds){
+    if(seconds===null||!Number.isFinite(seconds))return 'PAUSED';
+    if(seconds<60)return Math.max(0,Math.ceil(seconds))+' sec';
+    if(seconds<3600)return Math.ceil(seconds/60)+' min';
+    const d=Math.floor(seconds/86400),h=Math.floor(seconds%86400/3600),
+      m=Math.floor(seconds%3600/60);
+    if(d)return d+'d '+h+'h';
+    return h+'h '+m+'m';
+  }
+  function syncHorizonDev(now=Date.now()){
+    if(!horizonClock||!horizonDevPanel||currentScene!=='event-horizon')return;
+    const snap=horizonClock.snapshot(now),next=horizonClock.nextPass(now);
+    const phys=window.EventHorizonPhysicalSystem;
+    const camera=horizon.heroAt?.(snap.visualTime,width,height);
+    const art=window.EventHorizonPlanetArt?.diagnostics?.();
+    const light=window.EventHorizonSourceCompositor?.stats?.();
+    horizonNode('horizonClockMode').value=snap.mode;
+    if(document.activeElement!==horizonNode('horizonCustomRate'))
+      horizonNode('horizonCustomRate').value=String(snap.rate);
+    horizonNode('horizonClockPause').textContent=snap.paused?'RESUME ORBITS':'PAUSE ORBITS';
+    horizonNode('horizonClockPause').setAttribute('aria-pressed',String(snap.paused));
+    horizonNode('horizonSimDate').textContent=snap.simulatedDateISO.slice(0,19).replace('T',' ');
+    horizonNode('horizonSimDays').textContent=snap.simDays.toFixed(3)+' d';
+    horizonNode('horizonNextPass').textContent=!next?'—':snap.paused?'WHEN RESUMED':
+      new Date(next.realTimeISO).toLocaleString('en-GB',{day:'numeric',month:'short',
+        hour:'2-digit',minute:'2-digit'});
+    horizonNode('horizonPassETA').textContent=next?humanOrbitWait(next.realSecondsUntil):'—';
+    horizonNode('horizonPeriod').textContent=snap.periodRealDays>=1?
+      snap.periodRealDays.toFixed(2)+' real days':humanOrbitWait(snap.periodRealDays*86400);
+    horizonNode('horizonBodies').textContent=phys?
+      phys.binary.totalMassSolar.toFixed(1)+' M☉ · '+(phys.binary.periodSeconds/3600).toFixed(2)+'h binary':'MODEL UNAVAILABLE';
+    horizonNode('horizonCamera').textContent=camera?
+      (camera.heroLOD||'MIN')+' · r='+camera.radius.toFixed(1)+'px':'—';
+    horizonNode('horizonGlyphs').textContent=art?
+      art.glyphs+' body · '+art.cloudGlyphs+' cloud · '+(light?.totalGlyphs||0)+' gas':'—';
+    syncSpeedLabel();
+    if(!paused){
+      horizonNode('status').textContent=snap.paused?'ORBIT HOLD':'LIVE';
+      horizonNode('liveDot').classList.toggle('off',snap.paused);
+    }
+  }
+  function orbitClockAction(fn){
+    if(!horizonClock)return;
+    try{fn();syncHorizonDev();if(currentScene==='event-horizon')render(t);}
+    catch(error){horizonNode('horizonClockNote').textContent='Clock error: '+String(error?.message||error);}
+  }
+  horizonNode('horizonClockMode').addEventListener('change',()=>{
+    const mode=horizonNode('horizonClockMode').value;
+    orbitClockAction(()=>mode==='CUSTOM'?
+      horizonClock.setRate(horizonNode('horizonCustomRate').value):
+      horizonClock.setMode(mode));
+  });
+  horizonNode('horizonApplyRate').addEventListener('click',()=>orbitClockAction(()=>
+    horizonClock.setRate(horizonNode('horizonCustomRate').value)));
+  horizonNode('horizonCustomRate').addEventListener('keydown',e=>{
+    if(e.key==='Enter'){e.preventDefault();orbitClockAction(()=>
+      horizonClock.setRate(horizonNode('horizonCustomRate').value));}
+  });
+  horizonNode('horizonClockPause').addEventListener('click',()=>orbitClockAction(()=>
+    horizonClock.setPaused(!horizonClock.snapshot().paused)));
+  horizonNode('horizonJumpPass').addEventListener('click',()=>orbitClockAction(()=>
+    horizonClock.jumpToNextPass()));
+  horizonNode('horizonClockReset').addEventListener('click',()=>orbitClockAction(()=>
+    horizonClock.reset()));
+  horizonNode('horizonDevClose').addEventListener('click',()=>toggleDeveloper(false));
   const fields=[
     ['temperature','Temperature','temperatureC','°C'],
     ['wind','Wind','windKmh','km/h'],
@@ -1464,12 +1557,16 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     weatherUIError='';environment.refresh(true).then(()=>{syncDeveloperControls();});updateWeatherStatus();
   });
   function toggleDeveloper(force){
-    if(currentScene==='event-horizon' && force!==false)return;
-    const show=typeof force==='boolean'?force:devPanel.hidden;
-    devPanel.hidden=!show;codeBox.classList.toggle('dev-active',show);
+    const cosmos=currentScene==='event-horizon';
+    const active=cosmos?horizonDevPanel:devPanel;
+    const show=typeof force==='boolean'?force:active.hidden;
+    devPanel.hidden=cosmos||!show;
+    horizonDevPanel.hidden=!cosmos||!show;
+    codeBox.classList.toggle('dev-active',show);
     devToggle.setAttribute('aria-expanded',String(show));
     devToggle.setAttribute('aria-pressed',String(show));
     if(show){
+      if(cosmos){syncHorizonDev();return;}
       if(activeDevTab==='weather')syncDeveloperControls();
       if(activeDevTab==='life')syncEcosystemControls();
       if(activeDevTab==='sense')syncSenseControls();
@@ -1561,6 +1658,9 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
       drawDebt+=delta;
       if(drawDebt>=1/30){render(t);drawDebt=0;
         if(!devPanel.hidden&&activeDevTab==='sense'&&Math.floor(t*2)!==Math.floor((t-delta)*2))syncSenseControls();
+        if(currentScene==='event-horizon'&&!horizonDevPanel.hidden&&Date.now()-lastHorizonDevUpdate>=500){
+          lastHorizonDevUpdate=Date.now();syncHorizonDev();
+        }
         if(!devPanel.hidden)document.getElementById('devReadout').textContent=currentScene==='event-horizon'?'ORBIT · 8 WORLDS':currentScene==='greenwood'?`GROVE · ${greenwood.season}`:activeDevTab==='sense'?('TILT '+senses.state().motion+' · CAM '+senses.state().camera):devPanel.classList.contains('life-mode')?`CATCH ${ecosystem.state().counts.preyCaught} · VISIT ${ecosystem.state().counts.visitors}`:`Z ${swimmer.z.toFixed(1)} · ${bodyScale().toFixed(2)}× · ${t<swimmer.closeVisitUntil?'NEAR':t<swimmer.closeRetreatUntil?'RETURN':swimmer.behaviour.slice(0,5).toUpperCase()}`;
       }
     }
