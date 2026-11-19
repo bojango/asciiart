@@ -47,3 +47,11 @@ Gas orbital velocity decreases with radius using the source's Kepler-inspired
 scaling. The bright upper band is a lensing approximation, not a relativistic
 ray tracer. Planet periods follow Kepler's third law but the eight-world system
 is fictional.
+
+## Reference-faithful luminosity pass (19 November 2026)
+
+- The black-hole gas equations, ASCII glyph positions, disc tilt, planets and star field are unchanged.
+- Source reproduction: `TRAIL=0.4` retained with fading and Canvas `lighten` (Pygame `BLEND_MAX` analogue), then small and broad additive glow passes, scaled from source blur radii 5 and 22, at alpha 0.75 and 0.45.
+- The original's DEEP, RED, ORANGE, AMBER and HOT heat thresholds now drive the coloured text, with extra white-hot colour temperature near the shadow and brighter gold gas towards the edges for mobile legibility.
+- Preview script cache version is `renderer.js?v=3`. Production V2 remains unchanged.
+- iOS Safari filter support varies; a two-pass shadow-blur fallback preserves additive glow. Actual iPhone validation of brightness and performance is still needed.
