@@ -120,8 +120,8 @@ button:disabled{opacity:.40;cursor:default}
 </div>
 <script src="../../event-horizon.js?v=20261119"></script>
 <script>window.EventHorizonBaseline=window.PelagicEventHorizon;</script>
-<script src="./source-compositor.js?v=5"></script>
-<script src="./renderer-reference.js?v=1"></script>
+<script src="./source-compositor.js?v=6"></script>
+<script src="./renderer-reference.js?v=2"></script>
 <script>
 (() => {
   'use strict';
@@ -174,9 +174,9 @@ button:disabled{opacity:.40;cursor:default}
       desc:'Adjust the wide soft glow outside the disc'}
   ];
   const defaults=photometry.getDefaults();
-  // Separate storage key preserves earlier tuning experiments. A clean URL
-  // starts from the exact 10-control baseline supplied on 19 November 2026.
-  const settingsKey='eventHorizon.lightingTuners.v2';
+  // V3 resets to the owner's locked 14-value preset (19 November 2026).
+  // Older saved v1/v2 experiments remain untouched and cannot override it.
+  const settingsKey='eventHorizon.lightingTuners.v3';
   const chips=[],valueNodes=[];
   let activeIndex=0;
   function format(def,v){return Number(v).toFixed(2)+(def.unit||'')}
@@ -242,8 +242,7 @@ button:disabled{opacity:.40;cursor:default}
   try{
     const stored=JSON.parse(localStorage.getItem(settingsKey)||'null');
     if(stored&&typeof stored==='object')Object.assign(initial,stored);
-    // Deliberately do not import older V1 values over the approved baseline.
-    // The old V1 localStorage data remains available, but is not modified.
+    // Do not import older V1/V2 experiments over the locked V3 baseline.
   }catch(_){}
   try{
     const search=new URLSearchParams(location.search);
@@ -280,7 +279,7 @@ button:disabled{opacity:.40;cursor:default}
   };
   function exportPreset(){
     return JSON.stringify({
-      scene:'EVENT HORIZON / SOURCE RGB',presetVersion:2,
+      scene:'EVENT HORIZON / SOURCE RGB',presetVersion:3,
       palette:port.palette,detail:highDetail?'HI':'LO',
       viewport:{width:Math.round(cssWidth),height:Math.round(cssHeight)},
       settings:photometry.getParams()
