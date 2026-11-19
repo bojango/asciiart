@@ -396,6 +396,11 @@
   }
   window.EventHorizonRebuild = Object.freeze({
     draw: drawScene, cyclePalette, source, state,
+    heroAt(time,width=440,height=736){
+      return orbitPosition(planets[2],time,layout(width,height));
+    },
+    nextHeroPass(time){return window.EventHorizonHeroCamera.nextClosestTime(planets[2],time)},
+    camera(width,height){return window.EventHorizonHeroCamera.camera(width,height)},
     diagnostics:()=>({...diagnostics}),
     setShowPlanets(v){showPlanets=Boolean(v)},
     get showPlanets(){return showPlanets},
