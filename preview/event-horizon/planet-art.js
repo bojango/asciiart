@@ -102,8 +102,8 @@
     const inclination=profile.tilt*Math.PI/180;
     for(let band=0;band<2;band++){
       const mult=band===0?1.72:2.08;
-      for(let k=0;k<90;k++){
-        const a=k/90*TAU,sa=Math.sin(a),ca=Math.cos(a);
+      for(let k=0;k<66;k++){
+        const a=k/66*TAU,sa=Math.sin(a),ca=Math.cos(a);
         if((sa>=0)!==front)continue;
         if((k+band*3)%3===0)continue; // deliberately sparse ASCII rings
         const x0=ca*r*mult,y0=sa*r*(.42+.08*Math.cos(inclination));
