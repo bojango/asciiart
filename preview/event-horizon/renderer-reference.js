@@ -334,18 +334,25 @@
     if (planet.rings) drawPlanetRings(ctx, planet, pos, view, false);
   }
 
+  function paintPlanet(ctx,planet,pos,view,time){
+    const art=window.EventHorizonPlanetArt;
+    if(art&&art.draw(ctx,planet,pos,view,time))return;
+    // Preserve old standalone and legacy A/B behaviour when art module absent.
+    drawPlanet(ctx,planet,pos,view);
+  }
   function drawScene(ctx, width, height, time, ignoredEffects, highRes = true) {
     const view = layout(width, height);
     ctx.save(); ctx.globalAlpha = 1; ctx.shadowBlur = 0;
     drawBackground(ctx, time, view);
     drawOrbitHints(ctx, view);
+    if(window.EventHorizonPlanetArt)window.EventHorizonPlanetArt.resetDiagnostics();
     const worldPositions = planets.map(p => ({ planet: p, pos: orbitPosition(p, time, view) }));
     if(showPlanets)for (const world of worldPositions.filter(p => p.pos.depth > 0).sort((a, b) => b.pos.depth - a.pos.depth))
-      drawPlanet(ctx, world.planet, world.pos, view);
+      paintPlanet(ctx, world.planet, world.pos, view, time);
     renderBlackHole(ctx,view,time,highRes);
 
     if(showPlanets)for (const world of worldPositions.filter(p => p.pos.depth <= 0).sort((a, b) => b.pos.depth - a.pos.depth))
-      drawPlanet(ctx, world.planet, world.pos, view);
+      paintPlanet(ctx, world.planet, world.pos, view, time);
     ctx.shadowBlur = 0; ctx.globalAlpha = 1; ctx.restore();
   }
   function cyclePalette() { paletteIndex = (paletteIndex + 1) % palettes.length; return palettes[paletteIndex].name; }
