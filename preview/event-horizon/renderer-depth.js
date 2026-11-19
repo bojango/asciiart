@@ -366,6 +366,33 @@
     // Preserve old standalone and legacy A/B behaviour when art module absent.
     drawPlanet(ctx,planet,pos,view);
   }
+  // Soft opacity beneath luminous gas. This runs BEFORE the existing
+  // additive RGB light compositor, so the approved glyphs, colour ramps,
+  // bloom and event-horizon geometry are completely unaffected.
+  // Its only job is to stop background stars and rear planets showing
+  // through a bright accretion disc as though the gas were empty space.
+  function drawAccretionOcclusion(ctx,view){
+    const radius=view.hole*5.40;
+    ctx.save();
+    ctx.globalCompositeOperation='source-over';
+    ctx.globalAlpha=1;
+    ctx.translate(view.x,view.y);
+    ctx.rotate(TILT);
+    // Broad, tilted screen-space projection of the flowing disc.
+    // The extended outer edge fades smoothly to preserve diffuse gas.
+    ctx.scale(1,.27);
+    const matte=ctx.createRadialGradient(0,0,view.hole*.62,0,0,radius);
+    matte.addColorStop(0,'rgba(1,1,2,0.92)');
+    matte.addColorStop(.24,'rgba(1,1,2,0.73)');
+    matte.addColorStop(.57,'rgba(1,1,2,0.48)');
+    matte.addColorStop(.83,'rgba(1,1,2,0.20)');
+    matte.addColorStop(1,'rgba(1,1,2,0)');
+    ctx.fillStyle=matte;
+    ctx.beginPath();
+    ctx.arc(0,0,radius,0,TAU);
+    ctx.fill();
+    ctx.restore();
+  }
   function drawScene(ctx, width, height, time, ignoredEffects, highRes = true) {
     const view = layout(width, height);
     ctx.save(); ctx.globalAlpha = 1; ctx.shadowBlur = 0;
@@ -375,6 +402,9 @@
     const worldPositions = planets.map(p => ({ planet: p, pos: orbitPosition(p, time, view) }));
     if(showPlanets)for (const world of worldPositions.filter(p => p.pos.depth > 0).sort((a, b) => b.pos.depth - a.pos.depth))
       paintPlanet(ctx, world.planet, world.pos, view, time);
+    // The matte is behind the light itself, between far-side planets
+    // and the luminous disc. Nearby planets are painted afterwards.
+    drawAccretionOcclusion(ctx,view);
     renderBlackHole(ctx,view,time,highRes);
 
     if(showPlanets)for (const world of worldPositions.filter(p => p.pos.depth <= 0).sort((a, b) => b.pos.depth - a.pos.depth))
