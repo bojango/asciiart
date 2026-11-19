@@ -194,7 +194,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
 </main>
 <script src="./environment.js"></script>
 <script src="./greenwood.js"></script>
-<script src="./event-horizon.js?v=4"></script>
+<script src="./event-horizon.js?v=5"></script>
 <script src="./ecosystem.js"></script>
 <script src="./senses.js"></script>
 <script>
@@ -1223,7 +1223,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     if(cosmos)toggleDeveloper(false); // Weather, LIFE and SENSE controls are unrelated to astronomy.
     document.getElementById('devToggle').style.display=cosmos?'none':'';
     document.getElementById('sceneName').textContent=cosmos?'◎ HORIZON':forest?'◇ GREENWOOD':'◌ PELAGIC';
-    document.querySelector('.hud.top-left').innerHTML=cosmos?'EVENT HORIZON <strong>/</strong> 004<br>KEPLERIAN SYSTEM':forest?'GREENWOOD <strong>/</strong> 002<br>CINEMATIC CLEARING':'PELAGIC <strong>/</strong> 017<br>SENSORY ECOSYSTEM';
+    document.querySelector('.hud.top-left').innerHTML=cosmos?'EVENT HORIZON <strong>/</strong> 005<br>KEPLERIAN SYSTEM':forest?'GREENWOOD <strong>/</strong> 002<br>CINEMATIC CLEARING':'PELAGIC <strong>/</strong> 017<br>SENSORY ECOSYSTEM';
     document.querySelector('.hud.bottom-left').innerHTML=cosmos?'EIGHT <strong>WORLDS</strong>':forest?'THE <strong>OLD GROVE</strong>':'MEDUSA <strong>ASTRALIS</strong>';
     document.querySelector('.hud.bottom-right').innerHTML=cosmos?'ACCRETION <strong>DISC</strong><br>ORBITAL DYNAMICS':forest?'FIELD STUDY <strong>01</strong><br>LAYERS / LIGHT / WIND':'DEPTH <strong>2480 M</strong><br>PROCEDURAL MOTION';
     document.getElementById('colorName').textContent=cosmos?horizon.palette:forest?greenwood.season:palettes[paletteIndex].name;
