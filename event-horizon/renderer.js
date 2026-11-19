@@ -8,6 +8,15 @@
  */
 (() => {
   'use strict';
+  // Keep the original EVENT HORIZON scene working if any optional production
+  // render module fails to load (e.g. stale service-worker/network asset).
+  // The original ./event-horizon.js is registered before this module.
+  if(!window.EventHorizonHeroCamera||
+     !window.EventHorizonPlanetArt||
+     !window.EventHorizonSourceCompositor){
+    console.warn('EVENT HORIZON: enhanced scene dependency unavailable; using baseline renderer');
+    return;
+  }
   const TAU = Math.PI * 2;
   const clamp = (n, lo = 0, hi = 1) => Math.min(hi, Math.max(lo, n));
   const mix = (a, b, t) => a + (b - a) * t;
