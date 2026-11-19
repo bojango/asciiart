@@ -132,22 +132,25 @@
     return {disc:disk,lensed:halo,photon:ring,near,inside,shadowDistance:r,
       grain,discRadius:rho,phase:gas.phase,lr:gas.lr,heat,ang,ring};
   }
-  // The original ranges from deep red through amber to near white-hot.
-  const inkTable=palettesLight.map(ramp=>Array.from({length:72},(_,i)=>{
-    const heat=i/71*2.5;let c;
-    if(heat<.10)c=ramp[0];
-    else if(heat<.20)c=ramp[1];
-    else if(heat<.45)c=ramp[2];
-    else if(heat<.75)c=ramp[3];
-    else c=lerpRGB(ramp[4],[255,252,236],softstep((heat-.75)/1.5));
-    return Array.from({length:16},(_,alpha)=>rgba(c,alpha/15));
-  }));
-  function inkForHeat(heat,radius,grain){
-    const intensity=clamp(heat*1.8/2.5);
-    const level=Math.round(intensity*71);
-    const lum=Math.min(1.3,.42+.85*heat)*(.35+.65*softstep((heat-.07)/.15));
-    const alpha=Math.round(clamp(lum*(.95-.16*softstep((radius-2.6)/2.5)),0,1)*15);
-    return inkTable[paletteIndex][level][alpha];
+  // Source palette / luminance mapping plus mobile-screen colour separation.
+  // The supplied Python original uses fixed heat tags, TRAIL=.4 BLEND_MAX and
+  // two BLEND_ADD blurred copies (.75 small, .45 broad).
+  function lightWeights(heat,r){
+    const core=Math.exp(-Math.pow((r-1.36)/0.98,2))*softstep((heat-.13)/.33);
+    const outer=softstep((r-1.52)/.65)*
+      (1-softstep((r-5.25)/1.0))*(.42+.58*softstep((heat-.07)/.33));
+    return {core,outer};
+  }
+  function inkForHeat(heat,r,grain){
+    const ramp=palettesLight[paletteIndex];
+    const h=Math.max(0,heat*(.96+.08*grain));
+    const base=h<.10?ramp[0]:h<.20?ramp[1]:h<.45?ramp[2]:h<.75?ramp[3]:ramp[4];
+    const {core,outer}=lightWeights(h,r);
+    const gold=lerpRGB(ramp[3],[255,201,89],.82);
+    const colour=lerpRGB(lerpRGB(base,gold,outer*.88),[255,255,248],core*.97);
+    const sourceLum=Math.min(1.3,.42+.85*h)*(.35+.65*softstep((h-.07)/.15));
+    const exposure=1.10+1.32*core+.78*outer;
+    return rgba(colour,clamp(sourceLum*exposure,0,1));
   }
   function markForHeat(heat,grain,phase=0,lr=0,ring=false,ang=0){
     if(ring){
@@ -158,16 +161,34 @@
     const h=Math.floor(grain*12)+Math.floor(phase*2+lr*6);
     return pool[((h%pool.length)+pool.length)%pool.length];
   }
-  let rearCanvas,frontCanvas,rearCtx,frontCtx,layerWidth=0,layerHeight=0;
+  let rearCanvas,frontCanvas,rearCtx,frontCtx,trailRear,trailFront,
+      trailRearCtx,trailFrontCtx,layerWidth=0,layerHeight=0;
   const diagnostics={glyphs:0,hot:0,maxHeat:0,meanHeat:0,offscreen:false};
   function prepareLayers(w,h){
-    if(rearCanvas&&w===layerWidth&&h===layerHeight)return true;
+    if(rearCanvas&&frontCanvas&&trailRear&&trailFront&&
+       w===layerWidth&&h===layerHeight)return true;
     const make=()=>typeof OffscreenCanvas!=='undefined'?new OffscreenCanvas(w,h):
       typeof document!=='undefined'?Object.assign(document.createElement('canvas'),{width:w,height:h}):null;
-    rearCanvas=make();frontCanvas=make();layerWidth=w;layerHeight=h;
-    if(!rearCanvas||!frontCanvas)return false;
+    rearCanvas=make();frontCanvas=make();trailRear=make();trailFront=make();
+    if(!rearCanvas||!frontCanvas||!trailRear||!trailFront)return false;
     rearCtx=rearCanvas.getContext('2d');frontCtx=frontCanvas.getContext('2d');
-    return !!(rearCtx&&frontCtx);
+    trailRearCtx=trailRear.getContext('2d');trailFrontCtx=trailFront.getContext('2d');
+    layerWidth=w;layerHeight=h;
+    if(!rearCtx||!frontCtx||!trailRearCtx||!trailFrontCtx)return false;
+    for(const ctx of [trailRearCtx,trailFrontCtx]){
+      ctx.globalCompositeOperation='source-over';ctx.fillStyle='#000';
+      ctx.fillRect(0,0,w,h);
+    }
+    return true;
+  }
+  function retainLight(current,context){
+    // Python: previous frame * TRAIL(.4), then BLEND_MAX(current frame).
+    context.globalCompositeOperation='source-over';
+    context.fillStyle='rgba(0,0,0,.60)';
+    context.fillRect(0,0,layerWidth,layerHeight);
+    context.globalCompositeOperation='lighten';
+    context.drawImage(current,0,0);
+    context.globalCompositeOperation='source-over';
   }
   // Pure luminance adjustment: does not change gas physics, letter selection,
   // planets, stars, the silhouette or the near/far layering.
@@ -191,8 +212,9 @@
         const coreLight=innerLuminance(heat,gas.shadowDistance);
         const luminousHeat=heat*(1+1.70*coreLight);
         const colour=inkForHeat(luminousHeat,gas.shadowDistance,gas.grain);
+        const light=lightWeights(luminousHeat,gas.shadowDistance);
         const point={x,y,char,colour,near:gas.near,hot:heat>.68&&gas.shadowDistance<2.75,
-          coreLight};
+          coreLight:Math.max(coreLight,light.core),edgeLight:light.outer};
         points.push(point);
         diagnostics.glyphs++;diagnostics.maxHeat=Math.max(diagnostics.maxHeat,heat);
         diagnostics.meanHeat+=heat;if(point.hot)diagnostics.hot++;
@@ -205,15 +227,21 @@
     setFont(ctx,view.font*(highRes?1:1.06));
     for(const point of points)if(point.near===front){
       print(ctx,point.char,point.x,point.y,point.colour);
-      // Repeat only hot inner glyphs through additive blending; the existing
-      // two blur layers turn this into light without altering letter geometry.
-      if(point.coreLight>.25){
-        const previous=ctx.globalCompositeOperation;
-        ctx.globalCompositeOperation='lighter';
-        const strength=clamp((point.coreLight-.25)*.96,0,.68);
-        print(ctx,point.char,point.x,point.y,rgba(palettesLight[paletteIndex][4],strength));
-        ctx.globalCompositeOperation=previous||'source-over';
+      // All extra light is rendered from the SAME glyph at the SAME position.
+      const prev=ctx.globalCompositeOperation;
+      ctx.globalCompositeOperation='lighter';
+      if(point.edgeLight>.2)
+        print(ctx,point.char,point.x,point.y,
+          rgba(lerpRGB(palettesLight[paletteIndex][3],[255,208,94],.9),
+            clamp((point.edgeLight-.2)*.84,0,.68)));
+      if(point.coreLight>.15){
+        print(ctx,point.char,point.x,point.y,
+          rgba([255,255,249],clamp((point.coreLight-.15)*1.30,0,.90)));
+        if(point.coreLight>.57)
+          print(ctx,point.char,point.x,point.y,
+            rgba([255,255,255],(point.coreLight-.57)*.82));
       }
+      ctx.globalCompositeOperation=prev||'source-over';
     }
   }
   function renderBlackHole(ctx,view,time,highRes){
@@ -226,26 +254,34 @@
       drawGasField(ctx,points,view,true,highRes);
       return;
     }
-    rearCtx.clearRect(0,0,layerWidth,layerHeight);frontCtx.clearRect(0,0,layerWidth,layerHeight);
+    rearCtx.clearRect(0,0,layerWidth,layerHeight);
+    frontCtx.clearRect(0,0,layerWidth,layerHeight);
     drawGasField(rearCtx,points,view,false,highRes);
     drawGasField(frontCtx,points,view,true,highRes);
+    retainLight(rearCanvas,trailRearCtx);
+    retainLight(frontCanvas,trailFrontCtx);
     function merge(surface){
       ctx.save();ctx.globalCompositeOperation='lighter';
+      const small=Math.max(2,Math.round(view.width*5/1080));
+      const broad=Math.max(6,Math.round(view.width*22/1080));
       if(typeof ctx.filter==='string'){
-        ctx.filter='blur(14px)';ctx.globalAlpha=.40;ctx.drawImage(surface,0,0);
-        ctx.filter='blur(4px)';ctx.globalAlpha=.66;ctx.drawImage(surface,0,0);
+        // Source: BLEND_ADD blur(art,4,5)*.75 and blur(art,8,22)*.45.
+        ctx.filter='blur('+small+'px)';ctx.globalAlpha=.75;
+        ctx.drawImage(surface,0,0);
+        ctx.filter='blur('+broad+'px)';ctx.globalAlpha=.45;
+        ctx.drawImage(surface,0,0);
         ctx.filter='none';
-      } else {
-        // Safari versions without Canvas filter still receive a glow pass.
-        ctx.shadowBlur=12;ctx.shadowColor='rgba(255,145,60,.8)';
-        ctx.globalAlpha=.6;ctx.drawImage(surface,0,0);
+      }else{
+        // Safari fallback retains both additive glow layers.
+        ctx.shadowBlur=small*2.5;ctx.shadowColor='rgba(255,237,174,1)';
+        ctx.globalAlpha=.75;ctx.drawImage(surface,0,0);
+        ctx.shadowBlur=broad*1.7;ctx.shadowColor='rgba(255,166,57,1)';
+        ctx.globalAlpha=.45;ctx.drawImage(surface,0,0);
         ctx.shadowBlur=0;
       }
       ctx.globalAlpha=1;ctx.drawImage(surface,0,0);ctx.restore();
     }
-    merge(rearCanvas);
-    drawShadow(ctx,view);
-    merge(frontCanvas);
+    merge(trailRear);drawShadow(ctx,view);merge(trailFront);
   }
   function drawShadow(ctx, view) {
     const r = view.hole * 1.014;
