@@ -58,14 +58,20 @@ is fictional.
 
 ## Light Studio — interactive experimental tuning
 
-Open [the source-RGB test page](https://bojango.github.io/asciiart/preview/event-horizon/source.html), then tap **LIGHT STUDIO · 10 CONTROLS**.
+Open [the source-RGB test page](https://bojango.github.io/asciiart/preview/event-horizon/source.html), then tap **LIGHT STUDIO**.
 
 - **Brightness, core exposure, warmth/gold, saturation, gamma, contrast and highlight rolloff** alter only the black-hole RGB light mapping. Highlight rolloff softens per-channel clipping to help preserve colour separation at high gains.
 - **Bloom strength, near bloom radius and wide bloom radius** separately adjust the two additive light passes. Stronger bloom is implemented with repeated finite-alpha passes rather than invalid values above 1.
-- All ten range sliders show exact numerical values. Defaults reproduce the earlier working source-RGB preview.
+- The compact mobile dock displays one active slider at a time, with a numeric value. Swipe the horizontal parameter chips or use the previous/next buttons to move between all ten tuners. Defaults reproduce the earlier working source-RGB preview.
 - **Copy Settings** exports JSON with all ten numeric controls, palette, detail setting and viewport. On iOS browsers that restrict clipboard access, a manually selectable JSON field appears.
-- The browser saves controls to `eventHorizon.lightingTuners.v1`. Individual URL parameters override saved settings so presets can be shared. **RESET ALL** restores the original values.
-- The panel is collapsible to reveal the artwork on smaller phones. The A/B V2 mode disables all source-specific tuning controls.
+- The browser saves controls to `eventHorizon.lightingTuners.v1`. Individual URL parameters override saved settings so presets can be shared. **RESET** restores the original values.
+- Opening the dock hides the normal scene buttons and keeps its height compact so the black hole remains visible during adjustments. **VALUES** opens an optional list of every numeric setting; the A/B V2 mode disables all source-specific tuning controls.
 - The production `event-horizon.js`, GREENWOOD, PELAGIC and main app are not modified.
 
 Run: `node --test tests/event-horizon-tuner.test.cjs`.
+
+## Compact mobile dock revision
+
+- Only the experimental `source.html` UI is changed; the RGB compositor, simulation, planet orbits and background stars remain unchanged.
+- In **TUNE** mode the scene buttons hide, one slider stays visible, and the chip row scrolls horizontally. **VALUES** is a separate review mode, with **COPY SETTINGS** and **RESET** available at all times.
+- Existing saved presets, shareable URL parameters and full JSON export are retained. New scene controls have no effect on production V2.
