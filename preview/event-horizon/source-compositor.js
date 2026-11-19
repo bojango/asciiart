@@ -13,7 +13,20 @@
     [[107,37,100],[178,67,143],[224,125,178],[246,182,215],[255,230,248]],
     [[41,78,103],[74,128,148],[125,180,189],[208,203,159],[255,233,203]]
   ];
-  let brightness=1;
+  const defaults=Object.freeze({
+    brightness:1,coreExposure:1,warmth:1,saturation:1,gamma:1,contrast:1,
+    highlightRolloff:0,bloomStrength:1,bloomRadiusSmall:1.25,bloomRadiusWide:2.75
+  });
+  const limits=Object.freeze({
+    brightness:[.25,16,.25],coreExposure:[.10,8,.05],
+    warmth:[0,3,.05],saturation:[0,2.5,.05],
+    gamma:[.25,3,.05],contrast:[.25,4,.05],
+    highlightRolloff:[0,1,.05],bloomStrength:[0,4,.05],
+    bloomRadiusSmall:[.25,6,.05],bloomRadiusWide:[.5,12,.05]
+  });
+  const params={...defaults};
+  const getParams=()=>({...params});
+  const getDefaults=()=>({...defaults});
   let sizes=null,art,actx,trail,tctx,trailData,bloomSmall,bloomWide,
       smallCtx,wideCtx,tempSmall,tempWide,tempSmallCtx,tempWideCtx,lastTime=null;
   const createCanvas=(w,h)=>{
@@ -40,19 +53,43 @@
     lastTime=null;
   }
   function tint(heat,palette){
-    // Keep the reference heat categories and geometry. Adjust RGB exposure
-    // only: near-white inner gas, bright gold mids, dark outermost gas.
+    // The defaults deliberately reproduce the current, approved preview.
+    // Controls affect only RGB tone, not field geometry or character sampling.
     const base=TAGS[palette][heat<.1?0:heat<.2?1:heat<.45?2:heat<.75?3:4];
     const warmBoost=smooth((heat-.42)/.22);
     const coreBoost=smooth((heat-.74)/.12);
     const lum=clamp(.50+1.02*heat,0,1.58)*(.38+.62*smooth((heat-.07)/.15));
+    const coreMask=smooth((heat-.55)/.25);
+    const exposure=params.brightness*(1+(params.coreExposure-1)*coreMask);
     const out=base.map(v=>v*lum);
     out[0]+=10*warmBoost+10*coreBoost;
     out[1]+=22*warmBoost+28*coreBoost;
     out[2]+= 8*warmBoost+54*coreBoost;
-    // User-adjustable exposure applies only to black-hole RGB pixels.
-    // Black stays black; no Canvas alpha/compositing or geometry changes.
-    return out.map(v=>Math.min(255,Math.round(v*brightness)));
+    const warmth=params.warmth-1;
+    const warmMask=smooth((heat-.28)/.35);
+    out[0]*=1+.12*warmth*warmMask;
+    out[1]*=1+.20*warmth*warmMask;
+    out[2]*=1-.08*warmth*warmMask;
+    let channels=out.map(v=>Math.max(0,v*exposure/255));
+    if(params.saturation!==1){
+      const luma=channels[0]*.2126+channels[1]*.7152+channels[2]*.0722;
+      channels=channels.map(v=>Math.max(0,luma+(v-luma)*params.saturation));
+    }
+    if(params.contrast!==1){
+      channels=channels.map(v=>v===0?0:Math.max(0,.18+(v-.18)*params.contrast));
+    }
+    if(params.gamma!==1){
+      channels=channels.map(v=>Math.pow(v,1/params.gamma));
+    }
+    // Soft highlight knee keeps individual RGB channels separated instead
+    // of immediately clipping each of them to the same 255 grey.
+    const shoulder=params.highlightRolloff;
+    if(shoulder>0){
+      const knee=1-.82*shoulder;
+      const width=1-knee;
+      channels=channels.map(v=>v<=knee?v:knee+width*(1-Math.exp(-(v-knee)/width)));
+    }
+    return channels.map(v=>Math.round(clamp(v)*255));
   }
   function gaussian(srcCtx,dstCtx,w,h,sigma){
     const pixels=srcCtx.getImageData(0,0,w,h).data;
@@ -97,8 +134,19 @@
     const [x0,y0,w,h]=sizes;
     ctx.save();ctx.globalCompositeOperation='lighter';
     ctx.globalAlpha=1;ctx.drawImage(trail,x0,y0);
-    ctx.globalAlpha=.98;ctx.drawImage(bloomSmall,x0,y0,w,h);
-    ctx.globalAlpha=.62;ctx.drawImage(bloomWide,x0,y0,w,h);
+    // Multiple additive passes permit bloom >1x without invalid globalAlpha.
+    // Source pixels remain black where there is no gas light.
+    function bloom(layer,alpha){
+      let remaining=alpha*params.bloomStrength;
+      while(remaining>.001){
+        const portion=Math.min(1,remaining);
+        ctx.globalAlpha=portion;
+        ctx.drawImage(layer,x0,y0,w,h);
+        remaining-=portion;
+      }
+    }
+    bloom(bloomSmall,.98);
+    bloom(bloomWide,.62);
     ctx.restore();
   }
   function draw(ctx,view,time,points,palette,font,shadow){
@@ -138,29 +186,41 @@
     }
     stats.pixels=w*h;stats.brightPixels=bright;stats.rawMax=max;
     tctx.putImageData(new ImageData(trailData,w,h),0,0);
-    blurAtDownscale(tempSmallCtx,smallCtx,bloomSmall,1.25);
-    blurAtDownscale(tempWideCtx,wideCtx,bloomWide,2.75);
+    blurAtDownscale(tempSmallCtx,smallCtx,bloomSmall,params.bloomRadiusSmall);
+    blurAtDownscale(tempWideCtx,wideCtx,bloomWide,params.bloomRadiusWide);
     // One crisp RGB art layer, then two source-equivalent BLEND_ADD glows.
     composite(ctx,view,shadow);
     stats.active=true;stats.reason='';lastTime=time;
     return true;
   }
-  function setBrightness(value){
-    const n=Number(value);
-    const next=Math.round(clamp(Number.isFinite(n)?n:1,.25,16)*4)/4;
-    if(next!==brightness){
-      brightness=next;
-      // Wipe only historical RGB trails to prevent carrying the previous
-      // exposure into the next frame; reuse canvas allocations during drag.
-      if(trailData)for(let i=0;i<trailData.length;i+=4){
+  function setParams(next={}){
+    if(!next||typeof next!=='object')return getParams();
+    let changed=false,tonalChange=false;
+    for(const key of Object.keys(defaults)){
+      if(!Object.prototype.hasOwnProperty.call(next,key))continue;
+      const n=Number(next[key]);
+      if(!Number.isFinite(n))continue;
+      const [min,max,step]=limits[key];
+      const v=Number((Math.round((clamp(n,min,max)-min)/step)*step+min).toFixed(3));
+      if(v!==params[key]){
+        params[key]=v;changed=true;
+        if(!key.startsWith('bloom'))tonalChange=true;
+      }
+    }
+    if(changed){
+      // Tone changes invalidate temporal RGB trails. Bloom-only changes can
+      // reuse the original trail pixels; both force a fresh display frame.
+      if(tonalChange&&trailData)for(let i=0;i<trailData.length;i+=4){
         trailData[i]=0;trailData[i+1]=0;trailData[i+2]=0;trailData[i+3]=255;
       }
-      lastTime=null; // Immediate repaint, including when animation is paused.
+      lastTime=null;
     }
-    return brightness;
+    return getParams();
   }
+  function setBrightness(value){return setParams({brightness:value}).brightness}
   window.EventHorizonSourceCompositor={
-    draw,setBrightness,get brightness(){return brightness},needsFrame(time,view){
+    draw,getParams,getDefaults,setParams,setBrightness,
+    get brightness(){return params.brightness},needsFrame(time,view){
       if(!sizes||lastTime===null||time<lastTime-.3||time-lastTime>=1/30)return true;
       const pad=26,x=Math.max(0,Math.floor(view.x-view.halfSpan-pad)),y=Math.max(0,Math.floor(view.y-view.halfHeight-pad));
       const w=Math.max(1,Math.min(view.width-x,Math.ceil(view.halfSpan*2+pad*2))),
