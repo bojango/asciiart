@@ -169,6 +169,13 @@
     rearCtx=rearCanvas.getContext('2d');frontCtx=frontCanvas.getContext('2d');
     return !!(rearCtx&&frontCtx);
   }
+  // Pure luminance adjustment: does not change gas physics, letter selection,
+  // planets, stars, the silhouette or the near/far layering.
+  const innerLuminance=(heat,r)=>{
+    const ringFalloff=Math.exp(-Math.pow((r-1.55)/0.97,2));
+    const litGas=softstep((heat-.16)/.38);
+    return ringFalloff*litGas;
+  };
   function sampleFrame(time,view,highRes){
     const stepX=view.stepX*(highRes?1:1.30),stepY=view.stepY*(highRes?1:1.2);
     const xmin=Math.max(0,view.x-view.halfSpan),xmax=Math.min(view.width,view.x+view.halfSpan);
@@ -181,8 +188,11 @@
         if(heat<.07||(heat<.16&&gas.grain<.18))continue;
         const ring=gas.ring>.3&&gas.ring>gas.disc&&gas.ring>gas.lensed;
         const char=markForHeat(heat,gas.grain,gas.phase,gas.lr,ring,gas.ang);
-        const colour=inkForHeat(heat,gas.shadowDistance,gas.grain);
-        const point={x,y,char,colour,near:gas.near,hot:heat>.68&&gas.shadowDistance<2.75};
+        const coreLight=innerLuminance(heat,gas.shadowDistance);
+        const luminousHeat=heat*(1+1.70*coreLight);
+        const colour=inkForHeat(luminousHeat,gas.shadowDistance,gas.grain);
+        const point={x,y,char,colour,near:gas.near,hot:heat>.68&&gas.shadowDistance<2.75,
+          coreLight};
         points.push(point);
         diagnostics.glyphs++;diagnostics.maxHeat=Math.max(diagnostics.maxHeat,heat);
         diagnostics.meanHeat+=heat;if(point.hot)diagnostics.hot++;
@@ -193,8 +203,18 @@
   }
   function drawGasField(ctx,points,view,front,highRes){
     setFont(ctx,view.font*(highRes?1:1.06));
-    for(const point of points)if(point.near===front)
+    for(const point of points)if(point.near===front){
       print(ctx,point.char,point.x,point.y,point.colour);
+      // Repeat only hot inner glyphs through additive blending; the existing
+      // two blur layers turn this into light without altering letter geometry.
+      if(point.coreLight>.25){
+        const previous=ctx.globalCompositeOperation;
+        ctx.globalCompositeOperation='lighter';
+        const strength=clamp((point.coreLight-.25)*.96,0,.68);
+        print(ctx,point.char,point.x,point.y,rgba(palettesLight[paletteIndex][4],strength));
+        ctx.globalCompositeOperation=previous||'source-over';
+      }
+    }
   }
   function renderBlackHole(ctx,view,time,highRes){
     const points=sampleFrame(time,view,highRes);
