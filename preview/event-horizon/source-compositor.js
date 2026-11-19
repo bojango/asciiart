@@ -136,7 +136,13 @@
     return true;
   }
   window.EventHorizonSourceCompositor={
-    draw,reset(){sizes=null;lastTime=null},
-    stats:()=>({...stats})
+    draw,needsFrame(time,view){
+      if(!sizes||lastTime===null||time<lastTime-.3||time-lastTime>=1/30)return true;
+      const pad=26,x=Math.max(0,Math.floor(view.x-view.halfSpan-pad)),y=Math.max(0,Math.floor(view.y-view.halfHeight-pad));
+      const w=Math.max(1,Math.min(view.width-x,Math.ceil(view.halfSpan*2+pad*2))),
+            h=Math.max(1,Math.min(view.height-y,Math.ceil(view.halfHeight*2+pad*2)));
+      return sizes[0]!==x||sizes[1]!==y||sizes[2]!==w||sizes[3]!==h;
+    },
+    reset(){sizes=null;lastTime=null},stats:()=>({...stats})
   };
 })();
