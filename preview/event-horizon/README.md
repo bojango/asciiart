@@ -55,3 +55,17 @@ is fictional.
 - The original's DEEP, RED, ORANGE, AMBER and HOT heat thresholds now drive the coloured text, with extra white-hot colour temperature near the shadow and brighter gold gas towards the edges for mobile legibility.
 - Preview script cache version is `renderer.js?v=3`. Production V2 remains unchanged.
 - iOS Safari filter support varies; a two-pass shadow-blur fallback preserves additive glow. Actual iPhone validation of brightness and performance is still needed.
+
+## Light Studio — interactive experimental tuning
+
+Open [the source-RGB test page](https://bojango.github.io/asciiart/preview/event-horizon/source.html), then tap **LIGHT STUDIO · 10 CONTROLS**.
+
+- **Brightness, core exposure, warmth/gold, saturation, gamma, contrast and highlight rolloff** alter only the black-hole RGB light mapping. Highlight rolloff softens per-channel clipping to help preserve colour separation at high gains.
+- **Bloom strength, near bloom radius and wide bloom radius** separately adjust the two additive light passes. Stronger bloom is implemented with repeated finite-alpha passes rather than invalid values above 1.
+- All ten range sliders show exact numerical values. Defaults reproduce the earlier working source-RGB preview.
+- **Copy Settings** exports JSON with all ten numeric controls, palette, detail setting and viewport. On iOS browsers that restrict clipboard access, a manually selectable JSON field appears.
+- The browser saves controls to `eventHorizon.lightingTuners.v1`. Individual URL parameters override saved settings so presets can be shared. **RESET ALL** restores the original values.
+- The panel is collapsible to reveal the artwork on smaller phones. The A/B V2 mode disables all source-specific tuning controls.
+- The production `event-horizon.js`, GREENWOOD, PELAGIC and main app are not modified.
+
+Run: `node --test tests/event-horizon-tuner.test.cjs`.
