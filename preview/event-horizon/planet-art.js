@@ -125,7 +125,7 @@
     if(pos.x+2.3*r<0||pos.x-2.3*r>view.width||
        pos.y+2.3*r<0||pos.y-2.3*r>view.height)return true;
     const light=lightVector(pos,view);
-    if(p.rings)ringPass(ctx,planet,pos,view,p,true,light);
+    if(p.rings)ringPass(ctx,planet,pos,view,p,false,light);
     // Dense enough to read as a textured sphere, sparse enough to read as ASCII.
     // No bitmap fill or photographic layer is introduced.
     const cellX=clamp(view.stepX*.67,2.5,3.4),
@@ -179,7 +179,7 @@
         diagnostics.atmosphereGlyphs++;
       }
     }
-    if(p.rings)ringPass(ctx,planet,pos,view,p,false,light);
+    if(p.rings)ringPass(ctx,planet,pos,view,p,true,light);
     return true;
   }
   const api=Object.freeze({
