@@ -28,8 +28,32 @@ button.active{color:#fff1d1;border-color:#cf9a56;background:#3b281b}
 button:disabled{opacity:.40;cursor:default}
 .row{display:flex;justify-content:space-between;gap:10px;margin-top:11px;color:#969194;font-size:9px;letter-spacing:.4px}
 .row strong{color:#e3c4a3;font-weight:400}
-.footer{position:absolute;bottom:calc(env(safe-area-inset-bottom,0px) + 237px);left:0;right:0;text-align:center;color:#777078;font-size:9px;letter-spacing:1.3px;pointer-events:none}
+.footer{display:none;position:absolute;bottom:calc(env(safe-area-inset-bottom,0px) + 237px);left:0;right:0;text-align:center;color:#777078;font-size:9px;letter-spacing:1.3px;pointer-events:none}
 @media(min-width:800px){.controls{left:50%;right:auto;transform:translateX(-50%);width:430px}.top{padding:30px 36px}}
+
+/* Collapsible photometry lab: preserve as much of the artwork as possible. */
+.tune-toggle{display:flex;width:100%;align-items:center;justify-content:space-between;
+  border-color:#a97947;background:#302014;color:#ffe4ad;font-size:11px;letter-spacing:1.2px;text-align:left}
+.tune-toggle span{color:#e6a952;font-size:10px}
+.tuner-body[hidden],#settingsExport[hidden]{display:none}
+.tuner-body{max-height:min(42vh,355px);max-height:min(42dvh,355px);overflow-y:auto;overscroll-behavior:contain;
+  margin:8px 0 11px;padding:8px 7px 4px;background:#0e0b0f;border:1px solid #ffffff26;border-radius:9px;
+  -webkit-overflow-scrolling:touch}
+.tuner-intro{color:#958c8c;font-size:9px;line-height:1.5;margin-bottom:9px}
+.tuner-item{padding:9px 0 12px;border-top:1px solid #ffffff17}
+.tuner-item-head{display:flex;align-items:center;gap:10px;margin-bottom:4px}
+.tuner-item label{flex:1;font-size:10px;letter-spacing:.9px;color:#e1c8a2}
+.tuner-item output{font-size:13px;color:#ffdd9e;font-weight:bold;font-variant-numeric:tabular-nums;min-width:65px;text-align:right}
+.tuner-item input[type=range]{display:block;width:100%;height:27px;margin:0;accent-color:#f5ae55;touch-action:pan-x}
+.tuner-description{color:#8a8285;font-size:9px;margin-top:2px;line-height:1.3}
+.tuner-actions{position:sticky;bottom:0;background:#0e0b0ff2;display:flex;gap:7px;
+  padding:9px 0 5px;border-top:1px solid #ffffff25}
+.tuner-actions button{flex:1;min-height:38px}
+#copySettings{border-color:#c68f4f;color:#ffe5b0}
+#copyStatus{color:#bea985;font-size:10px;min-height:14px;margin:5px 0}
+#settingsExport{display:block;width:100%;min-height:90px;background:#1c171c;border:1px solid #777;
+  color:#fff2dc;font:11px monospace;border-radius:6px;padding:8px;resize:vertical}
+@media(max-height:700px){.tuner-body{max-height:34vh}}
 </style>
 </head>
 <body>
@@ -37,14 +61,18 @@ button:disabled{opacity:.40;cursor:default}
 <div class="top"><div><div class="kicker">EVENT HORIZON / SOURCE RGB</div><div class="meta">JIN2 LIGHTING PORT<br>SEPARATE VISUAL REVIEW</div></div><div class="note">NOT LIVE V2<br><span id="modeLabel">EXPERIMENT</span></div></div>
 <div class="footer">PIXEL-RGB LUMINANCE · MULT/ MAX/ ADD · JIN2 REFERENCE</div>
 <div class="controls">
-<div class="brightness-panel">
-  <div class="brightness-head">
-    <label for="brightness">BLACK HOLE BRIGHTNESS</label>
-    <output id="brightnessValue" for="brightness">1.00×</output>
-    <button id="brightnessReset" type="button" title="Restore original brightness">RESET</button>
+<button id="tuneToggle" type="button" class="tune-toggle" aria-expanded="false" aria-controls="tunerBody">
+  <strong>LIGHT STUDIO · 10 CONTROLS</strong><span id="tunerState">OPEN</span>
+</button>
+<div id="tunerBody" class="tuner-body" hidden>
+  <div class="tuner-intro">Tune light, colour and glow independently. Numbers update as you drag. Collapse this panel to inspect the artwork.</div>
+  <div id="tunerList"></div>
+  <div class="tuner-actions">
+    <button type="button" id="copySettings">COPY SETTINGS</button>
+    <button type="button" id="resetSettings">RESET ALL</button>
   </div>
-  <input id="brightness" type="range" min="0.25" max="16" step="0.25" value="1" aria-label="Black hole brightness multiplier">
-  <div class="brightness-scale"><span>0.25×</span><span>1.00× ORIGINAL</span><span>16.00×</span></div>
+  <div id="copyStatus" role="status" aria-live="polite"></div>
+  <textarea id="settingsExport" readonly hidden aria-label="Select these settings to copy manually"></textarea>
 </div>
 <div class="buttons">
 <button id="engine" class="active">SOURCE / V2</button>
@@ -58,7 +86,7 @@ button:disabled{opacity:.40;cursor:default}
 </div>
 <script src="../../event-horizon.js?v=20261119"></script>
 <script>window.EventHorizonBaseline=window.PelagicEventHorizon;</script>
-<script src="./source-compositor.js?v=3"></script>
+<script src="./source-compositor.js?v=4"></script>
 <script src="./renderer-reference.js?v=1"></script>
 <script>
 (() => {
@@ -66,7 +94,9 @@ button:disabled{opacity:.40;cursor:default}
   const port=window.EventHorizonRebuild,baseline=window.EventHorizonBaseline,photometry=window.EventHorizonSourceCompositor;
   if(!port||!baseline||!photometry){document.getElementById('modeLabel').textContent='SCRIPT ERROR';return}
   const canvas=document.getElementById('art'),ctx=canvas.getContext('2d',{alpha:false});
-  const nodes=Object.fromEntries(['engine','planet','quality','palette','speed','pause','brightness','brightnessValue','brightnessReset'].map(id=>[id,document.getElementById(id)]));
+  const nodes=Object.fromEntries(['engine','planet','quality','palette','speed','pause',
+    'tuneToggle','tunerState','tunerBody','tunerList','copySettings','resetSettings','copyStatus','settingsExport']
+    .map(id=>[id,document.getElementById(id)]));
   let usePort=true,showPlanets=true,highDetail=true,playing=true,speed=1,elapsed=55,previous=0;
   let cssWidth=0,cssHeight=0,frames=0,frameWindow=0,fps=0;
   function resize(){
@@ -77,35 +107,134 @@ button:disabled{opacity:.40;cursor:default}
     ctx.setTransform(dpr,0,0,dpr,0,0);
     document.getElementById('dimensions').textContent=Math.round(w)+' × '+Math.round(h);
   }
-  function setUserBrightness(value,persist=false){
-    const n=photometry.setBrightness(value);
-    nodes.brightness.value=String(n);
-    nodes.brightnessValue.textContent=n.toFixed(2)+'×';
-    if(persist){
-      try{localStorage.setItem('eventHorizon.previewBrightness',String(n))}catch(_){}
-      try{
-        const url=new URL(location.href);
-        url.searchParams.set('brightness',n.toFixed(2));
-        history.replaceState(null,'',url.toString());
-      }catch(_){}
+  const tunerDefs=[
+    {key:'brightness',label:'BRIGHTNESS',min:.25,max:16,step:.25,unit:'×',
+      desc:'Overall black-hole RGB gain (can clip at high levels)'},
+    {key:'coreExposure',label:'CORE EXPOSURE',min:.10,max:8,step:.05,unit:'×',
+      desc:'Extra light for the hottest inner gas only'},
+    {key:'warmth',label:'WARMTH / GOLD',min:0,max:3,step:.05,unit:'×',
+      desc:'Shift the accretion gas toward orange and gold'},
+    {key:'saturation',label:'SATURATION',min:0,max:2.5,step:.05,unit:'×',
+      desc:'Preserve or intensify the gold instead of flat grey'},
+    {key:'gamma',label:'GAMMA',min:.25,max:3,step:.05,unit:'',
+      desc:'Raise or lower midtones without uniform RGB gain'},
+    {key:'contrast',label:'CONTRAST',min:.25,max:4,step:.05,unit:'×',
+      desc:'Separate dim gas from intense highlights'},
+    {key:'highlightRolloff',label:'HIGHLIGHT ROLLOFF',min:0,max:1,step:.05,unit:'',
+      desc:'Gradually compress clipping to retain white/gold detail'},
+    {key:'bloomStrength',label:'BLOOM STRENGTH',min:0,max:4,step:.05,unit:'×',
+      desc:'Light spilled from the crisp ASCII characters'},
+    {key:'bloomRadiusSmall',label:'BLOOM RADIUS · NEAR',min:.25,max:6,step:.05,unit:'px',
+      desc:'Tight, bright halo around each luminous glyph'},
+    {key:'bloomRadiusWide',label:'BLOOM RADIUS · WIDE',min:.5,max:12,step:.05,unit:'px',
+      desc:'Broad, diffuse accretion-disc glow'}
+  ];
+  const defaults=photometry.getDefaults();
+  const sliders={};
+  const outputs={};
+  function format(key,v){
+    const def=tunerDefs.find(x=>x.key===key);
+    return Number(v).toFixed(2)+(def.unit||'');
+  }
+  for(const def of tunerDefs){
+    const item=document.createElement('div');item.className='tuner-item';
+    const head=document.createElement('div');head.className='tuner-item-head';
+    const label=document.createElement('label');label.htmlFor='tuner-'+def.key;label.textContent=def.label;
+    const output=document.createElement('output');output.id='output-'+def.key;output.htmlFor='tuner-'+def.key;
+    const input=document.createElement('input');input.type='range';input.id='tuner-'+def.key;
+    input.min=String(def.min);input.max=String(def.max);input.step=String(def.step);
+    input.value=String(defaults[def.key]);input.setAttribute('aria-label',def.label);
+    const desc=document.createElement('div');desc.className='tuner-description';desc.textContent=def.desc;
+    head.append(label,output);item.append(head,input,desc);nodes.tunerList.appendChild(item);
+    sliders[def.key]=input;outputs[def.key]=output;
+    input.addEventListener('input',()=>updateParams({[def.key]:input.value},false));
+    input.addEventListener('change',()=>saveSettings());
+  }
+  function displayParams(){
+    const params=photometry.getParams();
+    for(const def of tunerDefs){
+      sliders[def.key].value=String(params[def.key]);
+      outputs[def.key].textContent=format(def.key,params[def.key]);
     }
   }
-  let initialBrightness=1;
+  const settingsKey='eventHorizon.lightingTuners.v1';
+  function updateParams(next,persist=false){
+    photometry.setParams(next);
+    displayParams();
+    if(persist)saveSettings();
+  }
+  function saveSettings(){
+    const values=photometry.getParams();
+    try{localStorage.setItem(settingsKey,JSON.stringify(values))}catch(_){}
+    try{
+      const url=new URL(location.href);
+      for(const [k,v] of Object.entries(values))url.searchParams.set(k,Number(v).toFixed(2));
+      history.replaceState(null,'',url.toString());
+    }catch(_){}
+  }
+  // URL values override saved values; support older brightness-only links.
+  const initial={};
   try{
-    const specified=new URLSearchParams(location.search).get('brightness');
-    initialBrightness=specified!==null?specified:(localStorage.getItem('eventHorizon.previewBrightness')||1);
+    const stored=JSON.parse(localStorage.getItem(settingsKey)||'null');
+    if(stored&&typeof stored==='object')Object.assign(initial,stored);
+    else{
+      const remembered=localStorage.getItem('eventHorizon.previewBrightness');
+      if(remembered!==null)initial.brightness=remembered;
+    }
   }catch(_){}
-  setUserBrightness(initialBrightness);
-  nodes.brightness.addEventListener('input',()=>setUserBrightness(nodes.brightness.value));
-  nodes.brightness.addEventListener('change',()=>setUserBrightness(nodes.brightness.value,true));
-  nodes.brightnessReset.onclick=()=>setUserBrightness(1,true);
+  try{
+    const search=new URLSearchParams(location.search);
+    for(const def of tunerDefs){
+      const supplied=search.get(def.key);
+      if(supplied!==null)initial[def.key]=supplied;
+    }
+  }catch(_){}
+  updateParams(initial);
+  nodes.tuneToggle.onclick=()=>{
+    const expanding=nodes.tunerBody.hidden;
+    nodes.tunerBody.hidden=!expanding;
+    nodes.tuneToggle.setAttribute('aria-expanded',String(expanding));
+    nodes.tunerState.textContent=expanding?'CLOSE':'OPEN';
+  };
+  nodes.resetSettings.onclick=()=>{
+    updateParams(defaults,true);
+    nodes.copyStatus.textContent='All controls reset to original values.';
+    nodes.settingsExport.hidden=true;
+  };
+  function exportPreset(){
+    return JSON.stringify({
+      scene:'EVENT HORIZON / SOURCE RGB',
+      presetVersion:1,
+      palette:port.palette,
+      detail:highDetail?'HI':'LO',
+      viewport:{width:Math.round(cssWidth),height:Math.round(cssHeight)},
+      settings:photometry.getParams()
+    },null,2);
+  }
+  nodes.copySettings.onclick=async()=>{
+    saveSettings();
+    const payload=exportPreset();
+    try{
+      if(!navigator.clipboard||!navigator.clipboard.writeText)throw Error('clipboard unsupported');
+      await navigator.clipboard.writeText(payload);
+      nodes.copyStatus.textContent='COPIED — paste the settings into ChatGPT.';
+      nodes.settingsExport.hidden=true;
+    }catch(_){
+      nodes.settingsExport.hidden=false;
+      nodes.settingsExport.value=payload;
+      nodes.settingsExport.focus();
+      nodes.settingsExport.select();
+      nodes.copyStatus.textContent='Clipboard restricted: select and copy the JSON below.';
+    }
+  };
   nodes.engine.onclick=()=>{
     usePort=!usePort;
     nodes.engine.textContent=usePort?'SOURCE / V2':'V2 / SOURCE';
     nodes.engine.classList.toggle('active',usePort);
     nodes.planet.disabled=!usePort;
-    nodes.brightness.disabled=!usePort;
-    nodes.brightnessReset.disabled=!usePort;
+    for(const input of Object.values(sliders))input.disabled=!usePort;
+    nodes.resetSettings.disabled=!usePort;
+    nodes.copySettings.disabled=!usePort;
     document.getElementById('modeLabel').textContent=usePort?'SOURCE RGB':'RESTORED V2';
   };
   nodes.planet.onclick=()=>{showPlanets=!showPlanets;port.setShowPlanets(showPlanets);nodes.planet.textContent=showPlanets?'PLANETS ON':'BLACK HOLE';nodes.planet.classList.toggle('active',showPlanets)};
