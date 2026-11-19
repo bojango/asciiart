@@ -75,3 +75,23 @@ Run: `node --test tests/event-horizon-tuner.test.cjs`.
 - Only the experimental `source.html` UI is changed; the RGB compositor, simulation, planet orbits and background stars remain unchanged.
 - In **TUNE** mode the scene buttons hide, one slider stays visible, and the chip row scrolls horizontally. **VALUES** is a separate review mode, with **COPY SETTINGS** and **RESET** available at all times.
 - Existing saved presets, shareable URL parameters and full JSON export are retained. New scene controls have no effect on production V2.
+
+## Selective Core Bloom — 19 November 2026
+
+The owner-approved baseline is the new **Reset** target. Existing ten tuning values were copied exactly:
+`brightness=2`, `coreExposure=3.10`, `warmth=1.70`, `saturation=1.15`,
+`gamma=1`, `contrast=.90`, `highlightRolloff=.20`,
+`bloomStrength=2`, `bloomRadiusSmall=1.05`, `bloomRadiusWide=1.80`.
+
+Four additional experimental tuners are added, bringing the total to **14**:
+
+- **Core Bloom Strength** (0–6×, default **0**): additive light sourced from inner ASCII glyphs only.
+- **Core Bloom Radius** (0.25–6, default **1.10**): width of the isolated 1/4-resolution Gaussian glow.
+- **Core Heat Threshold** (0.20–1.50, default **0.70**): minimum gas heat contributing to core glow and white lift.
+- **Core White Lift** (0–1, default **0**): shifts selected hot glyphs towards near-white, separately from exposure.
+
+The selective glow uses its own black RGB canvas, Gaussian blur and a masked event-horizon shadow. At its zero-strength defaults, it adds **no additional light** and leaves the existing accepted image unchanged. Existing gas field, geometry, planets, stars and general bloom remain untouched. The new controls are first in the compact review sequence after Core Exposure.
+
+This test build stores new presets under `eventHorizon.lightingTuners.v2` without replacing the previous V1 saved settings. New clean URLs begin from the approved ten-value baseline. The JSON export uses `presetVersion:2` and includes all fourteen controls. The normal V2 artwork and GREENWOOD/PELAGIC are unaffected.
+
+Validation: `node --test tests/event-horizon-tuner.test.cjs` and in-browser inspection at the target iPhone resolution; avoid considering this visually final until reviewed on device.
