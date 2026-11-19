@@ -80,6 +80,7 @@ test('close-pass planet resolves surface detail while retaining single-glyph moo
     stepX:440/113,stepY:5.5,font:6.16};
   function sample(pos,time){
     const records=[],ctx={fillStyle:'',font:'',textBaseline:'',
+      save(){},restore(){},beginPath(){},arc(){},fill(){},
       fillText(ch,x,y){assert.ok(Number.isFinite(x+y));records.push(ch)}};
     art.resetDiagnostics();
     art.draw(ctx,planet,pos,view,time);
@@ -102,7 +103,7 @@ test('close-pass planet resolves surface detail while retaining single-glyph moo
 });
 test('separate test page provides near-pass button and portrait/landscape controls',()=>{
   const html=read('depth.html');
-  for(const script of ['hero-camera.js?v=2','planet-art-depth.js?v=2','renderer-depth.js?v=1'])
+  for(const script of ['hero-camera.js?v=2','planet-art-depth.js?v=3','renderer-depth.js?v=2'])
     assert.ok(html.includes('./'+script));
   assert.match(html,/id="jumpPass"/);
   assert.match(html,/id="sceneMenuToggle"/);
@@ -120,6 +121,7 @@ test('VERDANT has visible blue oceans, green continents and separately moving tr
     stepX:440/113,stepY:5.5,font:6.16};
   const records=[];
   const ctx={fillStyle:'',font:'',textBaseline:'',
+    save(){},restore(){},beginPath(){},arc(){},fill(){},
     fillText(ch,x,y){records.push({ch,x,y,color:this.fillStyle})}};
   art.resetDiagnostics();
   art.draw(ctx,{name:'VERDANT',body:[75,130,117],lit:[166,227,174]},pos,view,t);
@@ -160,7 +162,66 @@ test('VERDANT has visible blue oceans, green continents and separately moving tr
 });
 test('only the depth preview changes; approved source lighting and other scene previews are isolated',()=>{
   assert.match(read('depth.html'),/hero-camera\.js\?v=2/);
-  assert.match(read('depth.html'),/planet-art-depth\.js\?v=2/);
+  assert.match(read('depth.html'),/planet-art-depth\.js\?v=3/);
+  assert.match(read('depth.html'),/renderer-depth\.js\?v=2/);
   assert.ok(!read('planets.html').includes('planet-art-depth.js'));
   assert.ok(!read('source.html').includes('hero-camera.js'));
+});
+
+test('all eight planets have fully opaque black spherical backs before ASCII texture',()=>{
+  const w=modules(),art=w.EventHorizonPlanetArt;
+  const palettes={
+    CINDER:[[130,81,66],[248,162,102]],SILEX:[[84,105,121],[193,214,231]],
+    VERDANT:[[75,130,117],[166,227,174]],RUST:[[138,67,48],[247,165,109]],
+    ATLAS:[[159,114,77],[245,210,155]],HALO:[[151,146,107],[244,230,171]],
+    AZURE:[[62,101,147],[169,201,245]],UMBRA:[[106,81,130],[203,167,228]]
+  };
+  const view={width:440,height:736,x:220,y:375.36,stepX:440/113,stepY:5.5,font:6.16};
+  assert.equal(art.names().length,8);
+  for(const name of art.names()){
+    const logs=[],ctx={fillStyle:'',globalAlpha:1,globalCompositeOperation:'source-over',
+      font:'',textBaseline:'',save(){logs.push('save')},restore(){logs.push('restore')},
+      beginPath(){},arc(x,y,r){logs.push(['circle',x,y,r])},
+      fill(){logs.push(['fill',this.fillStyle,this.globalAlpha,this.globalCompositeOperation])},
+      fillText(ch,x,y){logs.push(['glyph',ch,x,y])}};
+    const [body,lit]=palettes[name];
+    art.draw(ctx,{name,body,lit},{x:170,y:250,radius:14,depth:-.2,orbit:.8},view,42);
+    const fillIdx=logs.findIndex(c=>Array.isArray(c)&&c[0]==='fill'&&c[1]==='#010102');
+    assert.ok(fillIdx>=0,name+' opaque black body');
+    const glyphAfter=logs.slice(fillIdx+1).findIndex(c=>Array.isArray(c)&&c[0]==='glyph');
+    assert.ok(glyphAfter>=0,name+' textured letters drawn after opaque circle');
+    const shape=logs.find(c=>Array.isArray(c)&&c[0]==='circle');
+    assert.ok(Math.abs(shape[3]-14)<1e-8,name+' unchanged radius');
+    assert.equal(logs[fillIdx][2],1,name+' completely opaque');
+    assert.equal(logs[fillIdx][3],'source-over',name+' solid compositing');
+  }
+});
+test('accretion disc draws a feathered dark matte under approved source RGB only',()=>{
+  const w=modules(),scene=w.EventHorizonRebuild;
+  const seq=[],ctx={
+    fillStyle:'',font:'',textBaseline:'',globalAlpha:1,globalCompositeOperation:'source-over',
+    shadowBlur:0,save(){},restore(){},fillRect(){},fillText(){},
+    beginPath(){},arc(){},fill(){if(this.fillStyle==='#010102')seq.push('planet-body')},
+    translate(){},rotate(){},scale(){},
+    createRadialGradient(){seq.push('disc-matte');return{
+      addColorStop(a,col){seq.push(['stop',a,col])}
+    }}
+  };
+  w.EventHorizonSourceCompositor={
+    needsFrame(){return false},
+    draw(){seq.push('approved-source-rgb');return true},
+    reset(){}
+  };
+  const t=scene.nextHeroPass(0);
+  scene.draw(ctx,440,736,t,null,true);
+  const matte=seq.indexOf('disc-matte'),rgb=seq.indexOf('approved-source-rgb');
+  assert.ok(matte>=0&&rgb>matte,'the disc matte is below the original RGB artwork');
+  assert.ok(seq.slice(0,matte).includes('planet-body'),'rear objects rendered before disc');
+  assert.ok(seq.slice(rgb+1).includes('planet-body'),'foreground planets cover disc');
+  const stops=seq.filter(entry=>Array.isArray(entry)&&entry[0]==='stop');
+  assert.equal(stops.length,5,'smooth alpha gradient rather than opaque black patch');
+  assert.equal(stops.at(-1)[2],'rgba(1,1,2,0)','disc edges fade to transparency');
+  assert.ok(stops[0][2].endsWith('0.92)'),'core area substantially shields objects');
+  assert.ok(!read('source-compositor.js').includes('drawAccretionOcclusion'),
+    'approved source lighting module not modified');
 });
