@@ -40,7 +40,7 @@
     HALO:Object.freeze([{size:'small',mark:':',orbit:2.86,flat:.55,roll:.32,rate:.085,phase:4.1}]),
     AZURE:Object.freeze([{size:'small',mark:'.',orbit:2.45,flat:.53,roll:-.27,rate:.067,phase:2.4}])
   });
-  const diagnostics={glyphs:0,atmosphereGlyphs:0,ringGlyphs:0,moonGlyphs:0,illuminated:0};
+  const diagnostics={glyphs:0,cloudGlyphs:0,atmosphereGlyphs:0,ringGlyphs:0,moonGlyphs:0,illuminated:0};
   const hash=(n)=>{const v=Math.sin(n*127.13+78.233)*43758.5453;return v-Math.floor(v)};
   const wave=(a,b,c)=>.52*Math.sin(a*4.3+b*3.7+c)+.31*Math.sin(a*8.1-b*6.5+2*c)+.17*Math.sin(a*14.1+b*9.2-c);
   function spinAngle(name,time){
@@ -66,7 +66,7 @@
     const n=wave(lon,phi,seed);
     const craterX=Math.sin(5.7*lon+7.1*phi+seed)*Math.sin(8.9*phi-3.1*lon-seed);
     const streak=Math.sin(13.7*phi+Math.sin(3*lon+seed)*.85);
-    let variation=0,cloud=0;
+    let variation=0,cloud=0,land=0,polarIce=0;
     switch(profile.kind){
       case 'gas':{
         // Latitude bands plus longitude-varying storm cells, so spin is legible.
@@ -78,11 +78,26 @@
       case 'ice-giant':
         variation=.20*Math.sin(phi*14+Math.sin(lon*2.8+seed))+.14*n;
         break;
-      case 'terrestrial':
-        // Coherent continent-like regions plus sparse cloud veils.
-        variation=.30*Math.tanh(1.8*n)+.10*craterX;
-        cloud=smooth(.30,.70,Math.sin(lon*5.2+phi*4.7+seed)*Math.cos(phi*6.1-lon*2.4));
+      case 'terrestrial':{
+        // Low-frequency, body-fixed geography. Smooth thresholds create
+        // large ocean basins, coherent continental interiors and coastlines.
+        const continents=
+          .52*Math.sin(lon*1.51+.50*Math.sin(phi*2.0+seed))+
+          .29*Math.cos(lon*2.67-phi*2.13+seed*.63)+
+          .23*Math.sin(lon*3.89+phi*3.21+seed*.27)+
+          .12*Math.cos(lon*7.4-phi*5.1+seed);
+        land=smooth(-.13,.14,continents);
+        polarIce=smooth(1.02,1.39,Math.abs(phi));
+        variation=.25*n+.10*craterX;
+        // A separate cloud deck slides slowly across the spinning surface.
+        // This is not baked into the rotating land/ocean map.
+        const cloudLon=lon+time*.034;
+        const clouds=.62*Math.sin(cloudLon*3.6+phi*3.2+seed)+
+          .30*Math.cos(cloudLon*6.1-phi*5.7+seed*.3)+
+          .15*Math.sin(cloudLon*10.5+phi*8.2);
+        cloud=.83*smooth(.24,.56,clouds);
         break;
+      }
       case 'volcanic':
         variation=.28*n+.15*craterX+.08*Math.sin(lon*10+phi*12);
         break;
@@ -99,13 +114,13 @@
         variation=.22*n;
     }
     if(lod>0&&profile.kind==='terrestrial'){
-      // Additional surface structure is resolved only during the close pass.
-      // Features remain body-fixed as longitude includes the planet's spin.
-      variation+=lod*(.042*Math.sin(lon*19.3+phi*17.1+seed)+
-        .027*Math.sin(lon*29.7-phi*13.9+seed*2));
-      cloud=clamp(cloud+lod*.07*Math.sin(lon*8.3+phi*12.7));
+      // Reveal geography at close range, rather than amplifying random noise.
+      const relief=.040*Math.sin(lon*12.7+phi*10.2+seed)+
+        .023*Math.sin(lon*23.2-phi*16.7+seed*2);
+      variation+=lod*relief;
+      land=clamp(land+lod*.11*relief);
     }
-    return {variation:clamp(variation,-.52,.52),cloud};
+    return {variation:clamp(variation,-.52,.52),cloud,land,polarIce};
   }
   // Artistic tone map of central-source flux ~ 1 / orbit^2. Geometry is
   // intentionally screen-scaled; use the stable orbital parameter rather than
@@ -190,13 +205,15 @@
     const hero=planet.name==='VERDANT'&&pos.heroLOD&&pos.heroLOD!=='MIN';
     // Limit mobile fillText workload at close approach while adding far
     // more actual surface samples than a normal distant planet has.
-    const cellX=hero?Math.max(clamp(view.stepX*.67,2.5,3.4),r/18):
+    const isClose=planet.name==='VERDANT'&&pos.heroLOD==='CLOSE';
+    const cellX=hero?Math.max(clamp(view.stepX*.67,2.5,3.4),r/(isClose?24:18)):
                         clamp(view.stepX*.67,2.5,3.4);
-    const cellY=hero?Math.max(clamp(view.stepY*.65,3.5,4.2),r/17):
+    const cellY=hero?Math.max(clamp(view.stepY*.65,3.5,4.2),r/(isClose?22:17)):
                         clamp(view.stepY*.65,3.5,4.2);
-    ctx.font=(hero?Math.max(5.8,Math.min(9.4,cellY*1.22)):
+    ctx.font=(hero?Math.max(5.8,Math.min(isClose?8.0:9.4,cellY*(isClose?1.05:1.22))):
                    Math.max(5.8,Math.min(7.4,cellY*1.66)))+
       "px 'Courier New',ui-monospace,monospace";
+    const bodyFont=ctx.font;
     ctx.textBaseline='middle';
     let count=0;
     const shadeAlpha=clamp(1-Math.max(0,pos.depth)*.12,.73,1);
@@ -222,7 +239,7 @@
         const penumbra=smooth(-.34,.34,incidence);
         const limb=Math.pow(clamp(1-z),1.9);
         const texture=sampleTexture({...p,name:planet.name},normal,time,
-          pos.heroLOD==='NEAR'?1:pos.heroLOD==='MID'?.5:0);
+          pos.heroLOD==='CLOSE'?1:pos.heroLOD==='NEAR'?.72:pos.heroLOD==='MID'?.35:0);
         // Extra minimum reflected light for bodies with only a few glyphs.
         // Slightly darker than Phase A roundness fix: roughly 10–20% less
         // ambient on the night side, without sacrificing full silhouettes.
@@ -231,12 +248,38 @@
         const illum=clamp((ambient+direct)*proximity*(.82+.18*z));
         const material=clamp(.52+texture.variation*p.grain*1.5,.12,.92);
         let tone=color(planet.body.map(c=>c*.64),planet.lit,clamp(illum*(.82+.33*material)));
-        if(texture.cloud>0)tone=color(tone,[220,229,212],texture.cloud*diffuse*.20);
+        let materialLight=illum;
+        if(planet.name==='VERDANT'){
+          // Oceans and land are materially different, even at low LOD.
+          // Colour on both is driven by the same accretion-disc illumination.
+          const seaDark=[15,44,77],seaLit=[46,125,178];
+          const landDark=[27,51,35],landLit=[102,157,84];
+          const coast=smooth(.22,.48,texture.land)*(1-smooth(.62,.85,texture.land));
+          const ocean=color(seaDark,seaLit,clamp(materialLight*(.95+.20*material)));
+          const terrain=color(landDark,landLit,clamp(materialLight*(.92+.25*material)));
+          const coastLit=color(terrain,[178,168,113],coast*.43*diffuse);
+          tone=color(ocean,coastLit,texture.land);
+          // Subtle polar ice: it follows surface rotation, not cloud drift.
+          tone=color(tone,[172,190,188],texture.polarIce*.55*diffuse);
+        }else if(texture.cloud>0){
+          tone=color(tone,[220,229,212],texture.cloud*diffuse*.20);
+        }
         const brightness=clamp(.21+illum*.55+texture.variation*.14+.095*z);
         const index=Math.min(GLYPHS.length-1,Math.floor(brightness*(GLYPHS.length-1)));
         const opacity=clamp((.51+.44*z)*shadeAlpha*(.64+.36*penumbra),.24,.96);
         ctx.fillStyle=rgb(tone,opacity);
         ctx.fillText(GLYPHS[index],pos.x+ox,pos.y+oy);
+        // Separate translucent ASCII cloud layer, drifting independently
+        // of continents. Sparse marks avoid a white blanket over the sea.
+        if(planet.name==='VERDANT'&&hero&&texture.cloud>.44&&diffuse>.07&&
+           ((ix+iy*3)%3!==0)){
+          const alpha=clamp((texture.cloud-.40)*(.18+.49*diffuse)*
+            (isClose?1:.72)*shadeAlpha,.04,.43);
+          ctx.fillStyle=rgb([220,229,226],alpha);
+          ctx.font=bodyFont;
+          ctx.fillText(texture.cloud>.70?'~':':',pos.x+ox+.85,pos.y+oy-1.15);
+          diagnostics.cloudGlyphs++;
+        }
         count++;diagnostics.glyphs++;
         if(incidence>0)diagnostics.illuminated++;
       }
@@ -247,13 +290,15 @@
     }
     if(p.atmosphere>0&&r>5){
       // A handful of quiet edge glyphs, not another bright circle or blur.
-      const steps=hero?32:14;
+      const steps=isClose?42:hero?32:14;
       for(let j=0;j<steps;j++){
         const angle=j/steps*TAU;
         const x=Math.cos(angle),y=Math.sin(angle);
         const illumination=clamp(light[0]*x+light[1]*y+.1*light[2]);
         if(illumination<.05)continue;
-        ctx.fillStyle=rgb(planet.lit,p.atmosphere*illumination*.44*proximity);
+        const rimStrength=isClose&&planet.name==='VERDANT'?1.6:1;
+        ctx.fillStyle=rgb(planet.name==='VERDANT'?[117,174,204]:planet.lit,
+          clamp(p.atmosphere*illumination*.44*proximity*rimStrength));
         ctx.fillText(j%3===0?':':'.',pos.x+x*r*1.11,pos.y+y*r*1.11);
         diagnostics.atmosphereGlyphs++;
       }
@@ -267,9 +312,9 @@
     spinAngle,
     proximityLight,
     moonPositions,
-    textureAt(name,normal,time){
+    textureAt(name,normal,time,lod=0){
       const p=PROFILES[name];
-      return p?sampleTexture({...p,name},normal,time):null;
+      return p?sampleTexture({...p,name},normal,time,lod):null;
     },
     profile(name){
       const p=PROFILES[name];
