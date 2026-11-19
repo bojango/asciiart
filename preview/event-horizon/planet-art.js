@@ -23,12 +23,24 @@
     SILEX: Object.freeze({kind:'ice',spin:.106,tilt:21,twist:-17,phase:1.3,scale:.9,grain:.28,atmosphere:.07,seed:29}),
     VERDANT: Object.freeze({kind:'terrestrial',spin:.163,tilt:28,twist:18,phase:2.1,scale:1.05,grain:.34,atmosphere:.14,seed:37}),
     RUST: Object.freeze({kind:'desert',spin:.127,tilt:13,twist:11,phase:3.4,scale:1.2,grain:.28,atmosphere:.05,seed:43}),
-    ATLAS: Object.freeze({kind:'gas',spin:.318,tilt:9,twist:8,phase:.3,scale:1.0,grain:.32,atmosphere:.09,seed:53}),
-    HALO: Object.freeze({kind:'gas',spin:.262,tilt:23,twist:-12,phase:2.7,scale:1.1,grain:.26,atmosphere:.07,rings:true,seed:61}),
+    ATLAS: Object.freeze({kind:'gas',spin:.318,tilt:9,twist:8,phase:.3,scale:1.0,grain:.32,atmosphere:.09,rings:'thin',seed:53}),
+    HALO: Object.freeze({kind:'gas',spin:.262,tilt:23,twist:-12,phase:2.7,scale:1.1,grain:.26,atmosphere:.07,rings:'broad',seed:61}),
     AZURE: Object.freeze({kind:'ice-giant',spin:.204,tilt:34,twist:20,phase:4.2,scale:1.1,grain:.23,atmosphere:.10,seed:71}),
     UMBRA: Object.freeze({kind:'dark-ice',spin:.078,tilt:42,twist:-19,phase:1.9,scale:1.0,grain:.20,atmosphere:.035,seed:83})
   });
-  const diagnostics={glyphs:0,atmosphereGlyphs:0,ringGlyphs:0,illuminated:0};
+  // Five tiny, deterministic satellites around four worlds. Their local
+  // rotations are distinct from both planet spin and central-system orbits.
+  // These are illustrative local orbits, not yet mass-calibrated moons.
+  const MOONS=Object.freeze({
+    VERDANT:Object.freeze([{size:'small',mark:'.',orbit:2.15,flat:.51,roll:.24,rate:.155,phase:.6}]),
+    ATLAS:Object.freeze([
+      {size:'large',mark:'o',orbit:2.48,flat:.57,roll:-.30,rate:.092,phase:1.25},
+      {size:'small',mark:'.',orbit:3.06,flat:.40,roll:.18,rate:.054,phase:3.15}
+    ]),
+    HALO:Object.freeze([{size:'small',mark:':',orbit:2.86,flat:.55,roll:.32,rate:.085,phase:4.1}]),
+    AZURE:Object.freeze([{size:'small',mark:'.',orbit:2.45,flat:.53,roll:-.27,rate:.067,phase:2.4}])
+  });
+  const diagnostics={glyphs:0,atmosphereGlyphs:0,ringGlyphs:0,moonGlyphs:0,illuminated:0};
   const hash=(n)=>{const v=Math.sin(n*127.13+78.233)*43758.5453;return v-Math.floor(v)};
   const wave=(a,b,c)=>.52*Math.sin(a*4.3+b*3.7+c)+.31*Math.sin(a*8.1-b*6.5+2*c)+.17*Math.sin(a*14.1+b*9.2-c);
   function spinAngle(name,time){
@@ -103,26 +115,55 @@
     // gravitational bending and physical distances belong to Phase B.
     return normalize(view.x-pos.x,view.y-pos.y,clamp(pos.depth*1.22,-1,1));
   }
+  function moonPositions(name,pos,time){
+    const specs=MOONS[name]||[];
+    return specs.map((moon,index)=>{
+      const phase=moon.phase+time*moon.rate;
+      const u=Math.cos(phase)*pos.radius*moon.orbit;
+      const v=Math.sin(phase)*pos.radius*moon.orbit*moon.flat;
+      const a=moon.roll,ca=Math.cos(a),sa=Math.sin(a);
+      return {id:name+'-MOON-'+(index+1),x:pos.x+u*ca-v*sa,
+        y:pos.y+u*sa+v*ca,depth:Math.sin(phase),
+        mark:moon.mark,size:moon.size,host:name};
+    });
+  }
+  function drawMoon(ctx,moon,planet,pos,view,proximity){
+    // Leave occultation to the parent planet; never create extra dots inside
+    // its own silhouette. A single ASCII mark is enough to read as a moon.
+    if(Math.hypot(moon.x-pos.x,moon.y-pos.y)<pos.radius*1.12)return;
+    if(moon.x<4||moon.x>view.width-4||moon.y<4||moon.y>view.height-4)return;
+    ctx.font=(moon.size==='large'?6.9:5.9)+"px 'Courier New',ui-monospace,monospace";
+    ctx.textBaseline='middle';
+    const col=color(planet.body,[219,215,208],moon.size==='large'?.68:.48);
+    const opacity=clamp((moon.size==='large'?.77:.60)*proximity*
+      (moon.depth>0?1:.86),.24,.83);
+    ctx.fillStyle=rgb(col,opacity);
+    ctx.fillText(moon.mark,moon.x,moon.y);
+    diagnostics.moonGlyphs++;
+  }
   function ringPass(ctx,planet,pos,view,profile,front,light,proximity){
-    const r=pos.radius,font=Math.max(5.5,Math.min(7.0,view.font*.82));
+    const r=pos.radius,thin=profile.rings==='thin';
+    const font=Math.max(6.15,Math.min(7.35,view.font*.91));
     ctx.font=font+"px 'Courier New',ui-monospace,monospace";
     ctx.textBaseline='middle';
     const inclination=profile.tilt*Math.PI/180;
-    for(let band=0;band<2;band++){
-      const mult=band===0?1.72:2.08;
-      for(let k=0;k<66;k++){
-        const a=k/66*TAU,sa=Math.sin(a),ca=Math.cos(a);
+    const bands=thin?[1.77]:[1.68,2.15];
+    const roll=thin?-.26:.42,cs=Math.cos(roll),sn=Math.sin(roll);
+    for(let band=0;band<bands.length;band++){
+      for(let k=0;k<84;k++){
+        const a=k/84*TAU,sa=Math.sin(a),ca=Math.cos(a);
         if((sa>=0)!==front)continue;
-        if((k+band*3)%3===0)continue; // deliberately sparse ASCII rings
-        const x0=ca*r*mult,y0=sa*r*(.42+.08*Math.cos(inclination));
-        const x=pos.x+x0*.91-y0*.41,y=pos.y+x0*.41+y0*.91;
-        const incidence=clamp((light[0]*ca+light[1]*sa+1)*.5);
-        const lit=clamp((.25+.65*incidence)*proximity);
-        const col=color(planet.body,planet.lit,lit);
-        const opacity=clamp((front?.72:.40)*(.48+.52*lit)*proximity,.08,.88);
+        if((k+band*3)%4===0)continue; // fine broken ASCII arc
+        const u=ca*r*bands[band],v=sa*r*(thin?.37:.47)*(.95+.05*Math.cos(inclination));
+        const x=pos.x+u*cs-v*sn,y=pos.y+u*sn+v*cs;
         if(x<0||x>view.width||y<0||y>view.height)continue;
-        ctx.fillStyle=rgb(col,opacity);
-        ctx.fillText(k%11===0?'=':k%5===0?':':'.',x,y);
+        const incidence=clamp((light[0]*ca+light[1]*sa+1)*.5);
+        const lit=clamp((.44+.50*incidence)*proximity);
+        const colour=color(planet.body,planet.lit,lit);
+        const alpha=front?(thin?.76:.88):(thin?.47:.54);
+        const opacity=clamp(alpha*(.76+.24*incidence)*proximity,.16,.88);
+        ctx.fillStyle=rgb(colour,opacity);
+        ctx.fillText(k%13===0?'=':k%6===0?'+':k%4===0?':':'.',x,y);
         diagnostics.ringGlyphs++;
       }
     }
@@ -134,6 +175,8 @@
     if(pos.x+2.3*r<0||pos.x-2.3*r>view.width||
        pos.y+2.3*r<0||pos.y-2.3*r>view.height)return true;
     const light=lightVector(pos,view),proximity=proximityLight(pos.orbit);
+    const moons=moonPositions(planet.name,pos,time);
+    for(const moon of moons)if(moon.depth<0)drawMoon(ctx,moon,planet,pos,view,proximity);
     if(p.rings)ringPass(ctx,planet,pos,view,p,false,light,proximity);
     // Dense enough to read as a textured sphere, sparse enough to read as ASCII.
     // No bitmap fill or photographic layer is introduced.
@@ -166,7 +209,9 @@
         const limb=Math.pow(clamp(1-z),1.9);
         const texture=sampleTexture({...p,name:planet.name},normal,time);
         // Extra minimum reflected light for bodies with only a few glyphs.
-        const ambient=.16+.075*readability;
+        // Slightly darker than Phase A roundness fix: roughly 10–20% less
+        // ambient on the night side, without sacrificing full silhouettes.
+        const ambient=.142+.060*readability;
         const direct=.64*diffuse+.13*penumbra+.03*limb*Math.max(0,incidence);
         const illum=clamp((ambient+direct)*proximity*(.82+.18*z));
         const material=clamp(.52+texture.variation*p.grain*1.5,.12,.92);
@@ -174,7 +219,7 @@
         if(texture.cloud>0)tone=color(tone,[220,229,212],texture.cloud*diffuse*.20);
         const brightness=clamp(.21+illum*.55+texture.variation*.14+.095*z);
         const index=Math.min(GLYPHS.length-1,Math.floor(brightness*(GLYPHS.length-1)));
-        const opacity=clamp((.51+.44*z)*shadeAlpha*(.68+.32*penumbra),.24,.96);
+        const opacity=clamp((.51+.44*z)*shadeAlpha*(.64+.36*penumbra),.24,.96);
         ctx.fillStyle=rgb(tone,opacity);
         ctx.fillText(GLYPHS[index],pos.x+ox,pos.y+oy);
         count++;diagnostics.glyphs++;
@@ -199,12 +244,14 @@
       }
     }
     if(p.rings)ringPass(ctx,planet,pos,view,p,true,light,proximity);
+    for(const moon of moons)if(moon.depth>=0)drawMoon(ctx,moon,planet,pos,view,proximity);
     return true;
   }
   const api=Object.freeze({
     draw:render,
     spinAngle,
     proximityLight,
+    moonPositions,
     textureAt(name,normal,time){
       const p=PROFILES[name];
       return p?sampleTexture({...p,name},normal,time):null;
