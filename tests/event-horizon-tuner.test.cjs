@@ -45,7 +45,18 @@ test('setters clamp unsafe values, round step increments and ignore invalid inpu
 test('controls and copy workflow are confined to the experimental preview',()=>{
   for(const key of keys)assert.ok(html.includes("key:'"+key+"'"),key);
   assert.match(html,/COPY SETTINGS/);
-  assert.match(html,/RESET ALL/);
+  assert.match(html,/id="activeSlider"/);
+  assert.match(html,/id="tunerChips"/);
+  assert.match(html,/id="tunerPrev"/);
+  assert.match(html,/id="tunerNext"/);
+  assert.match(html,/id="valuesPanel"/);
+  assert.match(html,/id="copySettings"/);
+  assert.match(html,/id="resetSettings"/);
+  assert.match(html,/classList\.toggle\('studio-open'/);
+  assert.match(html,/.controls\.studio-open>\.buttons/);
+  assert.match(html,/nodes\.activeSlider\.addEventListener\('input'/);
+  assert.match(html,/selectTuner\(activeIndex\+1\)/);
+  assert.match(html,/setStudioOpen\(false\)/);
   assert.match(html,/navigator\.clipboard\.writeText/);
   assert.match(html,/history\.replaceState/);
   assert.match(html,/eventHorizon\.lightingTuners\.v1/);
