@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#010102">
+<title>EVENT HORIZON | Source RGB Light Review</title>
+<style>
+:root{color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#010102;color:#c4c0c4;font-family:'Courier New',monospace}
+canvas{position:absolute;inset:0;width:100%;height:100%;display:block;background:#010102}
+.top{position:absolute;z-index:2;top:env(safe-area-inset-top,0px);left:0;right:0;padding:22px 20px;display:flex;justify-content:space-between;gap:12px;pointer-events:none;text-shadow:0 2px 8px #000}
+.kicker{font-size:10px;letter-spacing:2.4px;color:#b1a7a3}
+.meta{margin-top:7px;color:#777178;font-size:9px;line-height:1.6;letter-spacing:1.5px}
+.note{font-size:9px;letter-spacing:1.4px;color:#c2a47a;text-align:right}
+.controls{position:absolute;z-index:3;bottom:calc(env(safe-area-inset-bottom,0px) + 14px);left:12px;right:12px;padding:12px;border:1px solid #ffffff26;border-radius:14px;background:rgba(13,11,15,.88);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+.buttons{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+button{appearance:none;-webkit-appearance:none;touch-action:manipulation;border:1px solid #ffffff28;border-radius:7px;background:#1a1719;color:#d5c7ba;min-height:37px;padding:8px 3px;font:10px 'Courier New',monospace;letter-spacing:.7px;cursor:pointer}
+button.active{color:#fff1d1;border-color:#cf9a56;background:#3b281b}
+button:disabled{opacity:.40;cursor:default}
+.row{display:flex;justify-content:space-between;gap:10px;margin-top:11px;color:#969194;font-size:9px;letter-spacing:.4px}
+.row strong{color:#e3c4a3;font-weight:400}
+.footer{position:absolute;bottom:calc(env(safe-area-inset-bottom,0px) + 106px);left:0;right:0;text-align:center;color:#777078;font-size:9px;letter-spacing:1.3px;pointer-events:none}
+@media(min-width:800px){.controls{left:50%;right:auto;transform:translateX(-50%);width:430px}.top{padding:30px 36px}}
+</style>
+</head>
+<body>
+<canvas id="art" aria-label="Experimental ASCII black hole with orbiting planets"></canvas>
+<div class="top"><div><div class="kicker">EVENT HORIZON / SOURCE RGB</div><div class="meta">JIN2 LIGHTING PORT<br>SEPARATE VISUAL REVIEW</div></div><div class="note">NOT LIVE V2<br><span id="modeLabel">EXPERIMENT</span></div></div>
+<div class="footer">PIXEL-RGB LUMINANCE · MULT/ MAX/ ADD · JIN2 REFERENCE</div>
+<div class="controls">
+<div class="buttons">
+<button id="engine" class="active">SOURCE / V2</button>
+<button id="planet" class="active">PLANETS ON</button>
+<button id="quality" class="active">DETAIL HI</button>
+<button id="palette">EMBER</button>
+<button id="speed">SPEED 1×</button>
+<button id="pause">PAUSE</button>
+</div>
+<div class="row"><span>DISPLAY <strong id="dimensions">—</strong></span><span>ASCII <strong id="glyphs">—</strong></span><span>FPS <strong id="fps">—</strong></span></div>
+</div>
+<script src="../../event-horizon.js?v=20261119"></script>
+<script>window.EventHorizonBaseline=window.PelagicEventHorizon;</script>
+<script src="./source-compositor.js?v=1"></script>
+<script src="./renderer-reference.js?v=1"></script>
+<script>
+(() => {
+  'use strict';
+  const port=window.EventHorizonRebuild,baseline=window.EventHorizonBaseline;
+  if(!port||!baseline){document.getElementById('modeLabel').textContent='SCRIPT ERROR';return}
+  const canvas=document.getElementById('art'),ctx=canvas.getContext('2d',{alpha:false});
+  const nodes=Object.fromEntries(['engine','planet','quality','palette','speed','pause'].map(id=>[id,document.getElementById(id)]));
+  let usePort=true,showPlanets=true,highDetail=true,playing=true,speed=1,elapsed=55,previous=0;
+  let cssWidth=0,cssHeight=0,frames=0,frameWindow=0,fps=0;
+  function resize(){
+    const w=Math.max(280,innerWidth),h=Math.max(400,innerHeight),dpr=Math.min(devicePixelRatio||1,2);
+    if(w===cssWidth&&h===cssHeight)return;
+    cssWidth=w;cssHeight=h;canvas.width=Math.round(w*dpr);canvas.height=Math.round(h*dpr);
+    canvas.style.width=w+'px';canvas.style.height=h+'px';
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    document.getElementById('dimensions').textContent=Math.round(w)+' × '+Math.round(h);
+  }
+  nodes.engine.onclick=()=>{usePort=!usePort;nodes.engine.textContent=usePort?'SOURCE / V2':'V2 / SOURCE';nodes.engine.classList.toggle('active',usePort);nodes.planet.disabled=!usePort;document.getElementById('modeLabel').textContent=usePort?'SOURCE RGB':'RESTORED V2'};
+  nodes.planet.onclick=()=>{showPlanets=!showPlanets;port.setShowPlanets(showPlanets);nodes.planet.textContent=showPlanets?'PLANETS ON':'BLACK HOLE';nodes.planet.classList.toggle('active',showPlanets)};
+  nodes.quality.onclick=()=>{highDetail=!highDetail;nodes.quality.textContent=highDetail?'DETAIL HI':'DETAIL LO';nodes.quality.classList.toggle('active',highDetail)};
+  nodes.pause.onclick=()=>{playing=!playing;nodes.pause.textContent=playing?'PAUSE':'PLAY';nodes.pause.classList.toggle('active',!playing)};
+  nodes.speed.onclick=()=>{speed=speed===1?.25:speed===.25?2:1;nodes.speed.textContent='SPEED '+speed+'×'};
+  nodes.palette.onclick=()=>{const name=(usePort?port:baseline).cyclePalette();nodes.palette.textContent=name};
+  function frame(now){
+    resize();
+    const dt=previous?Math.min((now-previous)/1000,.05):0;previous=now;
+    if(playing)elapsed+=dt*speed;
+    const renderer=usePort?port:baseline;
+    renderer.draw(ctx,cssWidth,cssHeight,elapsed,null,highDetail);
+    if(now-frameWindow>700){
+      fps=Math.round(frames*1000/Math.max(1,now-frameWindow));frames=0;frameWindow=now;
+      document.getElementById('fps').textContent=fps;
+      const stat=usePort?port.diagnostics():null;
+      document.getElementById('glyphs').textContent=stat?stat.glyphs.toLocaleString():'V2';
+    }
+    frames++;
+    requestAnimationFrame(frame);
+  }
+  addEventListener('resize',resize);
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
