@@ -83,9 +83,9 @@ test('rings render as back pass, then body, then front pass',()=>{
   assert.ok(st.ringGlyphs>50,'fine ring texture');
   assert.ok(st.glyphs>20,'ring planet body');
   // The source layer ordering is intentional and regression-protected.
-  assert.ok(artSource.indexOf('ringPass(ctx,planet,pos,view,p,false,light)')<
+  assert.ok(artSource.indexOf('ringPass(ctx,planet,pos,view,p,false,light,proximity)')<
     artSource.indexOf('const cellX='));
-  assert.ok(artSource.indexOf('ringPass(ctx,planet,pos,view,p,true,light)')>
+  assert.ok(artSource.indexOf('ringPass(ctx,planet,pos,view,p,true,light,proximity)')>
     artSource.indexOf('const cellX='));
   assert.ok(records.length>st.ringGlyphs);
 });
@@ -104,7 +104,7 @@ test('existing orbit mechanics and black-hole lighting remain unchanged',()=>{
   assert.ok(!fs.readFileSync(path.join(folder,'source.html'),'utf8').includes('planet-art.js'));
 });
 test('new mobile route has all render modules and accepts existing Light Studio settings',()=>{
-  assert.match(html,/planet-art\.js\?v=2/);
+  assert.match(html,/planet-art\.js\?v=3/);
   assert.match(html,/renderer-planets\.js\?v=1/);
   assert.match(html,/source-compositor\.js\?v=6/);
   assert.match(html,/eventHorizon\.lightingTuners\.v3/);
@@ -147,4 +147,62 @@ test('shadow side stays readable and body brightness responds to proximity',()=>
   const avg=v=>v.reduce((a,b)=>a+b,0)/v.length;
   assert.ok(avg(near)>avg(far)*1.13,'inner world visibly brighter');
   assert.ok(Math.min(...far)>5,'outer world retains nonzero shadow-side detail');
+});
+
+test('ATLAS and HALO have visually distinct visible ring systems',()=>{
+  const art=moduleIn(artSource).EventHorizonPlanetArt;
+  const ringed=art.names().filter(name=>art.profile(name).rings);
+  assert.deepEqual([...ringed],['ATLAS','HALO']);
+  const atlas=stage(),halo=stage();
+  art.resetDiagnostics();
+  art.draw(atlas.ctx,{name:'ATLAS',body:[159,114,77],lit:[245,210,155]},
+    {x:170,y:300,radius:16.8,depth:0,orbit:.92},view,25);
+  const atlasRings=art.diagnostics().ringGlyphs;
+  art.resetDiagnostics();
+  art.draw(halo.ctx,{name:'HALO',body:[151,146,107],lit:[244,230,171]},
+    {x:250,y:300,radius:13.6,depth:0,orbit:1.07},view,25);
+  const haloRings=art.diagnostics().ringGlyphs;
+  assert.ok(atlasRings>30,'ATLAS subtle but visible ring');
+  assert.ok(haloRings>atlasRings,'HALO stronger two-band ring');
+  assert.ok(halo.records.length>haloRings,'planet still present within rings');
+});
+test('exactly five faint moons orbit four planets at independent repeatable rates',()=>{
+  const art=moduleIn(artSource).EventHorizonPlanetArt;
+  const names=['VERDANT','ATLAS','HALO','AZURE'];
+  const host={x:200,y:320,radius:14};
+  let count=0;
+  for(const name of names){
+    const now=art.moonPositions(name,host,30);
+    const later=art.moonPositions(name,host,43);
+    assert.equal(JSON.stringify(now),JSON.stringify(art.moonPositions(name,host,30)),
+      name+' deterministic moon positions');
+    assert.ok(now.length>0,name+' has satellite(s)');
+    assert.notEqual(JSON.stringify(now),JSON.stringify(later),name+' has changing moon positions');
+    for(let i=0;i<now.length;i++){
+      assert.ok(Number.isFinite(now[i].x)&&Number.isFinite(now[i].y),'finite coordinates');
+      assert.ok(['.',':','o'].includes(now[i].mark),'tiny ASCII moon only');
+      assert.ok(Math.hypot(now[i].x-host.x,now[i].y-host.y)<host.radius*3.2,
+        'moons remain locally bound to parent');
+    }
+    count+=now.length;
+  }
+  assert.equal(count,5,'moon count');
+  assert.equal(art.moonPositions('CINDER',host,30).length,0,'no unnecessary moons');
+});
+test('refined terminator darkens the unlit hemisphere without losing full planet',()=>{
+  const art=moduleIn(artSource).EventHorizonPlanetArt;
+  const {ctx,records}=stage();
+  const px=325;
+  art.draw(ctx,{name:'VERDANT',body:[75,130,117],lit:[166,227,174]},
+    {x:px,y:330,radius:10,depth:0,orbit:.64},view,28);
+  const lum=r=>{
+    const m=r.colour.match(/^rgba\((\d+),(\d+),(\d+),([\d.]+)\)$/);
+    assert.ok(m);
+    return (+m[1]*.2126+ +m[2]*.7152+ +m[3]*.0722)*+m[4];
+  };
+  const avg=xs=>xs.reduce((n,r)=>n+lum(r),0)/xs.length;
+  const day=records.filter(r=>r.x<px-2),night=records.filter(r=>r.x>px+2);
+  assert.ok(day.length>5&&night.length>5,'full planet has visible two hemispheres');
+  assert.ok(avg(day)>avg(night)*1.5,'directional day/night gradient');
+  assert.ok(avg(night)>15,'night remains distinguishable from empty background');
 });
