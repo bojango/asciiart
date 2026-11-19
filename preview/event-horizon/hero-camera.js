@@ -10,8 +10,8 @@
   const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
   const CAMERA=Object.freeze({
     width:440,height:736,blackHoleY:.51,
-    viewerDistance:323,orbitRadius:300,
-    nearAxis:[4.5,20.5,299.26],
+    viewerDistance:319,orbitRadius:300,
+    nearAxis:[4.5,18.5,299.26],
     sideAxis:[.952,.299,-.0348],
     referenceWidth:440,referenceHeight:736
   });
@@ -68,7 +68,7 @@
       magnification:projected.magnification,
       world:projected.world,
       foreground:projected.near,
-      heroLOD:radius>=70?'NEAR':radius>=22?'MID':radius>=10?'FAR':'MIN',
+      heroLOD:radius>=116?'CLOSE':radius>=70?'NEAR':radius>=22?'MID':radius>=10?'FAR':'MIN',
       orbitalPhase:((angle%TAU)+TAU)%TAU
     };
   }
