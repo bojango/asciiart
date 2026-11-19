@@ -154,3 +154,46 @@ alone does not imply habitability. A plausible system needs both a disk
 feeding assumption and appropriate planetary distances.
 
 **No orbital-engine changes are included in this lighting commit.**
+
+## Phase A — spinning ASCII planets (19 November 2026)
+
+**Preview:** https://bojango.github.io/asciiart/preview/event-horizon/planets.html
+
+Dedicated assets: `planet-art.js`, `renderer-planets.js` and `planets.html`.
+They are separate from the approved Source RGB preview (`source.html`)
+and the live production scenes.
+
+- Replaces static screen-space patterns with visible-sphere surface maps
+  sampled using each planet's **own independent axial rotation**.
+  Spin phase is a deterministic function of simulation time; pausing,
+  resuming and changing playback speed never introduces random drift.
+- Preserves all eight established names, orbital paths, orbital periods,
+  planet centres and apparent radii. No new planet or black-hole geometry
+  has been introduced.
+- Distinct identity per planet: CINDER (volcanic), SILEX (fractured ice),
+  VERDANT (terrestrial/cloud), RUST (desert), ATLAS (stormy gas giant),
+  HALO (ringed gas giant), AZURE (ice giant), UMBRA (dark icy world).
+- Material-specific procedural texture (continent-like regions, banding,
+  spots, fractures, frost, craters); brightness-weighted ASCII glyphs
+  and denser but restrained character sampling rather than image sprites.
+- Spherical normals create an initial day/night boundary; illumination
+  points towards the central accretion region and varies automatically as
+  the existing planet orbit changes. This is an illustrative central-source
+  approximation, **not yet a physically integrated luminous disc**.
+- HALO's far-side rings render behind the sphere; near-side ring characters
+  overlay the sphere. Their tones depend on the central light direction.
+  Selected atmospheres have very faint ASCII edge lettering.
+- The phase retains the owner-approved 14-setting EMBER black-hole lighting
+  and 14% directional bias without modifying its RGB compositor.
+
+**Limits:** surface structures, spin rates, tilts, reflected light and
+atmospheric types are visually plausible, not calibrated to an actual black
+hole mass, planet ages, compositions or measured radiation field.
+Smaller worlds have too few screen pixels for visually strong spin
+without increasing apparent size. Accurate extended-disc radiation,
+radiative transfer, eclipses, gravitational orbital perturbations and
+physical spin-orbit relationships remain Phase B / later simulation work.
+
+Checks: `node --test tests/event-horizon-planets.test.cjs`.
+A real iPhone screenshot and motion inspection should be performed before
+merging the new planet renderer into the existing scene selector.
