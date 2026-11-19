@@ -68,13 +68,15 @@ test('pause, resume and jump to next event update the persisted clock',()=>{
 });
 test('render time for fast gas animation is independent of slow orbit time',()=>{
   const {shell,clock}=make();
-  clock.reset(T0);
+  const realNow=Date.now();clock.reset(realNow);
   const horizon=shell.window.EventHorizonRebuild;
   const events=[];
-  shell.window.EventHorizonPlanetArt.draw=(ctx,planet,pos,view,time)=>{
-    events.push({name:planet.name,x:pos.x,y:pos.y,animationTime:time});return true;
+  shell.window.EventHorizonPlanetArt={
+    draw(ctx,planet,pos,view,time){
+      events.push({name:planet.name,x:pos.x,y:pos.y,animationTime:time});return true;
+    },
+    resetDiagnostics(){}
   };
-  shell.window.EventHorizonPlanetArt.resetDiagnostics=()=>{};
   shell.window.EventHorizonSourceCompositor.draw=()=>true;
   shell.window.EventHorizonSourceCompositor.needsFrame=()=>false;
   const ctx={save(){},restore(){},fillText(){},fillRect(){},beginPath(){},arc(){},fill(){},
@@ -82,10 +84,10 @@ test('render time for fast gas animation is independent of slow orbit time',()=>
     createRadialGradient(){return{addColorStop(){}}}};
   horizon.draw(ctx,440,736,20,null,true);
   const p1=events.find(v=>v.name==='VERDANT');events.length=0;
-  clock.setMode('DEMO',T0);
+  clock.setMode('DEMO',realNow);
   // Render continues using 20 seconds of local animation time in both frames,
   // but orbital wall time has moved ahead via an explicit clock change.
-  clock.jumpToNextPass(T0);
+  clock.jumpToNextPass(realNow);
   horizon.draw(ctx,440,736,20,null,true);
   const p2=events.find(v=>v.name==='VERDANT');
   assert.equal(p1.animationTime,20);
