@@ -232,3 +232,32 @@ centred silhouettes, monotonic orbital-light falloff, reproducible
 planet texture, full ring layers and nonzero shadow-side visibility.
 The accepted `source.html` preview, production V2, Jellyfish and
 GREENWOOD remain unchanged.
+
+## Phase A follow-up: nights, two ring systems and moons (19 November 2026)
+
+The experimental `planets.html` scene now has a slightly stronger day/night
+contrast: the minimum night-side ambient is reduced by roughly 10–20% and its
+opacity is eased back a little. Full circular silhouettes and orbital-distance
+lighting remain unchanged.
+
+**Two ringed worlds** are clearly distinguished: ATLAS has one subtle narrow
+ASCII ring, while HALO has a more prominent two-band ring. Each renders its
+rear segments behind the sphere and foreground segments above it. Ring
+characters, spacing, brightness and orientation are tuned for small iPhone
+displays while keeping the gas-giant textures visible.
+
+**Five tiny moons** now orbit four hosts: VERDANT (one), ATLAS (two), HALO
+(one) and AZURE (one). They consist of one dim ASCII character each, travel
+along deterministic, inclined projected local ellipses, and follow each
+planet as it orbits the black hole. Moons pass behind or in front of their
+host based on local phase and are skipped while hidden by the planet.
+Their simulated periods and host-relative radii are artistic, pending the
+future calibrated orbital system.
+
+The Phase A preview includes the new planet asset via `planet-art.js?v=3`.
+The black-hole compositor, approved Light Studio preset, orbital renderer
+and production scenes are unchanged.
+
+Regression checks: `tests/event-horizon-planets.test.cjs` now covers
+night/day contrast, ring hierarchy, the five deterministic local moon orbits,
+and preservation of existing orbital motion.
