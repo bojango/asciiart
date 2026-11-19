@@ -13,10 +13,11 @@
     [[107,37,100],[178,67,143],[224,125,178],[246,182,215],[255,230,248]],
     [[41,78,103],[74,128,148],[125,180,189],[208,203,159],[255,233,203]]
   ];
-  // Owner-approved baseline. All new core effects default off.
+  // Owner-approved locked 14-value preset, 2026-11-19 at 10:47.
+  // Visual baseline for future orbital-physics work. Values are kept exact.
   const defaults=Object.freeze({
-    brightness:2,coreExposure:3.1,
-    coreBloomStrength:0,coreBloomRadius:1.10,coreThreshold:.70,coreWhiteLift:0,
+    brightness:2,coreExposure:3.85,
+    coreBloomStrength:3.45,coreBloomRadius:2.25,coreThreshold:.80,coreWhiteLift:.80,
     warmth:1.7,saturation:1.15,gamma:1,contrast:.9,highlightRolloff:.2,
     bloomStrength:2,bloomRadiusSmall:1.05,bloomRadiusWide:1.8
   });
