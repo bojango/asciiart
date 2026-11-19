@@ -104,6 +104,9 @@
     }
     return {streak,phase,lr};
   }
+  // Reduce the old 25% illustrative directional gain to 14%.
+  // Alters brightness only; orbital positions, disk geometry and tilt remain unchanged.
+  const DIRECTIONAL_BRIGHTNESS_BIAS=.14;
   function sampleGas(x,y,time,view){
     const X=(x-view.x)/view.hole,Y=(y-view.y)/view.hole;
     const r=Math.hypot(X,Y),ang=Math.atan2(Y,X);
@@ -112,14 +115,14 @@
     const t=12+time*.44,w=.060222*t+.28*Math.max(0,t-7.8);
     const gas=flowingGas(phi,rho,t,w);
     const diskEdge=softstep((rho-1.55)/.25)*softstep((5.4-rho)/2.2);
-    const disk=1.52*diskEdge*gas.streak*(1.55/Math.max(rho,.00001))*(1-.25*u/Math.max(rho,1e-6));
+    const disk=1.52*diskEdge*gas.streak*(1.55/Math.max(rho,.00001))*(1-DIRECTIONAL_BRIGHTNESS_BIAS*u/Math.max(rho,1e-6));
     const top=.5-.5*Math.sin(ang-TILT),side=Math.pow(Math.abs(Math.cos(ang-TILT)),10);
     const out=Math.max(r-1.1,0);
     const haloBand=Math.exp(-Math.pow(out/(.2+.24*top+.45*side),2))*
       Math.exp(-Math.pow(Math.min(r-1.1,0)/.2,2));
     const haloRho=(1-side)*(1.55+Math.max(r-1,0)*2.6)+side*Math.max(r,1.55);
     const haloFlow=flowingGas(ang-TILT,haloRho,t,w).streak;
-    const halo=1.24*haloBand*haloFlow*(.5+.8*top)*(1-.25*Math.cos(ang-TILT));
+    const halo=1.24*haloBand*haloFlow*(.5+.8*top)*(1-DIRECTIONAL_BRIGHTNESS_BIAS*Math.cos(ang-TILT));
     const ring=Math.exp(-Math.pow((r-1.02)/.045,2));
     const puff=.5+.5*(.5*Math.sin(2*ang+.9*Math.sin(5*r-.45*t+1.3*t))+
       .3*Math.sin(4.6*ang-5*r+.45*t+.7*t)+.2*Math.sin(8.2*ang+8.5*r-.76*t-1.1*t));
