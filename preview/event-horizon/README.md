@@ -342,3 +342,31 @@ the live app or the approved black-hole Light Studio.
 Regression tests: `tests/event-horizon-depth.test.cjs`; includes
 deterministic body-fixed continents, separate cloud motion, near-pass
 size/safety, glyph budget and unchanged original orbits.
+
+## Phase B occlusion pass — opaque planets and softly backed accretion disc
+
+The `depth.html` preview now uses real foreground/background opacity:
+
+- Every planet draws a fully opaque, near-black circular body in
+  `planet-art-depth.js` **before** its coloured surface ASCII glyphs. This
+  prevents stars, planets, gas and orbit markers from showing through the
+  spaces between glyphs. Rear ring halves and far-side moons still render
+  *behind* this solid body; front halves/moons render in front.
+- `renderer-depth.js` adds an elliptical, feathered opacity matte underneath
+  the existing accretion gas. At its densest the matte approaches 92% black;
+  it fades gradually to zero at the outer edge. Rear planets and background
+  stars therefore appear partially obscured by dense foreground gas,
+  while the glow and character detail remain visible.
+- The matte is drawn **before** the approved RGB additive compositor, so
+  it does not modify source light colours, exposure, blur/bloom, gas movement,
+  disc geometry or the black-hole shadow.
+- All planet textures, axial rotation, moon positions, world and camera
+  coordinates remain unchanged. This preview makes *visual* occlusion more
+  realistic; the matte is not yet density-integrated radiative transfer.
+
+`depth.html` uses `planet-art-depth.js?v=3` and
+`renderer-depth.js?v=2`. The approved `source.html`, previous
+`planets.html` and production scenes remain unchanged.
+
+Regression tests check full opaque sphere coverage, ordering of planet
+rings/moons and source RGB, and a feathered accretion matte.
