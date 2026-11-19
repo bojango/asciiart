@@ -310,3 +310,35 @@ during some foreground passes according to its own independent phase.
 Validation: `node --test tests/event-horizon-depth.test.cjs`.
 Real iPhone (portrait and landscape) review is still required before treating
 this as visually approved or merging it into the existing scene selector.
+
+## Phase B close-pass visual refinement — 19 November 2026
+
+The independent `depth.html` preview has been refined without touching
+the live app or the approved black-hole Light Studio.
+
+- `hero-camera.js`: visual closest approach is approximately **20% larger**
+  than the prior prototype (projected radius **128.5 px**, up from
+  **107.5 px** at the 440×736 reference viewport). It remains in the
+  bottom foreground near (293, 677), with the accretion-disc shadow clear.
+  Camera coordinates are still world-based, so landscape displays a
+  wider horizontal view rather than independently scaling the orbit.
+- `planet-art-depth.js`: VERDANT now has a distinctly **blue ocean**
+  material, coherent and rotating **green/earthy continental landmasses**,
+  transitional coastal tones and subtle polar ice. A **separately moving,
+  translucent ASCII cloud layer** sits above the terrain.
+- A new `CLOSE` level of detail activates only at high angular size.
+  It uses about **1,650 body glyphs**, with around **130 sparse cloud
+  glyphs** at the reference approach. The glyph count remains bounded
+  for phone use, while the distant planet remains compact.
+- Axial spin, one-character moon, existing lighting falloff, the other
+  seven planets and the user's locked 14 black-hole light values
+  remain unchanged. Moon visibility is still determined by local phase.
+- `depth.html` cache-busts the camera and Earth-like planet renderer
+  as `hero-camera.js?v=2` and `planet-art-depth.js?v=2`.
+- These planet materials and the close pass are visually motivated,
+  **not a scientifically calibrated model of real oceans, continents,
+  clouds or black-hole orbit timing**.
+
+Regression tests: `tests/event-horizon-depth.test.cjs`; includes
+deterministic body-fixed continents, separate cloud motion, near-pass
+size/safety, glyph budget and unchanged original orbits.
