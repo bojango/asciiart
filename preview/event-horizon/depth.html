@@ -1,0 +1,403 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#010102">
+<title>EVENT HORIZON | VERDANT Near Pass (3D Camera)</title>
+<style>
+:root{color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#010102;color:#c4c0c4;font-family:'Courier New',monospace}
+canvas{position:absolute;inset:0;width:100%;height:100%;display:block;background:#010102}
+.top{position:absolute;z-index:2;top:env(safe-area-inset-top,0px);left:0;right:0;padding:22px 20px;display:flex;justify-content:space-between;gap:12px;pointer-events:none;text-shadow:0 2px 8px #000}
+.kicker{font-size:10px;letter-spacing:2.4px;color:#b1a7a3}
+.meta{margin-top:7px;color:#777178;font-size:9px;line-height:1.6;letter-spacing:1.5px}
+.note{font-size:9px;letter-spacing:1.4px;color:#c2a47a;text-align:right}
+.controls{position:absolute;z-index:3;bottom:calc(env(safe-area-inset-bottom,0px) + 14px);left:12px;right:12px;padding:12px;border:1px solid #ffffff26;border-radius:14px;background:rgba(13,11,15,.88);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+.buttons{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.brightness-panel{padding:2px 4px 12px;margin-bottom:11px;border-bottom:1px solid #ffffff20}
+.brightness-head{display:flex;align-items:center;gap:10px;margin-bottom:5px;color:#e0c8a8;letter-spacing:1px;font-size:10px}
+.brightness-head label{flex:1}
+.brightness-head output{color:#ffdc97;font-size:15px;font-weight:bold;letter-spacing:0;min-width:58px;text-align:right;font-variant-numeric:tabular-nums}
+.brightness-panel input[type=range]{display:block;appearance:auto;width:100%;height:30px;margin:0;accent-color:#f5b65d;cursor:pointer;touch-action:pan-x}
+.brightness-scale{display:flex;justify-content:space-between;gap:6px;color:#888087;font-size:9px;letter-spacing:.3px}
+button#brightnessReset{min-height:27px;padding:3px 7px;font-size:9px}
+button{appearance:none;-webkit-appearance:none;touch-action:manipulation;border:1px solid #ffffff28;border-radius:7px;background:#1a1719;color:#d5c7ba;min-height:37px;padding:8px 3px;font:10px 'Courier New',monospace;letter-spacing:.7px;cursor:pointer}
+button.active{color:#fff1d1;border-color:#cf9a56;background:#3b281b}
+button:disabled{opacity:.40;cursor:default}
+.row{display:flex;justify-content:space-between;gap:10px;margin-top:11px;color:#969194;font-size:9px;letter-spacing:.4px}
+.row strong{color:#e3c4a3;font-weight:400}
+.footer{display:none;position:absolute;bottom:calc(env(safe-area-inset-bottom,0px) + 237px);left:0;right:0;text-align:center;color:#777078;font-size:9px;letter-spacing:1.3px;pointer-events:none}
+@media(min-width:800px){.controls{left:50%;right:auto;transform:translateX(-50%);width:430px}.top{padding:30px 36px}}
+
+/* Mobile-first, single-control dock. Never cover the central artwork. */
+.controls{transition:padding .15s ease}
+.controls.studio-open{padding:9px 10px 10px}
+.controls.studio-open>.buttons,
+.controls.studio-open>.row{display:none}
+.tune-toggle{display:flex;width:100%;min-height:34px;padding:6px 10px;align-items:center;
+  justify-content:space-between;gap:12px;border-color:#ad8050;
+  background:#302016;color:#ffe5b6;font-size:10px;letter-spacing:1.3px;text-align:left}
+.tune-toggle span{color:#eeb877;font-size:10px}
+.tuner-body[hidden],#valuesPanel[hidden],#settingsExport[hidden],#copyStatus:empty{display:none}
+.tuner-body{padding:0;margin-top:8px}
+.tuner-tabs{display:flex;align-items:center;gap:5px;overflow-x:auto;overscroll-behavior-x:contain;
+  scrollbar-width:none;-webkit-overflow-scrolling:touch;margin:0 -1px 8px;padding:0 1px 2px}
+.tuner-tabs::-webkit-scrollbar{display:none}
+.tuner-tabs button{flex:0 0 auto;white-space:nowrap;min-height:28px;padding:5px 9px;
+  border-radius:999px;color:#a99e9b;font-size:9px;letter-spacing:.5px}
+.tuner-tabs button[aria-selected="true"]{background:#56351f;border-color:#d7a468;color:#ffe1ad}
+.tuner-main{border:1px solid #ffffff1c;border-radius:8px;background:#0e0c0f;padding:8px 8px 5px}
+.tuner-header{display:flex;align-items:center;gap:7px;min-width:0}
+.tuner-header label{flex:1;min-width:0;font-size:10px;color:#e8c999;letter-spacing:.7px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tuner-header output{color:#ffdb9c;font-size:15px;font-weight:bold;text-align:right;
+  font-variant-numeric:tabular-nums;min-width:56px}
+.tuner-nav{min-height:27px;width:28px;padding:0;border-radius:6px;font-size:17px;
+  line-height:1;border-color:#ffffff25}
+#activeSlider{display:block;width:100%;height:28px;margin:3px 0 0;accent-color:#f2b35e;touch-action:pan-x}
+.tuner-description{color:#898189;font-size:9px;line-height:1.25;min-height:12px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tuner-actions{display:grid;grid-template-columns:1fr 1.2fr 1fr;gap:6px;margin-top:7px}
+.tuner-actions button{min-height:30px;padding:5px 3px;font-size:9px;letter-spacing:.4px}
+#copySettings{border-color:#c99756;color:#ffe1a8}
+#copyStatus{color:#cdb48e;font-size:9px;line-height:1.4;padding-top:6px}
+#valuesPanel{max-height:26vh;overflow-y:auto;overscroll-behavior:contain;margin-top:7px;
+  padding:7px;background:#0e0c0f;border:1px solid #ffffff26;border-radius:7px}
+.values-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 12px}
+.value-pair{display:flex;flex-direction:column;gap:2px;font-size:9px;color:#958785}
+.value-pair strong{font-size:12px;color:#ffe0aa;font-weight:normal;font-variant-numeric:tabular-nums}
+#settingsExport{display:block;width:100%;height:110px;margin-top:6px;padding:7px;
+  background:#161116;border:1px solid #a88f76;border-radius:5px;color:#f1dfc5;font:10px monospace}
+@media(min-width:800px){
+  .controls.studio-open{width:500px}
+}
+@media(orientation:landscape) and (max-height:540px){
+  .controls.studio-open{left:auto;right:8px;bottom:8px;transform:none;width:min(380px,48vw)}
+  .tuner-description{display:none}
+}
+
+/* Depth study keeps the artwork unobstructed in portrait and landscape.
+ * Default quick controls occupy the bottom-left only. */
+.depthInfo{font-size:8px;margin-top:6px;color:#7e716c}
+.controls{left:10px;right:auto;bottom:calc(env(safe-area-inset-bottom,0px) + 9px);
+  width:158px;padding:6px;max-width:calc(100vw - 20px);border-radius:9px;
+  background:rgba(13,11,15,.84)}
+.quick-scene-controls{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.quick-scene-controls button{font-size:9px;min-height:29px;padding:5px 2px;
+  color:#e1c29e;border-color:#876447}
+#sceneControls{display:none}
+.controls.menu-open{width:min(440px,calc(100vw - 20px));background:rgba(13,11,15,.94)}
+.controls.menu-open #sceneControls{display:block;margin-top:8px}
+.controls.menu-open .buttons{display:grid}
+.controls.menu-open .row{display:flex}
+.controls.menu-open.studio-open .buttons,.controls.menu-open.studio-open .row{display:none}
+.controls.menu-open .tune-toggle{min-height:31px}
+@media(min-width:800px){
+  .controls{left:12px;right:auto;transform:none;width:158px}
+  .controls.menu-open{left:12px;right:auto;transform:none;width:410px}
+}
+@media(orientation:landscape) and (max-height:520px){
+  .controls{left:10px;bottom:8px;right:auto;transform:none}
+  .controls.menu-open{width:min(390px,48vw);left:10px;right:auto;transform:none}
+  .controls.menu-open.studio-open{max-height:93vh;overflow-y:auto}
+  .top{padding:8px 14px}
+  .meta{display:none}
+}
+</style>
+</head>
+<body>
+<canvas id="art" aria-label="Experimental ASCII black hole with a depth-scaled foreground VERDANT planet and its moon"></canvas>
+<div class="top"><div><div class="kicker">EVENT HORIZON / DEPTH STUDY</div><div class="meta">VERDANT / CLOSE-PASS ORBIT<br>PHASE B / CAMERA EXPERIMENT</div></div><div class="note">NOT LIVE V2<br><span id="modeLabel">3D PREVIEW</span><div id="depthInfo" class="depthInfo">ILLUSTRATIVE ORBIT</div></div></div>
+<div class="footer">PIXEL-RGB LUMINANCE · MULT/ MAX/ ADD · JIN2 REFERENCE</div>
+<div class="controls" id="controls">
+<div class="quick-scene-controls">
+  <button type="button" id="jumpPass" aria-label="Preview the next close pass of VERDANT">VIEW PASS</button>
+  <button type="button" id="sceneMenuToggle" aria-expanded="false" aria-controls="sceneControls">MENU</button>
+</div>
+<div id="sceneControls">
+<button id="tuneToggle" type="button" class="tune-toggle" aria-expanded="false" aria-controls="tunerBody">
+  <strong>LIGHT STUDIO</strong><span id="tunerState">TUNE</span>
+</button>
+<div id="tunerBody" class="tuner-body" hidden>
+  <div id="tunerChips" class="tuner-tabs" role="tablist" aria-label="Lighting parameter"></div>
+  <div class="tuner-main">
+    <div class="tuner-header">
+      <button id="tunerPrev" class="tuner-nav" type="button" aria-label="Previous lighting control">‹</button>
+      <label id="activeName" for="activeSlider">BRIGHTNESS</label>
+      <output id="activeValue" for="activeSlider">1.00×</output>
+      <button id="tunerNext" class="tuner-nav" type="button" aria-label="Next lighting control">›</button>
+    </div>
+    <input id="activeSlider" type="range" min=".25" max="16" step=".25" value="1" aria-label="Brightness">
+    <div id="activeDescription" class="tuner-description"></div>
+  </div>
+  <div class="tuner-actions">
+    <button id="showValues" type="button" aria-expanded="false" aria-controls="valuesPanel">VALUES</button>
+    <button id="copySettings" type="button">COPY SETTINGS</button>
+    <button id="resetSettings" type="button">RESET</button>
+  </div>
+  <div id="valuesPanel" hidden><div id="valuesList" class="values-grid"></div></div>
+  <div id="copyStatus" role="status" aria-live="polite"></div>
+  <textarea id="settingsExport" readonly hidden aria-label="Manually copy these settings"></textarea>
+</div>
+<div class="buttons">
+<button id="engine" class="active">SOURCE / V2</button>
+<button id="planet" class="active">PLANETS ON</button>
+<button id="quality" class="active">DETAIL HI</button>
+<button id="palette">EMBER</button>
+<button id="speed">SPEED 1×</button>
+<button id="pause">PAUSE</button>
+</div>
+<div class="row"><span>DISPLAY <strong id="dimensions">—</strong></span><span>ASCII <strong id="glyphs">—</strong></span><span>FPS <strong id="fps">—</strong></span></div>
+</div>
+</div>
+<script src="../../event-horizon.js?v=20261119"></script>
+<script>window.EventHorizonBaseline=window.PelagicEventHorizon;</script>
+<script src="./source-compositor.js?v=6"></script>
+<script src="./hero-camera.js?v=1"></script>
+<script src="./planet-art-depth.js?v=1"></script>
+<script src="./renderer-depth.js?v=1"></script>
+<script>
+(() => {
+  'use strict';
+  const port=window.EventHorizonRebuild,baseline=window.EventHorizonBaseline,photometry=window.EventHorizonSourceCompositor;
+  const heroCam=window.EventHorizonHeroCamera;
+  if(!heroCam||typeof port.nextHeroPass!=='function'){
+    document.getElementById('modeLabel').textContent='CAMERA ERROR';return;
+  }
+  if(!port||!baseline||!photometry){document.getElementById('modeLabel').textContent='SCRIPT ERROR';return}
+  const canvas=document.getElementById('art'),ctx=canvas.getContext('2d',{alpha:false});
+  const nodes=Object.fromEntries(['controls','engine','planet','quality','palette','speed','pause',
+    'tuneToggle','tunerState','tunerBody','tunerChips','tunerPrev','tunerNext',
+    'activeName','activeValue','activeSlider','activeDescription',
+    'showValues','valuesPanel','valuesList','copySettings','resetSettings','copyStatus','settingsExport']
+    .map(id=>[id,document.getElementById(id)]));
+  let usePort=true,showPlanets=true,highDetail=true,playing=true,speed=1,elapsed=55,previous=0;
+  let cssWidth=0,cssHeight=0,frames=0,frameWindow=0,fps=0;
+  function resize(){
+    const w=Math.max(280,innerWidth),h=Math.max(240,innerHeight),dpr=Math.min(devicePixelRatio||1,2);
+    if(w===cssWidth&&h===cssHeight)return;
+    cssWidth=w;cssHeight=h;canvas.width=Math.round(w*dpr);canvas.height=Math.round(h*dpr);
+    canvas.style.width=w+'px';canvas.style.height=h+'px';
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    document.getElementById('dimensions').textContent=Math.round(w)+' × '+Math.round(h);
+  }
+  const tunerDefs=[
+    {key:'brightness',short:'BRIGHT',label:'BRIGHTNESS',min:.25,max:16,step:.25,unit:'×',
+      desc:'Overall black-hole RGB gain (clips at high levels)'},
+    {key:'coreExposure',short:'CORE',label:'CORE EXPOSURE',min:.10,max:8,step:.05,unit:'×',
+      desc:'Extra exposure for the hottest inner gas'},
+    {key:'coreBloomStrength',short:'C BLOOM',label:'CORE BLOOM STRENGTH',min:0,max:6,step:.05,unit:'×',
+      desc:'Separate white-hot glow around the inner accretion disc'},
+    {key:'coreBloomRadius',short:'C RADIUS',label:'CORE BLOOM RADIUS',min:.25,max:6,step:.05,unit:'px',
+      desc:'Spread only the core-specific light, not the full disc'},
+    {key:'coreThreshold',short:'C THRESH',label:'CORE HEAT THRESHOLD',min:.2,max:1.5,step:.05,unit:'',
+      desc:'Lower values let more inner gas contribute to core bloom'},
+    {key:'coreWhiteLift',short:'C WHITE',label:'CORE WHITE LIFT',min:0,max:1,step:.05,unit:'',
+      desc:'Move selected core letters towards near-white without global gain'},
+    {key:'warmth',short:'GOLD',label:'WARMTH / GOLD',min:0,max:3,step:.05,unit:'×',
+      desc:'Shift the accretion gas toward orange and gold'},
+    {key:'saturation',short:'SAT',label:'SATURATION',min:0,max:2.5,step:.05,unit:'×',
+      desc:'Strengthen warm colours rather than washing into grey'},
+    {key:'gamma',short:'GAMMA',label:'GAMMA',min:.25,max:3,step:.05,unit:'',
+      desc:'Shape the midtones without uniform RGB gain'},
+    {key:'contrast',short:'CONTRAST',label:'CONTRAST',min:.25,max:4,step:.05,unit:'×',
+      desc:'Separate faint gas from bright highlights'},
+    {key:'highlightRolloff',short:'ROLLOFF',label:'HIGHLIGHT ROLLOFF',min:0,max:1,step:.05,unit:'',
+      desc:'Compress clipped highlights to retain gold and white detail'},
+    {key:'bloomStrength',short:'BLOOM',label:'BLOOM STRENGTH',min:0,max:4,step:.05,unit:'×',
+      desc:'Increase the light spilling from the ASCII'},
+    {key:'bloomRadiusSmall',short:'NEAR',label:'NEAR BLOOM RADIUS',min:.25,max:6,step:.05,unit:'px',
+      desc:'Adjust the tight light halo around bright glyphs'},
+    {key:'bloomRadiusWide',short:'WIDE',label:'WIDE BLOOM RADIUS',min:.5,max:12,step:.05,unit:'px',
+      desc:'Adjust the wide soft glow outside the disc'}
+  ];
+  const defaults=photometry.getDefaults();
+  // V3 resets to the owner's locked 14-value preset (19 November 2026).
+  // Older saved v1/v2 experiments remain untouched and cannot override it.
+  const settingsKey='eventHorizon.lightingTuners.v3';
+  const chips=[],valueNodes=[];
+  let activeIndex=0;
+  function format(def,v){return Number(v).toFixed(2)+(def.unit||'')}
+  for(const [index,def] of tunerDefs.entries()){
+    const chip=document.createElement('button');
+    chip.type='button';chip.className='tuner-chip';chip.textContent=def.short;
+    chip.id='chip-'+def.key;chip.setAttribute('role','tab');chip.setAttribute('aria-selected','false');
+    chip.onclick=()=>selectTuner(index);
+    chips.push(chip);nodes.tunerChips.appendChild(chip);
+    const pair=document.createElement('div');pair.className='value-pair';
+    const name=document.createElement('span');name.textContent=def.label;
+    const value=document.createElement('strong');value.textContent=format(def,defaults[def.key]);
+    valueNodes.push(value);pair.append(name,value);nodes.valuesList.appendChild(pair);
+  }
+  function displayParams(){
+    const params=photometry.getParams();
+    const def=tunerDefs[activeIndex];
+    nodes.activeSlider.value=String(params[def.key]);
+    nodes.activeValue.textContent=format(def,params[def.key]);
+    for(const [index,item] of tunerDefs.entries())
+      valueNodes[index].textContent=format(item,params[item.key]);
+  }
+  function selectTuner(index,scroll=true){
+    activeIndex=(index+tunerDefs.length)%tunerDefs.length;
+    const def=tunerDefs[activeIndex];
+    nodes.activeName.textContent=def.label;
+    nodes.activeSlider.min=String(def.min);
+    nodes.activeSlider.max=String(def.max);
+    nodes.activeSlider.step=String(def.step);
+    nodes.activeSlider.setAttribute('aria-label',def.label);
+    nodes.activeDescription.textContent=def.desc;
+    for(const [i,chip] of chips.entries()){
+      const chosen=i===activeIndex;
+      chip.setAttribute('aria-selected',String(chosen));
+      chip.tabIndex=chosen?0:-1;
+    }
+    displayParams();
+    if(scroll&&chips[activeIndex].scrollIntoView)
+      chips[activeIndex].scrollIntoView({block:'nearest',inline:'center',behavior:'smooth'});
+  }
+  nodes.tunerPrev.onclick=()=>selectTuner(activeIndex-1);
+  nodes.tunerNext.onclick=()=>selectTuner(activeIndex+1);
+  nodes.activeSlider.addEventListener('input',()=>{
+    const def=tunerDefs[activeIndex];
+    updateParams({[def.key]:nodes.activeSlider.value});
+  });
+  nodes.activeSlider.addEventListener('change',()=>saveSettings());
+  function updateParams(next,persist=false){
+    photometry.setParams(next);
+    displayParams();
+    if(persist)saveSettings();
+  }
+  function saveSettings(){
+    const values=photometry.getParams();
+    try{localStorage.setItem(settingsKey,JSON.stringify(values))}catch(_){}
+    try{
+      const url=new URL(location.href);
+      for(const [k,v] of Object.entries(values))url.searchParams.set(k,Number(v).toFixed(2));
+      history.replaceState(null,'',url.toString());
+    }catch(_){}
+  }
+  const initial={};
+  try{
+    const stored=JSON.parse(localStorage.getItem(settingsKey)||'null');
+    if(stored&&typeof stored==='object')Object.assign(initial,stored);
+    // Do not import older V1/V2 experiments over the locked V3 baseline.
+  }catch(_){}
+  try{
+    const search=new URLSearchParams(location.search);
+    for(const def of tunerDefs){
+      const supplied=search.get(def.key);
+      if(supplied!==null)initial[def.key]=supplied;
+    }
+  }catch(_){}
+  updateParams(initial);
+  selectTuner(2,false); // Begin with new selective Core Bloom strength control.
+  function setStudioOpen(open){
+    nodes.tunerBody.hidden=!open;
+    nodes.controls.classList.toggle('studio-open',open);
+    nodes.tuneToggle.setAttribute('aria-expanded',String(open));
+    nodes.tunerState.textContent=open?'CLOSE':'TUNE';
+    if(!open){
+      nodes.valuesPanel.hidden=true;
+      nodes.showValues.textContent='VALUES';
+      nodes.showValues.setAttribute('aria-expanded','false');
+      nodes.settingsExport.hidden=true;
+    }
+  }
+  nodes.tuneToggle.onclick=()=>setStudioOpen(nodes.tunerBody.hidden);
+  nodes.showValues.onclick=()=>{
+    const open=nodes.valuesPanel.hidden;
+    nodes.valuesPanel.hidden=!open;
+    nodes.showValues.setAttribute('aria-expanded',String(open));
+    nodes.showValues.textContent=open?'HIDE VALUES':'VALUES';
+  };
+  nodes.resetSettings.onclick=()=>{
+    updateParams(defaults,true);
+    nodes.copyStatus.textContent='Restored approved 19 Nov baseline; core effects off.';
+    nodes.settingsExport.hidden=true;
+  };
+  function exportPreset(){
+    return JSON.stringify({
+      scene:'EVENT HORIZON / SOURCE RGB',presetVersion:3,
+      palette:port.palette,detail:highDetail?'HI':'LO',
+      viewport:{width:Math.round(cssWidth),height:Math.round(cssHeight)},
+      settings:photometry.getParams()
+    },null,2);
+  }
+  nodes.copySettings.onclick=async()=>{
+    saveSettings();
+    const payload=exportPreset();
+    try{
+      if(!navigator.clipboard||!navigator.clipboard.writeText)throw Error('clipboard unsupported');
+      await navigator.clipboard.writeText(payload);
+      nodes.copyStatus.textContent='COPIED — paste the settings into ChatGPT.';
+      nodes.settingsExport.hidden=true;
+    }catch(_){
+      nodes.settingsExport.hidden=false;
+      nodes.settingsExport.value=payload;
+      nodes.settingsExport.focus();
+      nodes.settingsExport.select();
+      nodes.copyStatus.textContent='Clipboard restricted: select and copy the JSON below.';
+    }
+  };
+  nodes.engine.onclick=()=>{
+    usePort=!usePort;
+    nodes.engine.textContent=usePort?'SOURCE / V2':'V2 / SOURCE';
+    nodes.engine.classList.toggle('active',usePort);
+    nodes.planet.disabled=!usePort;
+    nodes.tuneToggle.disabled=!usePort;
+    nodes.activeSlider.disabled=!usePort;
+    for(const chip of chips)chip.disabled=!usePort;
+    nodes.resetSettings.disabled=!usePort;
+    nodes.copySettings.disabled=!usePort;
+    if(!usePort)setStudioOpen(false);
+    document.getElementById('modeLabel').textContent=usePort?'SOURCE RGB':'RESTORED V2';
+  };
+  const menuButton=document.getElementById('sceneMenuToggle');
+  const sceneControls=nodes.controls;
+  const passButton=document.getElementById('jumpPass');
+  menuButton.onclick=()=>{
+    const open=!sceneControls.classList.contains('menu-open');
+    if(!open&&!nodes.tunerBody.hidden)nodes.tuneToggle.onclick();
+    sceneControls.classList.toggle('menu-open',open);
+    menuButton.setAttribute('aria-expanded',String(open));
+    menuButton.textContent=open?'CLOSE':'MENU';
+  };
+  passButton.onclick=()=>{
+    // Demo-time positioning only, not an actual calendar prediction.
+    elapsed=Math.max(0,port.nextHeroPass(elapsed)-7);
+    playing=true;nodes.pause.textContent='PAUSE';
+    nodes.pause.classList.toggle('active',false);
+    speed=1;nodes.speed.textContent='SPEED 1×';
+    if(sceneControls.classList.contains('menu-open'))menuButton.onclick();
+  };
+  nodes.planet.onclick=()=>{showPlanets=!showPlanets;port.setShowPlanets(showPlanets);nodes.planet.textContent=showPlanets?'PLANETS ON':'BLACK HOLE';nodes.planet.classList.toggle('active',showPlanets)};
+  nodes.quality.onclick=()=>{highDetail=!highDetail;nodes.quality.textContent=highDetail?'DETAIL HI':'DETAIL LO';nodes.quality.classList.toggle('active',highDetail)};
+  nodes.pause.onclick=()=>{playing=!playing;nodes.pause.textContent=playing?'PAUSE':'PLAY';nodes.pause.classList.toggle('active',!playing)};
+  nodes.speed.onclick=()=>{speed=speed===1?.25:speed===.25?2:1;nodes.speed.textContent='SPEED '+speed+'×'};
+  nodes.palette.onclick=()=>{const name=(usePort?port:baseline).cyclePalette();nodes.palette.textContent=name};
+  function frame(now){
+    resize();
+    const dt=previous?Math.min((now-previous)/1000,.05):0;previous=now;
+    if(playing)elapsed+=dt*speed;
+    const renderer=usePort?port:baseline;
+    renderer.draw(ctx,cssWidth,cssHeight,elapsed,null,highDetail);
+    if(now-frameWindow>700){
+      fps=Math.round(frames*1000/Math.max(1,now-frameWindow));frames=0;frameWindow=now;
+      document.getElementById('fps').textContent=fps;
+      const stat=usePort?port.diagnostics():null;
+      document.getElementById('glyphs').textContent=stat?stat.glyphs.toLocaleString():'V2';
+      const camera=port.camera(cssWidth,cssHeight);
+      document.getElementById('depthInfo').textContent=
+        cssWidth/cssHeight>1.2?'WIDE CAMERA · DEMO':'PORTRAIT CROP · DEMO';
+    }
+    frames++;
+    requestAnimationFrame(frame);
+  }
+  addEventListener('resize',resize);
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
