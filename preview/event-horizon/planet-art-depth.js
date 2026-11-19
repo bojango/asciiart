@@ -200,6 +200,19 @@
     const moons=moonPositions(planet.name,pos,time);
     for(const moon of moons)if(moon.depth<0)drawMoon(ctx,moon,planet,pos,view,proximity);
     if(p.rings)ringPass(ctx,planet,pos,view,p,false,light,proximity);
+    // Solid planetary body occludes anything already behind it: stars,
+    // the accretion disc and other planets. Draw it AFTER far rings/moons
+    // but BEFORE the surface glyphs, so day/night texture stays unchanged.
+    // A fully opaque dark base is essential for ASCII, whose glyph gaps
+    // otherwise let distant objects shine straight through the planet.
+    ctx.save();
+    ctx.globalCompositeOperation='source-over';
+    ctx.globalAlpha=1;
+    ctx.fillStyle='#010102';
+    ctx.beginPath();
+    ctx.arc(pos.x,pos.y,r,0,TAU);
+    ctx.fill();
+    ctx.restore();
     // Dense enough to read as a textured sphere, sparse enough to read as ASCII.
     // No bitmap fill or photographic layer is introduced.
     const hero=planet.name==='VERDANT'&&pos.heroLOD&&pos.heroLOD!=='MIN';
