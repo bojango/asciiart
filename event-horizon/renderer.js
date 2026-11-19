@@ -409,7 +409,11 @@
     drawBackground(ctx, time, view);
     drawOrbitHints(ctx, view);
     if(window.EventHorizonPlanetArt)window.EventHorizonPlanetArt.resetDiagnostics();
-    const worldPositions = planets.map(p => ({ planet: p, pos: orbitPosition(p, time, view) }));
+    // Planetary travel uses the persisted wall-art clock, independent of the
+    // fast local animation time for gas currents, rotation and cloud drift.
+    // Display trajectories remain illustrative until the true ephemeris ships.
+    const orbitTime=window.EventHorizonSceneClock?.visualTime?.()??time;
+    const worldPositions = planets.map(p => ({ planet: p, pos: orbitPosition(p, orbitTime, view) }));
     if(showPlanets)for (const world of worldPositions.filter(p => p.pos.depth > 0).sort((a, b) => b.pos.depth - a.pos.depth))
       paintPlanet(ctx, world.planet, world.pos, view, time);
     // The matte is behind the light itself, between far-side planets

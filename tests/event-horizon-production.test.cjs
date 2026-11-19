@@ -12,7 +12,8 @@ const modules=[
   'event-horizon/hero-camera.js',
   'event-horizon/planet-art.js',
   'event-horizon/physical-system.js',
-  'event-horizon/renderer.js'
+  'event-horizon/renderer.js',
+  'event-horizon/scene-clock.js'
 ];
 function makeShell(full=true){
   const shell={window:{},document:{},console:{warn(){}},Math};
@@ -35,13 +36,15 @@ test('original production UI remains in place and loads no preview controls',()=
   assert.match(html,/id="devPanel"/);
   assert.match(html,/const sceneOrder=\['pelagic','greenwood','event-horizon'\]/);
   assert.match(html,/horizon\.draw\(ctx,width,height,time,null,highRes\)/);
-  for(const file of modules)
-    assert.ok(html.includes('src="./'+file+'?v=1"'),file+' included on main page');
+  for(const file of modules){
+    const version=file==='event-horizon/renderer.js'?'2':'1';
+    assert.ok(html.includes('src="./'+file+'?v='+version+'"'),file+' included on main page');
+  }
   for(const forbidden of ['preview/event-horizon/','tuneToggle','jumpPass','sceneMenuToggle',
     'LIGHT STUDIO','VIEW PASS','ILLUSTRATIVE ORBIT'])
     assert.ok(!html.includes(forbidden),'experimental control excluded: '+forbidden);
   assert.ok(html.indexOf('src="./event-horizon.js?v=20261119"')<
-    html.indexOf('src="./event-horizon/renderer.js?v=1"'),
+    html.indexOf('src="./event-horizon/renderer.js?v=2"'),
     'baseline loaded before optional enhancement');
 });
 
@@ -79,7 +82,7 @@ test('all 14 approved light values are intact and separate from main UI',()=>{
     shell.window.EventHorizonSourceCompositor.getParams())),approved);
 });
 
-test('hidden binary module loads without driving illustrative visible orbits',()=>{
+test('hidden binary module is loaded but never shown as a body',()=>{
   const {shell,horizon}=makeShell(),model=shell.window.EventHorizonPhysicalSystem;
   assert.ok(model);
   assert.equal(model.blackHole.massSolar,5);
@@ -91,6 +94,7 @@ test('hidden binary module loads without driving illustrative visible orbits',()
   assert.ok(Math.abs(model.companion.rocheFillFactor-1)<.003);
   assert.equal(model.metadata.visualIntegration,false);
   assert.equal(model.metadata.eventClockIntegrated,false);
+  assert.equal(shell.window.EventHorizonSceneClock.snapshot().mode,'WALL');
   assert.ok(horizon.state(0,440,736).planets[2].period!==
     model.plannedPlanets[2].keplerPeriodSeconds,
     'physical periods not falsely passed off as already-integrated visual orbits');
