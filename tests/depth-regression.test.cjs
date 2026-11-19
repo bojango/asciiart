@@ -50,6 +50,11 @@ function createSimulation() {
     draw() {}, source() { return '// test'; }, cycleSeason() { return 'SUMMER'; },
     get season() { return 'SUMMER'; },
   };
+  // This suite tests PELAGIC depth; other registered scenes are mocked.
+  window.PelagicEventHorizon = {
+    draw() {}, source() { return '// test horizon'; }, cyclePalette() { return 'EMBER'; },
+    get palette() { return 'EMBER'; }, get swatch() { return '#fff'; },
+  };
   const definitions = Object.fromEntries(['temperature', 'wind', 'rain', 'airQuality', 'humidity', 'daylight']
     .map(key => [key, { min: 0, max: 100 }]));
   window.PelagicEnvironment = {
