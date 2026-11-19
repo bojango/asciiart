@@ -139,6 +139,25 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
 .weather-source .location-meta{color:#85a398;font-size:9px;white-space:nowrap}
 .dev-panel .preset-group select:disabled{opacity:.4}
 @media(max-width:480px){.weather-source .source-row{min-height:18px}.weather-source .source-status{font-size:8px}.weather-source button{padding:3px 5px}.dev-panel .effect-grid{grid-template-rows:repeat(4,30px)}}
+
+/* Astronomy DEV occupies the original lower code area, never the canvas. */
+.horizon-dev-panel{background:#080c13;color:#bbc9d8;overflow-y:auto;overscroll-behavior:contain;gap:7px}
+.horizon-dev-panel h2{color:#d7dfed}
+.horizon-dev-panel .dev-mode{color:#879db2}
+.horizon-dev-panel button,.horizon-dev-panel select,.horizon-dev-panel input[type=number]{border:1px solid #3b4d62;background:#111925;color:#d5e2f2;font:10px/1.2 "Courier New",monospace;border-radius:2px;padding:6px}
+.horizon-dev-panel button[aria-pressed="true"]{background:#283a52;border-color:#9ab8d7;color:#fff}
+.horizon-dev-panel input[type=number]{width:95px;min-width:0;box-sizing:border-box}
+.horizon-dev-panel select{max-width:none;flex:1;min-width:0}
+.horizon-dev-panel .astro-speed{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.horizon-dev-panel .astro-speed label{display:flex;align-items:center;gap:6px;font-size:9px;color:#a4b6cb}
+.horizon-dev-panel .astro-actions{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.horizon-dev-panel .astro-actions button{flex:1 1 auto;white-space:nowrap}
+.horizon-dev-panel .astro-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 12px}
+.horizon-dev-panel .astro-stat{min-width:0;border-top:1px solid #25313f;padding:5px 0}
+.horizon-dev-panel .astro-stat span{display:block;font-size:9px;color:#7d95ac;letter-spacing:.045em}
+.horizon-dev-panel .astro-stat output{display:block;color:#d7e7fc;font-size:10px;overflow-wrap:anywhere;margin-top:4px}
+.horizon-dev-panel .astro-note{color:#8d9cad;font-size:9px;line-height:1.45;margin:0}
+@media(max-width:480px){.horizon-dev-panel{gap:5px}.horizon-dev-panel .astro-actions button{font-size:9px;padding:5px 4px}.horizon-dev-panel .astro-grid{gap:3px 8px}.horizon-dev-panel .astro-stat{padding:3px 0}.horizon-dev-panel .astro-stat output{font-size:9px}.bar .actions button#devToggle{min-width:32px;padding:0 4px}.bar .actions button#speed{padding:0 3px;font-size:9px;min-width:36px}}
 </style>
 </head>
 <body>
@@ -160,7 +179,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
       <button id="color" type="button" aria-label="Change colour palette" title="Change colour palette"><i id="swatch" class="swatch"></i><span class="word" id="colorName">LUMEN</span></button>
       <button id="density" type="button" aria-label="Toggle ASCII detail" title="Toggle ASCII detail"><span id="densityName">HI-RES</span></button>
       <button id="speed" type="button" aria-label="Change animation speed" title="Change animation speed"><span id="speedName">1×</span></button>
-      <button id="devToggle" type="button" aria-label="Open developer simulation" aria-expanded="false" aria-controls="devPanel" title="Environmental simulator"><span>DEV</span></button>
+      <button id="devToggle" type="button" aria-label="Open developer simulation" aria-expanded="false" aria-controls="devPanel horizonDevPanel" title="Scene developer controls"><span>DEV</span></button>
       <button id="expandArt" type="button" aria-label="Expand artwork" title="Expand artwork"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H3v5 M16 3h5v5 M3 16v5h5 M21 16v5h-5"/></svg></button>
     </div>
   </nav>
@@ -190,6 +209,38 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
       </section>
       <div class="dev-footer"><button type="button" id="simulatePresence">PRESENCE</button><button type="button" id="simulateTouch">TOUCH</button><button type="button" id="installationMode">FULL ART</button><span class="readout" id="devReadout">Z —</span></div>
     </aside>
+    <aside class="dev-panel horizon-dev-panel" id="horizonDevPanel" hidden aria-label="EVENT HORIZON simulation developer controls">
+      <header><h2>DEV / EVENT HORIZON</h2><span class="dev-mode">ORBIT CLOCK · DIAGNOSTICS</span><span class="preset-group"></span><button id="horizonDevClose" type="button" aria-label="Close astronomy developer panel">×</button></header>
+      <div class="astro-speed">
+        <label for="horizonClockMode">SPEED</label>
+        <select id="horizonClockMode" aria-label="EVENT HORIZON simulation speed">
+          <option value="WALL">WALL · 5×</option>
+          <option value="REAL">REAL · 1×</option>
+          <option value="FAST">FAST · 100×</option>
+          <option value="TEST">TEST · 1,440×</option>
+          <option value="DEMO">DEMO · 86,400×</option>
+          <option value="CUSTOM">CUSTOM</option>
+        </select>
+        <label for="horizonCustomRate">RATE <input id="horizonCustomRate" type="number" min="0.001" max="1000000" step="any" value="5" aria-label="Custom simulation speed multiplier">×</label>
+        <button id="horizonApplyRate" type="button">APPLY</button>
+      </div>
+      <div class="astro-actions">
+        <button id="horizonClockPause" type="button">PAUSE ORBITS</button>
+        <button id="horizonJumpPass" type="button">JUMP TO VERDANT</button>
+        <button id="horizonClockReset" type="button">RESET EPOCH</button>
+      </div>
+      <div class="astro-grid" aria-live="off">
+        <div class="astro-stat"><span>SIMULATION DATE · UTC</span><output id="horizonSimDate">—</output></div>
+        <div class="astro-stat"><span>SIMULATED DAYS ELAPSED</span><output id="horizonSimDays">—</output></div>
+        <div class="astro-stat"><span>NEXT VERDANT CAMERA PASS</span><output id="horizonNextPass">—</output></div>
+        <div class="astro-stat"><span>REAL TIME UNTIL PASS</span><output id="horizonPassETA">—</output></div>
+        <div class="astro-stat"><span>VERDANT ORBIT / REAL TIME</span><output id="horizonPeriod">—</output></div>
+        <div class="astro-stat"><span>PLANET VIEW · DETAIL</span><output id="horizonCamera">—</output></div>
+        <div class="astro-stat"><span>BLACK HOLE + DONOR</span><output id="horizonBodies">—</output></div>
+        <div class="astro-stat"><span>RENDER DIAGNOSTICS</span><output id="horizonGlyphs">—</output></div>
+      </div>
+      <p class="astro-note" id="horizonClockNote">The 5.4-solar-mass physical binary is modelled, but these visual planetary trajectories are still illustrative. Pass estimates are camera events, not scientifically validated conjunction predictions. Clock progress is stored on this browser.</p>
+    </aside>
   </section>
 </main>
 <script src="./environment.js"></script>
@@ -200,7 +251,8 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
 <script src="./event-horizon/hero-camera.js?v=1"></script>
 <script src="./event-horizon/planet-art.js?v=1"></script>
 <script src="./event-horizon/physical-system.js?v=1"></script>
-<script src="./event-horizon/renderer.js?v=1"></script>
+<script src="./event-horizon/renderer.js?v=2"></script>
+<script src="./event-horizon/scene-clock.js?v=1"></script>
 <script src="./ecosystem.js"></script>
 <script src="./senses.js"></script>
 <script>
