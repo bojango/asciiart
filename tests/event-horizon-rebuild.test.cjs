@@ -7,13 +7,13 @@ const vm=require('node:vm');
 const root=path.join(__dirname,'..');
 const src=fs.readFileSync(path.join(root,'preview/event-horizon/renderer.js'),'utf8');
 function context() {
-  const state={glyphs:0,composites:0};
+  const state={glyphs:0,composites:0,maxRetention:0,hotAdditiveGlyphs:0};
   const mock=()=>({
     filter:'none',globalCompositeOperation:'source-over',globalAlpha:1,shadowBlur:0,
     save(){},restore(){},translate(){},rotate(){},scale(){},beginPath(){},arc(){},fill(){},
     fillRect(){},clearRect(){},createRadialGradient(){return{addColorStop(){}}},
-    fillText(char,x,y){assert.equal(typeof char,'string');assert.ok(Number.isFinite(x));assert.ok(Number.isFinite(y));state.glyphs++},
-    drawImage(){state.composites++}
+    fillText(char,x,y){assert.equal(typeof char,'string');assert.ok(Number.isFinite(x));assert.ok(Number.isFinite(y));state.glyphs++;if(this.globalCompositeOperation==='lighter')state.hotAdditiveGlyphs++},
+    drawImage(){state.composites++;if(this.globalCompositeOperation==='lighten')state.maxRetention++}
   });
   const c={window:{},document:{createElement(name){assert.equal(name,'canvas');return{width:0,height:0,getContext:mock}}}};
   vm.runInNewContext(src,c,{filename:'renderer.js'});
@@ -48,7 +48,9 @@ test('front and back ASCII light layers receive independent additive blur',()=>{
   assert.ok(diagnostic.hot>90);
   assert.ok(diagnostic.maxHeat>1);
   assert.equal(diagnostic.offscreen,true);
-  assert.equal(state.composites,6);
+  assert.equal(state.composites,8);
+  assert.equal(state.maxRetention,2);
+  assert.ok(state.hotAdditiveGlyphs>200);
 });
 test('rendering remains finite on portrait, landscape and low-detail views',()=>{
   const {renderer,mock}=context(),ctx=mock();
