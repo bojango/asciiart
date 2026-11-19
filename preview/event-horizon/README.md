@@ -95,3 +95,62 @@ The selective glow uses its own black RGB canvas, Gaussian blur and a masked eve
 This test build stores new presets under `eventHorizon.lightingTuners.v2` without replacing the previous V1 saved settings. New clean URLs begin from the approved ten-value baseline. The JSON export uses `presetVersion:2` and includes all fourteen controls. The normal V2 artwork and GREENWOOD/PELAGIC are unaffected.
 
 Validation: `node --test tests/event-horizon-tuner.test.cjs` and in-browser inspection at the target iPhone resolution; avoid considering this visually final until reviewed on device.
+
+## Locked lighting preset — 19 November 2026 at 10:47
+
+The accepted 14-setting **EMBER / HI** look has been saved exactly as `getDefaults()`
+in `source-compositor.js`. This is the baseline for all future edits, not a
+temporary slider state. New fresh previews store overrides in
+`eventHorizon.lightingTuners.v3`, so historical V1/V2 tuning sessions remain
+intact and cannot silently replace the locked preset. Export format: `presetVersion:3`.
+
+```json
+{"brightness":2,"coreExposure":3.85,"coreBloomStrength":3.45,
+"coreBloomRadius":2.25,"coreThreshold":0.8,"coreWhiteLift":0.8,
+"warmth":1.7,"saturation":1.15,"gamma":1,"contrast":0.9,
+"highlightRolloff":0.2,"bloomStrength":2,
+"bloomRadiusSmall":1.05,"bloomRadiusWide":1.8}
+```
+
+The illustration's asymmetric directional light gain is reduced from 0.25 to
+0.14 in both the disk and upper lensing bands of `renderer-reference.js`.
+The positions, simulated gas density/shape, tilt, radius, shadow and planetary
+rendering remain untouched. **This is an artistic Doppler-beaming approximation,
+not a relativistic radiative-transfer calculation.**
+
+## Long-term goal: predictive fictional black-hole planetary system
+
+Today's planet layer is *not yet a physically calibrated solar system*.
+Eight fictional planets have circular projected orbits and relative periods
+`P=142*(relativeRadius/0.4)^1.5` in display-time units; there is no physical
+central mass, measured distance, eccentricity, mutual gravity, or calendar epoch.
+
+A physically grounded future edition should treat rendering and physics as
+separate components:
+
+1. Pick a physically specified central black hole (mass, possible spin,
+   distance scale, disk inclination, feeding/accretion rate, luminosity).
+2. Give each planet a stable identifier, mass and radius plus orbital
+   elements `(a,e,i,Ω,ω,M0)` at a shared epoch, expressed in AU, SI or
+   gravitational-radius units as appropriate. Derive Kepler periods from `GM`.
+3. Compute deterministic 3D positions and velocities from the timestamp,
+   solve Kepler's equation initially, then project to the existing ASCII scene.
+   Simulated time must be independent of frame rate, playback speed and
+   screen geometry. Supply play/pause, date scrub and time scale.
+4. Predict reproducible conjunctions, apparent alignments, eclipses/transits
+   and oppositions from orbital geometry plus a defined observer viewpoint.
+   These must be calculated, not scheduled random events.
+5. Validate dynamical stability and disk/planet clearance. Add N-body
+   perturbations, relativistic precession, time-delay/light bending and
+   dynamical accuracy tests as needed; use stated approximations rather than
+   calling illustrations exact general relativity.
+6. Compare any upgraded accretion disk against physical relativistic
+   ray-tracing/doppler models, without sacrificing the user-approved ASCII
+   colour and glyph aesthetic. Explicitly separate physically-derived
+   luminosity from the artistic brightness sliders.
+
+Bright accretion disks also imply strong irradiation, so orbital stability
+alone does not imply habitability. A plausible system needs both a disk
+feeding assumption and appropriate planetary distances.
+
+**No orbital-engine changes are included in this lighting commit.**
