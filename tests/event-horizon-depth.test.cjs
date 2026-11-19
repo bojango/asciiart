@@ -28,10 +28,10 @@ test('single existing VERDANT gets deterministic 3D perspective (no added planet
   assert.ok(next>when);
   assert.ok(next-when>280&&next-when<300);
   const p=scene.heroAt(when,...portrait);
-  assert.equal(p.heroLOD,'NEAR');
-  assert.ok(p.radius>100&&p.radius<116);
-  assert.ok(p.y-p.radius>530&&p.y-p.radius<565);
-  assert.ok(p.x>250&&p.x<310);
+  assert.equal(p.heroLOD,'CLOSE');
+  assert.ok(p.radius>126&&p.radius<131,'~20% larger than previous 107.5px radius');
+  assert.ok(p.y-p.radius>540&&p.y-p.radius<555);
+  assert.ok(p.x>285&&p.x<300);
   assert.ok(w.EventHorizonHeroCamera.shadowSafe(p,...portrait,45.76));
   assert.deepEqual(
     JSON.parse(JSON.stringify(p)),
@@ -102,8 +102,8 @@ test('close-pass planet resolves surface detail while retaining single-glyph moo
 });
 test('separate test page provides near-pass button and portrait/landscape controls',()=>{
   const html=read('depth.html');
-  for(const script of ['hero-camera.js','planet-art-depth.js','renderer-depth.js'])
-    assert.ok(html.includes('./'+script+'?v=1'));
+  for(const script of ['hero-camera.js?v=2','planet-art-depth.js?v=2','renderer-depth.js?v=1'])
+    assert.ok(html.includes('./'+script));
   assert.match(html,/id="jumpPass"/);
   assert.match(html,/id="sceneMenuToggle"/);
   assert.match(html,/nextHeroPass\(elapsed\)-7/);
@@ -111,4 +111,56 @@ test('separate test page provides near-pass button and portrait/landscape contro
   assert.match(html,/Math\.max\(240,innerHeight\)/);
   assert.ok(!read('planets.html').includes('hero-camera.js'),
     'old planet-art preview remains untouched');
+});
+
+test('VERDANT has visible blue oceans, green continents and separately moving translucent clouds',()=>{
+  const win=modules(),scene=win.EventHorizonRebuild,art=win.EventHorizonPlanetArt;
+  const t=scene.nextHeroPass(0),pos=scene.heroAt(t,...portrait);
+  const view={width:440,height:736,x:220,y:375.36,hole:45.76,
+    stepX:440/113,stepY:5.5,font:6.16};
+  const records=[];
+  const ctx={fillStyle:'',font:'',textBaseline:'',
+    fillText(ch,x,y){records.push({ch,x,y,color:this.fillStyle})}};
+  art.resetDiagnostics();
+  art.draw(ctx,{name:'VERDANT',body:[75,130,117],lit:[166,227,174]},pos,view,t);
+  const stat=art.diagnostics();
+  assert.equal(pos.heroLOD,'CLOSE');
+  assert.ok(stat.glyphs>1300&&stat.glyphs<2000,'denser detailed but bounded ASCII surface');
+  assert.ok(stat.cloudGlyphs>60&&stat.cloudGlyphs<450,'separate sparse cloud layer');
+  function parseRGBA(row){
+    const match=row.color.match(/^rgba\((\d+),(\d+),(\d+),([\d.]+)\)$/);
+    assert.ok(match);
+    return match.slice(1).map(Number);
+  }
+  let blue=0,green=0;
+  for(const row of records){
+    if(!'~:'.includes(row.ch)){
+      const [r,g,b,a]=parseRGBA(row);
+      if(b>g*1.2&&b>r*1.3)blue++;
+      if(g>b*1.12&&g>r*1.1)green++;
+    }
+  }
+  assert.ok(blue>250,'large blue ocean regions');
+  assert.ok(green>120,'distinct green landmasses');
+  const normals=Array.from({length:180},(_,i)=>{
+    const a=i/180*Math.PI*2;return [.9*Math.cos(a),.9*Math.sin(a),Math.sqrt(1-.9**2)];
+  });
+  const now=normals.map(n=>art.textureAt('VERDANT',n,t,1));
+  const later=normals.map(n=>art.textureAt('VERDANT',n,t+21,1));
+  assert.ok(now.some(v=>v.land>.8)&&now.some(v=>v.land<.2),
+    'continental map retains coastlines and broad oceans');
+  assert.ok(now.some((v,i)=>Math.abs(v.land-later[i].land)>.2),
+    'landmasses rotate with the planet');
+  assert.ok(now.some((v,i)=>Math.abs(v.cloud-later[i].cloud)>.25),
+    'cloud cover moves separately over the rotating map');
+  assert.deepEqual(
+    JSON.parse(JSON.stringify(now)),
+    JSON.parse(JSON.stringify(normals.map(n=>art.textureAt('VERDANT',n,t,1)))),
+    'surface is deterministic at a fixed simulation time');
+});
+test('only the depth preview changes; approved source lighting and other scene previews are isolated',()=>{
+  assert.match(read('depth.html'),/hero-camera\.js\?v=2/);
+  assert.match(read('depth.html'),/planet-art-depth\.js\?v=2/);
+  assert.ok(!read('planets.html').includes('planet-art-depth.js'));
+  assert.ok(!read('source.html').includes('hero-camera.js'));
 });
