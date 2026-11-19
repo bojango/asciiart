@@ -13,6 +13,7 @@
     [[107,37,100],[178,67,143],[224,125,178],[246,182,215],[255,230,248]],
     [[41,78,103],[74,128,148],[125,180,189],[208,203,159],[255,233,203]]
   ];
+  let brightness=1;
   let sizes=null,art,actx,trail,tctx,trailData,bloomSmall,bloomWide,
       smallCtx,wideCtx,tempSmall,tempWide,tempSmallCtx,tempWideCtx,lastTime=null;
   const createCanvas=(w,h)=>{
@@ -49,7 +50,9 @@
     out[0]+=10*warmBoost+10*coreBoost;
     out[1]+=22*warmBoost+28*coreBoost;
     out[2]+= 8*warmBoost+54*coreBoost;
-    return out.map(v=>Math.min(255,Math.round(v)));
+    // User-adjustable exposure applies only to black-hole RGB pixels.
+    // Black stays black; no Canvas alpha/compositing or geometry changes.
+    return out.map(v=>Math.min(255,Math.round(v*brightness)));
   }
   function gaussian(srcCtx,dstCtx,w,h,sigma){
     const pixels=srcCtx.getImageData(0,0,w,h).data;
@@ -142,8 +145,22 @@
     stats.active=true;stats.reason='';lastTime=time;
     return true;
   }
+  function setBrightness(value){
+    const n=Number(value);
+    const next=Math.round(clamp(Number.isFinite(n)?n:1,.25,16)*4)/4;
+    if(next!==brightness){
+      brightness=next;
+      // Wipe only historical RGB trails to prevent carrying the previous
+      // exposure into the next frame; reuse canvas allocations during drag.
+      if(trailData)for(let i=0;i<trailData.length;i+=4){
+        trailData[i]=0;trailData[i+1]=0;trailData[i+2]=0;trailData[i+3]=255;
+      }
+      lastTime=null; // Immediate repaint, including when animation is paused.
+    }
+    return brightness;
+  }
   window.EventHorizonSourceCompositor={
-    draw,needsFrame(time,view){
+    draw,setBrightness,get brightness(){return brightness},needsFrame(time,view){
       if(!sizes||lastTime===null||time<lastTime-.3||time-lastTime>=1/30)return true;
       const pad=26,x=Math.max(0,Math.floor(view.x-view.halfSpan-pad)),y=Math.max(0,Math.floor(view.y-view.halfHeight-pad));
       const w=Math.max(1,Math.min(view.width-x,Math.ceil(view.halfSpan*2+pad*2))),
