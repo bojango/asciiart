@@ -28,9 +28,34 @@
   });
   const scene=()=>window.EventHorizonRebuild;
   let selected=null;
+
+  // Derive genuine values from the project's idealised circular Kepler model,
+  // not from the arbitrary visual orbit radius or canvas projection.
+  function orbitalStats(name){
+    const physics=window.EventHorizonPhysicalSystem;
+    const body=physics?.plannedPlanets?.find(p=>p.name===name);
+    const seconds=body?.keplerPeriodSeconds;
+    const axis=body?.semimajorAxisAU;
+    const auMetres=physics?.SI?.AU_M;
+    let orbitTimeText='—',orbitDistanceText='—';
+    if(Number.isFinite(seconds)&&seconds>0){
+      const whole=Math.round(seconds);
+      const days=Math.floor(whole/86400);
+      const remainder=whole%86400;
+      const pad=n=>String(n).padStart(2,'0');
+      orbitTimeText=days+'d '+pad(Math.floor(remainder/3600))+':'+
+        pad(Math.floor(remainder%3600/60))+':'+pad(remainder%60);
+    }
+    if(Number.isFinite(axis)&&axis>0&&Number.isFinite(auMetres))
+      orbitDistanceText=Math.round(TAU*axis*auMetres/1609.344).
+        toLocaleString('en-GB')+' MILES';
+    const count=window.EventHorizonPlanetArt?.moonCount?.(name);
+    return {orbitTimeText,orbitDistanceText,
+      moonCount:Number.isInteger(count)?count:'—'};
+  }
   function info(name){
     const p=INFO[name];
-    return p?Object.freeze({...p,name,
+    return p?Object.freeze({...p,...orbitalStats(name),name,
       radiusEarth:p.diameterKm/EARTH_DIAMETER_KM,
       diameterText:p.diameterKm.toLocaleString('en-GB')+' KM DIAMETER'}):null;
   }
@@ -76,60 +101,58 @@
     selected=name===selected?null:name;
     return selected;
   }
-  function clear(){selected=null;}
-  function strokeSegment(ctx,a,b,opacity,shade=255){
-    if(!a||!b||!Number.isFinite(a.x+a.y+b.x+b.y))return;
-    ctx.strokeStyle='rgba('+shade+','+shade+','+shade+','+
-      clamp(opacity,0,1).toFixed(3)+')';
-    ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();
+  function select(name){
+    selected=Object.prototype.hasOwnProperty.call(INFO,name)?name:null;
+    return selected;
   }
+  function clear(){selected=null;}
+
   function drawOrbit(ctx,width,height,time){
     if(!selected)return;
-    const periodSec=period(selected);
-    if(!(periodSec>0))return;
-    const sceneNow=scene();
-    if(!sceneNow?.projectedPlanet||typeof ctx.setLineDash!=='function')return;
-    // Trace the true *currently rendered* illustrative orbit (including the
-    // perspective-foreshortened VERDANT orbit). No invented circle/ellipse.
-    const SAMPLES=192,points=[];
+    const periodSec=period(selected),sceneNow=scene();
+    if(!(periodSec>0)||!sceneNow?.projectedPlanet||
+       typeof ctx.setLineDash!=='function')return;
+    // Equally spaced 4px dashes in screen-space arc length, including on
+    // the foreshortened elliptical orbits.
+    const SAMPLES=480,DASH=4,GAP=4,points=[];
     for(let i=0;i<=SAMPLES;i++)
-      points.push(sceneNow.projectedPlanet(selected,periodSec*i/SAMPLES,width,height));
+      points.push(sceneNow.projectedPlanet(
+        selected,periodSec*i/SAMPLES,width,height));
+    const currentPhase=((time%periodSec)+periodSec)%periodSec/periodSec;
     ctx.save();
     ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';
-    ctx.lineWidth=1;ctx.setLineDash([4,6]);
-    ctx.lineCap='butt';ctx.strokeStyle='rgba(187,192,200,0.31)';
-    ctx.beginPath();
-    for(let i=0;i<points.length;i++){
-      const p=points[i];if(!p)continue;
-      if(i===0)ctx.moveTo(p.x,p.y);else ctx.lineTo(p.x,p.y);
-    }
-    ctx.stroke();
-
-    // Recently traversed 62% of this path fades from white at the planet
-    // back to grey. Draw 48 small dashed segments for a travelling gradient.
-    const TRAIL_SEGMENTS=48,TRAIL_FRACTION=.62;
-    let previous=sceneNow.projectedPlanet(
-      selected,time-periodSec*TRAIL_FRACTION,width,height);
-    ctx.setLineDash([4,6]);
-    for(let i=1;i<=TRAIL_SEGMENTS;i++){
-      const fraction=i/TRAIL_SEGMENTS;
-      const at=time-periodSec*TRAIL_FRACTION*(1-fraction);
-      const next=sceneNow.projectedPlanet(selected,at,width,height);
-      const intensity=Math.pow(fraction,1.6);
-      strokeSegment(ctx,previous,next,.13+.81*intensity,
-        Math.round(176+79*intensity));
-      previous=next;
-    }
-    // Direction-of-travel cue: the short forward arc is bright white.
-    // The longer fading tail above indicates distance just covered.
-    ctx.setLineDash([4,6]);
-    const FORWARD=14,forwardFraction=.115;
-    previous=sceneNow.projectedPlanet(selected,time,width,height);
-    for(let i=1;i<=FORWARD;i++){
-      const next=sceneNow.projectedPlanet(
-        selected,time+periodSec*forwardFraction*i/FORWARD,width,height);
-      strokeSegment(ctx,previous,next,.94-.33*i/FORWARD,255);
-      previous=next;
+    ctx.lineWidth=1;ctx.lineCap='butt';ctx.setLineDash([]);
+    let cumulative=0;
+    for(let i=1;i<points.length;i++){
+      const a=points[i-1],b=points[i];
+      if(!a||!b||!Number.isFinite(a.x+a.y+b.x+b.y))continue;
+      const length=Math.hypot(b.x-a.x,b.y-a.y);
+      if(length<1e-8)continue;
+      let offset=0;
+      while(offset<length-1e-7){
+        const phase=(cumulative+offset)%(DASH+GAP);
+        const dash=phase<DASH;
+        const available=(dash?DASH:DASH+GAP)-phase;
+        const step=Math.min(length-offset,Math.max(available,1e-6));
+        if(dash&&step>1e-5){
+          const u=offset/length,v=(offset+step)/length;
+          const f=((i-1)+(offset+step*.5)/length)/SAMPLES;
+          const behind=(currentPhase-f+1)%1;
+          const ahead=(f-currentPhase+1)%1;
+          // Pale-grey entire orbit; brighter recent path and forward motion.
+          let glow=behind<.62?Math.pow(1-behind/.62,1.65):0;
+          if(ahead<.115)glow=Math.max(glow,.68+.32*(1-ahead/.115));
+          const shade=Math.round(191+64*glow);
+          ctx.strokeStyle='rgba('+shade+','+shade+','+
+            Math.min(255,shade+4)+','+(.72+.27*glow).toFixed(3)+')';
+          ctx.beginPath();
+          ctx.moveTo(a.x+(b.x-a.x)*u,a.y+(b.y-a.y)*u);
+          ctx.lineTo(a.x+(b.x-a.x)*v,a.y+(b.y-a.y)*v);
+          ctx.stroke();
+        }
+        offset+=step;
+      }
+      cumulative+=length;
     }
     ctx.restore();
   }
@@ -143,44 +166,79 @@
     if(line)lines.push(line);
     return lines.slice(0,maxLines);
   }
+
   function calloutGeometry(pos,w,h,name){
     const profile=window.EventHorizonPlanetArt?.profile?.(name);
-    const ringMultiplier=profile?.rings?(profile.rings==='thin'?1.88:2.27):1;
-    const extent=pos.radius*ringMultiplier+5;
+    const ringMultiplier=profile?.rings?
+      (profile.rings==='thin'?1.88:2.27):1;
+    const extent=Math.max(8,pos.radius*ringMultiplier+5);
     const margin=8;
-    // Responsive boxes leave space for the 45-degree leader on mobile.
-    const boxW=Math.min(230,Math.max(152,w*.49));
+    const boxW=Math.max(80,Math.min(244,Math.max(200,w*.63),w-2*margin));
     const descriptor=info(name);
-    const limit=Math.max(13,Math.floor((boxW-18)/(9*.60)));
+    const limit=Math.max(13,Math.floor((boxW-16)/(9*.60)));
     const description=wrap(descriptor?.description||'',limit,3);
-    const boxH=45+12*description.length;
-    const right=(w-(pos.x+extent))>=(pos.x-extent);
-    const direction=right?1:-1;
-    const below=pos.y<h*.43;
-    const vertical=below?1:-1;
-    const startX=pos.x+direction*extent;
-    const startY=pos.y+vertical*Math.min(extent*.25,12);
-    const preferredDiagonal=Math.max(20,Math.min(38,extent*.3+18));
-    const desiredEntryX=startX+direction*(preferredDiagonal+12);
-    const proposedX=right?desiredEntryX:desiredEntryX-boxW;
-    const boxX=clamp(proposedX,margin,Math.max(margin,w-boxW-margin));
-    const entryX=right?boxX:boxX+boxW;
-    // Preserve a short *visible* horizontal segment even when a narrow
-    // viewport forces the description box closer to its planet.
-    const available=direction*(entryX-startX);
-    const elbowDistance=available>=12?
-      Math.min(38,Math.max(7,available-12)):Math.max(14,preferredDiagonal*.6);
-    const elbowX=startX+direction*elbowDistance;
-    const elbowY=startY+vertical*elbowDistance;
-    const boxY=clamp(elbowY-boxH*.3,margin,Math.max(margin,h-boxH-margin));
-    const entryY=clamp(elbowY,boxY+8,boxY+boxH-8);
-    return {extent,startX,startY,elbowX,elbowY,entryX,entryY,
-      boxX,boxY,boxW,boxH,description,side:direction};
+    const boxH=96+12*description.length;
+    const offscreen=!visible(pos,w,h)||pos.x<0||pos.x>w||
+      pos.y<0||pos.y>h;
+    if(offscreen){
+      // Box is pinned just inside the relevant screen edge. The short
+      // connector points toward the selected planet even when offscreen.
+      const side=pos.x<0?-1:pos.x>w?1:pos.x>=w/2?1:-1;
+      const gutter=Math.min(36,Math.max(24,w*.09));
+      const boxX=side>0?w-gutter-boxW:gutter;
+      const upper=Math.min(72,Math.max(margin,h*.10));
+      const lower=Math.max(upper,h-boxH-Math.min(60,h*.09));
+      const boxY=clamp(pos.y-boxH*.5,upper,lower);
+      const entryX=side>0?boxX+boxW:boxX;
+      const entryY=clamp(pos.y,boxY+14,boxY+boxH-14);
+      return {offscreen,extent,boxX,boxY,boxW,boxH,description,side,
+        entryX,entryY,elbowX:entryX+side*11,
+        startX:side>0?w-1:1,startY:clamp(pos.y,8,h-8)};
+    }
+    const leftRoom=pos.x-extent-margin;
+    const rightRoom=w-pos.x-extent-margin;
+    const side=rightRoom>=leftRoom?1:-1;
+    const room=Math.max(leftRoom,rightRoom);
+    const vertical=pos.y<h*.5?1:-1;
+    if(room>=boxW+36){
+      // When space permits, the entire box stays outside the highlight.
+      const gap=Math.min(52,Math.max(36,room-boxW));
+      const boxX=side>0?pos.x+extent+gap:
+        pos.x-extent-gap-boxW;
+      const startX=pos.x+side*extent;
+      const startY=pos.y+vertical*Math.min(12,extent*.25);
+      const elbowX=startX+side*19;
+      const elbowY=startY+vertical*19;
+      const boxY=clamp(elbowY-(vertical>0?12:boxH-12),
+        margin,Math.max(margin,h-boxH-margin));
+      return {offscreen:false,mode:'lateral',extent,boxX,boxY,boxW,boxH,
+        description,side,startX,startY,elbowX,elbowY,
+        entryX:side>0?boxX:boxX+boxW,
+        entryY:clamp(elbowY,boxY+10,boxY+boxH-10)};
+    }
+    // Mobile cannot fit a large ringed planet and its label side by side.
+    // Switch above/below with a 24px gap, preserving the angular leader.
+    const downSpace=h-(pos.y+extent);
+    const upSpace=pos.y-extent;
+    const v=downSpace>=boxH+24?1:
+      upSpace>=boxH+24?-1:downSpace>=upSpace?1:-1;
+    const boxX=clamp(pos.x-boxW*.5+side*12,
+      margin,Math.max(margin,w-boxW-margin));
+    const boxY=clamp(v>0?pos.y+extent+24:
+      pos.y-extent-boxH-24,margin,Math.max(margin,h-boxH-margin));
+    const startX=pos.x+side*extent;
+    const startY=pos.y+v*extent;
+    const elbowX=startX+side*16;
+    const elbowY=startY+v*16;
+    return {offscreen:false,mode:'vertical',extent,boxX,boxY,boxW,boxH,
+      description,side,startX,startY,elbowX,elbowY,
+      entryX:clamp(elbowX+side*15,boxX+12,boxX+boxW-12),
+      entryY:v>0?boxY:boxY+boxH};
   }
   function drawCallout(ctx,width,height,time){
     if(!selected)return;
     const pos=current(selected,time,width,height);
-    if(!visible(pos,width,height))return;
+    if(!pos||!Number.isFinite(pos.x+pos.y+pos.radius))return;
     const metadata=info(selected);
     if(!metadata)return;
     const g=calloutGeometry(pos,width,height,selected);
@@ -188,33 +246,50 @@
     ctx.globalCompositeOperation='source-over';ctx.globalAlpha=1;
     ctx.shadowBlur=0;ctx.lineWidth=1;ctx.setLineDash([]);
     ctx.strokeStyle='rgba(255,255,255,0.93)';
-    // Crisp, square planet highlight. Ringed planets include their rings.
-    ctx.strokeRect(Math.round(pos.x-g.extent)+.5,
-      Math.round(pos.y-g.extent)+.5,
-      Math.round(g.extent*2),Math.round(g.extent*2));
+    if(!g.offscreen){
+      ctx.strokeRect(Math.round(pos.x-g.extent)+.5,
+        Math.round(pos.y-g.extent)+.5,
+        Math.round(g.extent*2),Math.round(g.extent*2));
+    }
     ctx.beginPath();
-    ctx.moveTo(g.startX,g.startY);
-    ctx.lineTo(g.elbowX,g.elbowY);  // 45° diagonal
-    ctx.lineTo(g.entryX,g.elbowY); // short horizontal connector
+    if(g.offscreen){
+      ctx.moveTo(g.entryX,g.entryY);
+      ctx.lineTo(g.elbowX,g.entryY);
+      ctx.lineTo(g.startX,g.startY);
+    }else{
+      ctx.moveTo(g.startX,g.startY);
+      ctx.lineTo(g.elbowX,g.elbowY);
+      ctx.lineTo(g.entryX,g.elbowY);
+      if(Math.abs(g.entryY-g.elbowY)>.5)
+        ctx.lineTo(g.entryX,g.entryY);
+    }
     ctx.stroke();
-    ctx.fillStyle='rgba(0,0,0,0.82)';
+    ctx.fillStyle='rgba(0,0,0,0.88)';
     ctx.fillRect(g.boxX,g.boxY,g.boxW,g.boxH);
     ctx.strokeRect(Math.round(g.boxX)+.5,Math.round(g.boxY)+.5,
       Math.round(g.boxW),Math.round(g.boxH));
     ctx.textBaseline='top';
     ctx.fillStyle='rgba(255,255,255,0.96)';
     ctx.font='bold 10px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace';
-    ctx.fillText(metadata.name,g.boxX+8,g.boxY+7);
+    ctx.fillText(metadata.name,g.boxX+8,g.boxY+8);
     ctx.font='9px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace';
     ctx.fillStyle='rgba(232,235,241,0.88)';
-    ctx.fillText(metadata.diameterText,g.boxX+8,g.boxY+22);
+    ctx.fillText(metadata.diameterText,g.boxX+8,g.boxY+23);
+    ctx.font=(g.boxW<221?'8.3':'9')+
+      'px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace';
+    ctx.fillText('ORBIT TIME: '+metadata.orbitTimeText,g.boxX+8,g.boxY+41);
+    ctx.fillText('ORBIT DISTANCE: '+metadata.orbitDistanceText,
+      g.boxX+8,g.boxY+54);
+    ctx.fillText('MOONS: '+metadata.moonCount,g.boxX+8,g.boxY+67);
+    ctx.font='9px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace';
     ctx.fillStyle='rgba(194,207,218,0.84)';
     for(let i=0;i<g.description.length;i++)
-      ctx.fillText(g.description[i].toUpperCase(),g.boxX+8,g.boxY+39+i*12);
+      ctx.fillText(g.description[i].toUpperCase(),
+        g.boxX+8,g.boxY+86+i*12);
     ctx.restore();
   }
   window.EventHorizonPlanetInteraction=Object.freeze({
-    tap,hitTest,clear,drawOrbit,drawCallout,info,
+    tap,hitTest,select,clear,drawOrbit,drawCallout,info,
     calloutGeometry,get selected(){return selected},
     names:()=>Object.keys(INFO)
   });
