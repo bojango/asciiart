@@ -10,7 +10,7 @@ function environment(){
   const w={},shell={window:w,document:{},console:{warn(){},error(){}}};
   for(const file of ['event-horizon/hero-camera.js','event-horizon/planet-art.js',
       'event-horizon/source-compositor.js','event-horizon/renderer.js',
-      'event-horizon/planet-interaction.js'])
+      'event-horizon/physical-system.js','event-horizon/planet-interaction.js'])
     vm.runInNewContext(read(file),shell,{filename:file});
   return {w,scene:w.EventHorizonRebuild,ui:w.EventHorizonPlanetInteraction};
 }
@@ -115,11 +115,13 @@ test('selected orbit follows the live projected 3D path with grey dashes and dir
     const {ctx,actions,getBalance}=context();
     ui.drawOrbit(ctx,440,736,43);
     const strokes=actions.filter(a=>a.type==='stroke');
-    assert.ok(strokes.length>45,'dashed base + gradient segments');
-    assert.ok(actions.some(a=>a.type==='dash'&&a.dash[0]===4&&a.dash[1]===6));
-    assert.ok(strokes.some(a=>a.style==='rgba(187,192,200,0.31)'),'grey orbit');
-    assert.ok(strokes.some(a=>a.style.startsWith('rgba(255,255,255,0.')),'white forward guide');
-    assert.ok(strokes.some(a=>a.style.startsWith('rgba(176,176,176,0.')),'faded trailing region');
+    assert.ok(strokes.length>45,'equal short dashed segments');
+    // Manually segmented dashes retain equal screen-space lengths after
+    // foreshortening, rather than relying on angle-based setLineDash.
+    assert.ok(actions.some(a=>a.type==='dash'&&a.dash.length===0));
+    const shade=strokes.map(a=>Number(a.style.match(/^rgba\((\d+),/)?.[1]));
+    assert.ok(shade.some(x=>x>=245),'white leading path');
+    assert.ok(shade.some(x=>x<=198),'light-grey full path');
     assert.equal(getBalance(),0);
     ui.clear();
   }
@@ -152,15 +154,58 @@ test('planetary callout uses two 1px white square frames and clipped readable mo
       assert.ok(frames.every(a=>a.width===1));
       assert.ok(actions.some(a=>a.type==='text'&&a.text===name));
       assert.ok(actions.some(a=>a.type==='text'&&a.text.includes('KM DIAMETER')));
+      for(const stat of ['ORBIT TIME:','ORBIT DISTANCE:','MOONS:'])
+        assert.ok(actions.some(a=>a.type==='text'&&a.text.startsWith(stat)),stat);
       assert.ok(actions.some(a=>a.type==='fillRect'),'dark readable text background');
       assert.equal(getBalance(),0);
       ui.clear();
     }
   }
 });
+test('adaptive annotations stay inside the viewport and avoid planet silhouettes',()=>{
+  const {ui,scene}=environment();
+  let checked=0,offscreen=0;
+  for(const [w,h] of [[320,600],[353,680],[390,690],[844,390]]){
+    for(const name of ui.names()){
+      const period=scene.planetPeriod(name);
+      for(let i=0;i<20;i++){
+        const t=period*i/20,p=scene.projectedPlanet(name,t,w,h);
+        const g=ui.calloutGeometry(p,w,h,name,t);
+        assert.ok(g.boxX>=7&&g.boxY>=7,name+' box margin');
+        assert.ok(g.boxX+g.boxW<=w-7&&g.boxY+g.boxH<=h-7,name+' box bounds');
+        if(g.offscreen){offscreen++;continue}
+        // Compare the actual planet/ring square against the information box.
+        const overlapX=Math.max(0,Math.min(g.boxX+g.boxW,p.x+g.extent)-
+          Math.max(g.boxX,p.x-g.extent));
+        const overlapY=Math.max(0,Math.min(g.boxY+g.boxH,p.y+g.extent)-
+          Math.max(g.boxY,p.y-g.extent));
+        assert.ok(overlapX*overlapY<.1,name+' cannot be covered by its label');
+        assert.ok(Math.abs(Math.abs(g.elbowX-g.startX)-
+          Math.abs(g.elbowY-g.startY))<1e-8,'45-degree leader');
+        checked++;
+      }
+    }
+  }
+  assert.ok(checked>500&&offscreen>0,'visible and offscreen states exercised');
+});
+test('planet selector and physical data come from actual model definitions',()=>{
+  const {ui}=environment();
+  const expected={CINDER:0,SILEX:0,VERDANT:1,RUST:0,ATLAS:2,
+    HALO:1,AZURE:1,UMBRA:0};
+  for(const [name,moonCount] of Object.entries(expected)){
+    const meta=ui.info(name);
+    assert.equal(meta.moonCount,moonCount);
+    assert.match(meta.orbitTimeText,/^\d+d \d{2}:\d{2}:\d{2}$/);
+    assert.match(meta.orbitDistanceText,/^[\d,]+ MILES$/);
+    assert.equal(ui.select(name),name);
+    assert.equal(ui.selected,name);
+  }
+  ui.clear();
+  assert.equal(ui.selected,null);
+});
 test('existing app only attaches selection to EVENT HORIZON and retains PELAGIC touch handlers',()=>{
   const html=read('index.html');
-  assert.ok(html.includes('src="./event-horizon/planet-interaction.js?v=1"'));
+  assert.ok(html.includes('src="./event-horizon/planet-interaction.js?v=20261120"'));
   assert.ok(html.includes('src="./event-horizon/renderer.js?v=4"'));
   assert.ok(html.includes("if(currentScene==='event-horizon'){"));
   assert.ok(html.includes('window.EventHorizonPlanetInteraction?.tap?.('));
