@@ -1757,7 +1757,8 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
          Math.hypot(p.x-start.x,p.y-start.y)<15&&
          Date.now()-start.started<900){
         window.EventHorizonPlanetInteraction?.tap?.(
-          p.x,p.y,width,height,window.EventHorizonSceneClock?.visualTime?.()??t);
+          p.x,p.y,width,height,horizon.renderedOrbitTime??
+            window.EventHorizonSceneClock?.visualTime?.()??t);
         render(t);
       }
       return;
