@@ -148,7 +148,8 @@
     const ringMultiplier=profile?.rings?(profile.rings==='thin'?1.88:2.27):1;
     const extent=pos.radius*ringMultiplier+5;
     const margin=8;
-    const boxW=Math.min(230,Math.max(145,w-2*margin));
+    // Responsive boxes leave space for the 45-degree leader on mobile.
+    const boxW=Math.min(230,Math.max(152,w*.49));
     const descriptor=info(name);
     const limit=Math.max(13,Math.floor((boxW-18)/(9*.60)));
     const description=wrap(descriptor?.description||'',limit,3);
@@ -159,13 +160,19 @@
     const vertical=below?1:-1;
     const startX=pos.x+direction*extent;
     const startY=pos.y+vertical*Math.min(extent*.25,12);
-    const elbowDistance=Math.max(22,Math.min(40,extent*.3+18));
+    const preferredDiagonal=Math.max(20,Math.min(38,extent*.3+18));
+    const desiredEntryX=startX+direction*(preferredDiagonal+12);
+    const proposedX=right?desiredEntryX:desiredEntryX-boxW;
+    const boxX=clamp(proposedX,margin,Math.max(margin,w-boxW-margin));
+    const entryX=right?boxX:boxX+boxW;
+    // Preserve a short *visible* horizontal segment even when a narrow
+    // viewport forces the description box closer to its planet.
+    const available=direction*(entryX-startX);
+    const elbowDistance=available>=12?
+      Math.min(38,Math.max(7,available-12)):Math.max(14,preferredDiagonal*.6);
     const elbowX=startX+direction*elbowDistance;
     const elbowY=startY+vertical*elbowDistance;
-    const proposedX=right?elbowX+12:elbowX-12-boxW;
-    const boxX=clamp(proposedX,margin,Math.max(margin,w-boxW-margin));
-    const boxY=clamp(elbowY-boxH*.25,margin,Math.max(margin,h-boxH-margin));
-    const entryX=right?boxX:boxX+boxW;
+    const boxY=clamp(elbowY-boxH*.3,margin,Math.max(margin,h-boxH-margin));
     const entryY=clamp(elbowY,boxY+8,boxY+boxH-8);
     return {extent,startX,startY,elbowX,elbowY,entryX,entryY,
       boxX,boxY,boxW,boxH,description,side:direction};
