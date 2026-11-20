@@ -191,6 +191,7 @@
   const diagnostics={glyphs:0,hot:0,maxHeat:0,meanHeat:0,offscreen:false};
   const sceneASCII={stars:0,hints:0,planets:0,gas:0,total:0};
   let usingRGBCompositor=false;
+  let lastRenderedOrbitTime=0;
   function prepareLayers(w,h){
     if(rearCanvas&&w===layerWidth&&h===layerHeight)return true;
     const make=()=>typeof OffscreenCanvas!=='undefined'?new OffscreenCanvas(w,h):
@@ -419,6 +420,7 @@
     drawBackground(ctx, time, view);
     drawOrbitHints(ctx, view);
     const orbitTime=window.EventHorizonSceneClock?.visualTime?.()??time;
+    lastRenderedOrbitTime=orbitTime;
     if(showPlanets)window.EventHorizonPlanetInteraction?.drawOrbit?.(
       ctx,width,height,orbitTime);
     if(window.EventHorizonPlanetArt)window.EventHorizonPlanetArt.resetDiagnostics();
@@ -480,6 +482,7 @@
     planetPeriod(name){
       return planets.find(p=>p.name===name)?.period??null;
     },
+    get renderedOrbitTime(){return lastRenderedOrbitTime;},
     setShowPlanets(v){showPlanets=Boolean(v)},
     get showPlanets(){return showPlanets},
     get palette() { return palettes[paletteIndex].name; },
