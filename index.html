@@ -158,6 +158,18 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
 .horizon-dev-panel .astro-stat output{display:block;color:#d7e7fc;font-size:10px;overflow-wrap:anywhere;margin-top:4px}
 .horizon-dev-panel .astro-note{color:#8d9cad;font-size:9px;line-height:1.45;margin:0}
 @media(max-width:480px){.horizon-dev-panel{gap:5px}.horizon-dev-panel .astro-actions button{font-size:9px;padding:5px 4px}.horizon-dev-panel .astro-grid{gap:3px 8px}.horizon-dev-panel .astro-stat{padding:3px 0}.horizon-dev-panel .astro-stat output{font-size:9px}.bar .actions button#devToggle{min-width:32px;padding:0 4px}.bar .actions button#speed{padding:0 3px;font-size:9px;min-width:36px}}
+
+/* EVENT HORIZON HUD: matches the existing understated mono HUD style. */
+.horizon-events[hidden]{display:none!important}
+.horizon-events{pointer-events:auto;margin-top:4px;max-width:calc(100vw - 26px)}
+.horizon-events button{display:block;margin-left:auto;border:0;border-radius:0;padding:2px 0;background:transparent;color:inherit;cursor:pointer;text-align:right;font:inherit;line-height:inherit;letter-spacing:inherit;text-decoration:none;text-transform:inherit;-webkit-tap-highlight-color:transparent}
+.horizon-events button:hover,.horizon-events button:focus-visible{color:rgba(188,216,236,.85);text-decoration:none;outline-offset:3px}
+.horizon-event-list{max-height:0;opacity:0;overflow:hidden;transition:max-height .32s ease,opacity .26s ease,padding .32s ease;padding:0}
+.horizon-events[data-open="true"] .horizon-event-list{max-height:240px;opacity:1;padding-top:6px}
+.horizon-event-line{display:block;white-space:normal;overflow-wrap:normal;margin:0 0 5px;line-height:1.55;color:rgba(156,178,202,.57);letter-spacing:.055em;font-size:9px}
+.horizon-event-note{font-size:8px;color:rgba(140,160,180,.43);line-height:1.4;letter-spacing:.06em}
+@media(max-width:480px){.horizon-events{max-width:calc(100vw - 26px)}.horizon-events button{font-size:9px;letter-spacing:.06em}.horizon-event-line{font-size:8px;letter-spacing:.015em;line-height:1.6}.horizon-event-list{max-width:calc(100vw - 26px)}}
+@media(prefers-reduced-motion:reduce){.horizon-event-list{transition:none}}
 </style>
 </head>
 <body>
@@ -165,7 +177,17 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
   <section class="art" id="art" aria-label="Animated ASCII jellyfish with bioluminescent tentacles and moving ASCII sea life">
     <canvas id="sea" role="img" aria-label="Colourful animated ASCII jellyfish in a dark deep-sea scene"></canvas>
     <div class="hud top-left">PELAGIC <strong>/</strong> 017<br>SENSORY ECOSYSTEM</div>
-    <div class="hud top-right"><span id="status">LIVE</span> <span id="liveDot" class="live-indicator" aria-label="Animation running"></span></div>
+    <div class="hud top-right"><span id="status">LIVE</span> <span id="liveDot" class="live-indicator" aria-label="Animation running"></span>
+      <div id="horizonEvents" class="horizon-events" data-open="false" hidden>
+        <button type="button" id="horizonEventsToggle" aria-expanded="false" aria-controls="horizonEventList">+ ASTRONOMICAL EVENTS</button>
+        <div id="horizonEventList" class="horizon-event-list" aria-hidden="true">
+          <span class="horizon-event-line" id="horizonEventApproach">VERDANT NEXT APPROACH: —</span>
+          <span class="horizon-event-line" id="horizonEventAlignment">NEXT ALIGNMENT: —</span>
+          <span class="horizon-event-line" id="horizonEventAccretion">NEXT ACCRETION PASSING: —</span>
+          <span class="horizon-event-note">ILLUSTRATIVE VISUAL FORECAST · UK TIME</span>
+        </div>
+      </div>
+    </div>
     <div class="hud bottom-left">MEDUSA <strong>ASTRALIS</strong></div>
     <div class="hud bottom-right">DEPTH <strong>2480 M</strong><br>PROCEDURAL MOTION</div>
 
@@ -251,8 +273,9 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
 <script src="./event-horizon/hero-camera.js?v=1"></script>
 <script src="./event-horizon/planet-art.js?v=1"></script>
 <script src="./event-horizon/physical-system.js?v=1"></script>
-<script src="./event-horizon/renderer.js?v=2"></script>
+<script src="./event-horizon/renderer.js?v=3"></script>
 <script src="./event-horizon/scene-clock.js?v=1"></script>
+<script src="./event-horizon/event-forecast.js?v=1"></script>
 <script src="./ecosystem.js"></script>
 <script src="./senses.js"></script>
 <script>
@@ -1182,7 +1205,14 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
   }
   function render(time){
     if(currentScene==='greenwood'){greenwood.draw(ctx,width,height,time,environmentalFx,highRes);return;}
-    if(currentScene==='event-horizon'){horizon.draw(ctx,width,height,time,null,highRes);return;}
+    if(currentScene==='event-horizon'){
+      horizon.draw(ctx,width,height,time,null,highRes);
+      const now=Date.now();
+      if(now-lastHorizonHudUpdate>=1000){
+        lastHorizonHudUpdate=now;updateHorizonHUD(now);
+      }
+      return;
+    }
     centerX=swimmer.x;centerY=swimmer.y;
     drawBackground(time);
     ecosystem.draw(ctx,'behind',time,swimmer,{width,height,radius});
@@ -1285,18 +1315,20 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     devToggle.title=cosmos?'Orbital simulation and diagnostics':'Environmental simulator';
     document.getElementById('sceneName').textContent=cosmos?'◎ HORIZON':forest?'◇ GREENWOOD':'◌ PELAGIC';
     document.querySelector('.hud.top-left').innerHTML=cosmos?'EVENT HORIZON <strong>/</strong> 002<br>KEPLERIAN SYSTEM':forest?'GREENWOOD <strong>/</strong> 002<br>CINEMATIC CLEARING':'PELAGIC <strong>/</strong> 017<br>SENSORY ECOSYSTEM';
-    document.querySelector('.hud.bottom-left').innerHTML=cosmos?'EIGHT <strong>WORLDS</strong>':forest?'THE <strong>OLD GROVE</strong>':'MEDUSA <strong>ASTRALIS</strong>';
-    document.querySelector('.hud.bottom-right').innerHTML=cosmos?'ACCRETION <strong>DISC</strong><br>ORBITAL DYNAMICS':forest?'FIELD STUDY <strong>01</strong><br>LAYERS / LIGHT / WIND':'DEPTH <strong>2480 M</strong><br>PROCEDURAL MOTION';
+    document.querySelector('.hud.bottom-left').innerHTML=cosmos?'ASCII: —':forest?'THE <strong>OLD GROVE</strong>':'MEDUSA <strong>ASTRALIS</strong>';
+    document.querySelector('.hud.bottom-right').innerHTML=cosmos?`${horizonRateText()}<br>ORBITAL DYNAMICS`:forest?'FIELD STUDY <strong>01</strong><br>LAYERS / LIGHT / WIND':'DEPTH <strong>2480 M</strong><br>PROCEDURAL MOTION';
     document.getElementById('colorName').textContent=cosmos?horizon.palette:forest?greenwood.season:palettes[paletteIndex].name;
     document.getElementById('swatch').style.background=cosmos?horizon.swatch:forest?'linear-gradient(120deg,#315c4b,#a2b677,#b78d4a)':palettes[paletteIndex].swatch;
     document.getElementById('color').setAttribute('aria-label',cosmos?'Change accretion disc palette':forest?'Change forest season':'Change colour palette');
     document.getElementById('art').setAttribute('aria-label',cosmos?'Animated ASCII black hole with eight orbiting planets':forest?'Animated ASCII ancient woodland clearing':'Animated ASCII jellyfish');
     document.getElementById('sea').setAttribute('aria-label',cosmos?'ASCII black hole with softly glowing accretion disc and orbiting planets':forest?'Living ASCII forest clearing with moving light and foliage':'Living ASCII jellyfish');
     document.title=cosmos?'EVENT HORIZON / Living ASCII':forest?'GREENWOOD / Living ASCII':'PELAGIC / Living ASCII';
+    horizonEvents.hidden=!cosmos;
+    if(!cosmos)closeHorizonEvents();
     syncSpeedLabel();
     if(!cosmos&&!paused){horizonNode('status').textContent='LIVE';horizonNode('liveDot').classList.remove('off');}
     buildSource();render(t);
-    if(cosmos)syncHorizonDev();
+    if(cosmos){updateHorizonHUD();syncHorizonDev();}
   }
   function toggleDetail(){highRes=!highRes;document.getElementById('densityName').textContent=highRes?'HI-RES':'LO-RES';resize();}
   function changeSpeed(){
@@ -1320,6 +1352,107 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
   const app=document.querySelector('.app');
   const devToggle=document.getElementById('devToggle');
   const horizonClock=window.EventHorizonSceneClock;
+  const horizonEvents=document.getElementById('horizonEvents');
+  const horizonEventsToggle=document.getElementById('horizonEventsToggle');
+  const horizonEventList=document.getElementById('horizonEventList');
+  const horizonForecast=window.EventHorizonEventForecast;
+  let horizonEventOpen=false,forecastCancel=null,forecastCache=null;
+  let lastHorizonHudUpdate=0;
+  const eventNode=id=>document.getElementById(id);
+  const eventDateFormatter=new Intl.DateTimeFormat('en-GB',{
+    timeZone:'Europe/London',weekday:'long',day:'2-digit',
+    month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',
+    hour12:false,hourCycle:'h23'
+  });
+  function eventUKDate(iso){
+    if(!iso)return 'PAUSED';
+    const parts=Object.fromEntries(eventDateFormatter.formatToParts(new Date(iso))
+      .filter(p=>p.type!=='literal').map(p=>[p.type,p.value]));
+    return (parts.weekday+' '+parts.day+'/'+parts.month+'/'+parts.year+
+      ', '+parts.hour+':'+parts.minute).toUpperCase();
+  }
+  function horizonRateText(){
+    const snap=horizonClock?.snapshot?.();
+    if(!snap)return 'REAL TIME';
+    if(snap.rate===1)return 'REAL TIME';
+    const rate=snap.rate>=1?
+      snap.rate.toLocaleString('en-GB',{maximumFractionDigits:2}):
+      snap.rate.toLocaleString('en-GB',{maximumFractionDigits:3});
+    return 'REAL TIME X '+rate;
+  }
+  function closeHorizonEvents(){
+    horizonEventOpen=false;
+    horizonEvents.dataset.open='false';
+    horizonEventsToggle.textContent='+ ASTRONOMICAL EVENTS';
+    horizonEventsToggle.setAttribute('aria-expanded','false');
+    horizonEventList.setAttribute('aria-hidden','true');
+    if(forecastCancel){forecastCancel();forecastCancel=null;}
+  }
+  function showHorizonEvents(){
+    const now=Date.now(),snap=horizonClock?.snapshot?.(now);
+    if(!horizonEventOpen||!snap||currentScene!=='event-horizon')return;
+    const hero=horizonClock.nextPass(now);
+    eventNode('horizonEventApproach').textContent='VERDANT NEXT APPROACH: '+
+      (hero?.realTimeISO?eventUKDate(hero.realTimeISO):
+        snap.paused?'PAUSED':'NOT FORECAST');
+    const alignment=forecastCache?.alignment;
+    const aDate=alignment&&horizonForecast?.wallDate?.(alignment.visualTime,now);
+    eventNode('horizonEventAlignment').textContent='NEXT ALIGNMENT: '+
+      (alignment===undefined?'SEARCHING 10 SIM YEARS':
+        alignment===null?'NO DATE FORECAST (10 SIM YEARS)':
+        aDate?eventUKDate(aDate):snap.paused?'PAUSED':'NOT FORECAST');
+    const disc=forecastCache?.disc;
+    const dDate=disc&&horizonForecast?.wallDate?.(disc.visualTime,now);
+    eventNode('horizonEventAccretion').textContent='NEXT ACCRETION PASSING: '+
+      (disc===undefined?'SEARCHING':
+        disc===null?'NOT FORECAST (365 SIM DAYS)':
+        disc.name+', '+(dDate?eventUKDate(dDate):snap.paused?'PAUSED':'NOT FORECAST'));
+  }
+  function beginHorizonForecast(){
+    if(!horizonEventOpen||currentScene!=='event-horizon'||!horizonClock)return;
+    if(forecastCancel)forecastCancel();
+    const snap=horizonClock.snapshot(),widthNow=width,heightNow=height;
+    forecastCache={origin:snap.visualTime,width:widthNow,height:heightNow,
+      disc:undefined,alignment:undefined};
+    showHorizonEvents();
+    if(!horizonForecast){forecastCache.disc=null;forecastCache.alignment=null;
+      showHorizonEvents();return;}
+    const active=forecastCache;
+    // A foreground-disc crossing is a screen-space entry event.
+    active.disc=horizonForecast.nextAccretionVisual(snap.visualTime,widthNow,heightNow);
+    showHorizonEvents();
+    forecastCancel=horizonForecast.searchAlignmentAsync(
+      snap.visualTime,widthNow,heightNow,result=>{
+        if(forecastCache!==active)return;
+        active.alignment=result;showHorizonEvents();
+      });
+  }
+  horizonEventsToggle.addEventListener('click',()=>{
+    if(currentScene!=='event-horizon')return;
+    horizonEventOpen=!horizonEventOpen;
+    horizonEvents.dataset.open=String(horizonEventOpen);
+    horizonEventsToggle.textContent=(horizonEventOpen?'-':'+')+' ASTRONOMICAL EVENTS';
+    horizonEventsToggle.setAttribute('aria-expanded',String(horizonEventOpen));
+    horizonEventList.setAttribute('aria-hidden',String(!horizonEventOpen));
+    if(horizonEventOpen)beginHorizonForecast();else closeHorizonEvents();
+  });
+  function updateHorizonHUD(now=Date.now()){
+    if(currentScene!=='event-horizon')return;
+    const count=horizon.diagnostics?.().asciiCount;
+    document.querySelector('.hud.bottom-left').textContent=
+      'ASCII: '+(Number.isFinite(count)?Math.round(count).toLocaleString('en-GB'):'—');
+    document.querySelector('.hud.bottom-right').innerHTML=
+      horizonRateText()+'<br>ORBITAL DYNAMICS';
+    if(horizonEventOpen){
+      const snap=horizonClock?.snapshot?.(now);
+      if(!forecastCache||forecastCache.width!==width||forecastCache.height!==height||
+         (forecastCache.disc&&forecastCache.disc.visualTime<=snap.visualTime)||
+         (forecastCache.alignment&&forecastCache.alignment.visualTime<=snap.visualTime)||
+         snap.visualTime<forecastCache.origin-1)
+        beginHorizonForecast();
+      else showHorizonEvents();
+    }
+  }
   const horizonDevPanel=document.getElementById('horizonDevPanel');
   let lastHorizonDevUpdate=0;
   const horizonNode=id=>document.getElementById(id);
@@ -1375,7 +1508,10 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
   }
   function orbitClockAction(fn){
     if(!horizonClock)return;
-    try{fn();syncHorizonDev();if(currentScene==='event-horizon')render(t);}
+    try{fn();syncHorizonDev();if(currentScene==='event-horizon'){
+      if(horizonEventOpen)beginHorizonForecast();
+      render(t);updateHorizonHUD();
+    }}
     catch(error){horizonNode('horizonClockNote').textContent='Clock error: '+String(error?.message||error);}
   }
   horizonNode('horizonClockMode').addEventListener('change',()=>{

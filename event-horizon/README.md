@@ -85,3 +85,60 @@ conjunctions, transits or eclipses.
 
 Regression coverage: `tests/event-horizon-production.test.cjs` and
 `tests/event-horizon-clock.test.cjs`.
+
+## EVENT HORIZON fullscreen HUD: character count and astronomical events
+
+The artwork overlay in both ordinary and fullscreen installation mode now
+displays:
+
+- Bottom-left **ASCII: N**: a live, approximately per-second tally of
+  character marks submitted by the frame's stars, orbital guide dots, the
+  accretion field, planets, clouds, rings, atmosphere and moons. These are
+  drawn source glyphs, not OCR/pixel-counted visible characters; glyphs
+  covered by foreground opacity are still counted.
+- Bottom-right **REAL TIME** at 1×, or **REAL TIME X N** for any other
+  simulated time speed, above the original ORBITAL DYNAMICS caption.
+- Top-right a collapsed **+ ASTRONOMICAL EVENTS** toggle beneath LIVE.
+  Expanding smoothly reveals:
+  - **VERDANT NEXT APPROACH:** date/time of its next camera-close pass
+  - **NEXT ALIGNMENT:** date/time only when all eight planet centres are
+    genuinely near the screen's vertical centre line; otherwise an
+    explicit no-forecast message
+  - **NEXT ACCRETION PASSING:** first planet whose centre enters the
+    projected accretion-disc envelope *in front* of the black hole
+- Times are the **expected real-world UK local dates**, using
+  Europe/London for automatic BST/GMT, and update on clock speed changes,
+  pause/resume or jump-to-pass.
+- This UI is visible **only** in the EVENT HORIZON scene. PELAGIC and
+  GREENWOOD retain their exact existing HUD text and behaviour.
+
+### Forecast model limitations
+
+The wall-art clock already scales VERDANT's illustrative orbit to a
+64.1-day Kepler reference period. The eight rendered paths still do not
+follow a validated N-body or full three-dimensional physical ephemeris.
+
+The new event engine in `event-forecast.js` makes screen-space
+**visual forecasts**, not physically certified gravitational predictions.
+"Next accretion passing" is a projected-disc crossing by a foreground
+planet and is not a gas-transfer or companion-star event.
+
+An all-eight alignment requires **each** planet to be within 55% of the
+scene's reference black-hole radius horizontally from the screen centre,
+and on screen. A ten-simulated-year scan of the illustrative trajectories
+may find no such event. In that case the UI reports
+**NO DATE FORECAST (10 SIM YEARS)**. It never invents a date or
+generates an alignment solely to make the UI look populated.
+
+Alignment scanning is broken into short asynchronous batches and only
+runs while the user has the accordion open. It is cancelled when closed.
+Accretion passing forecasts cover the next 365 simulated days, with
+two-simulated-hour samples and refinement to the entry boundary.
+
+The underlying black-hole art, approved 14-value RGB lighting preset,
+opaque planet rendering, orbital shapes, scene source panel, main menu
+and developer clock controls are unchanged. No forecast controls or
+experimental LIGHT STUDIO UI are imported into production.
+
+Regression tests: `tests/event-horizon-hud.test.cjs` plus existing
+production, clock, planetary and PELAGIC depth regression suites.
