@@ -167,7 +167,10 @@
     return lines.slice(0,maxLines);
   }
 
-  function calloutGeometry(pos,w,h,name){
+  // Candidate locations are scored against the selected orbit and the
+  // actual on-screen planets. The box moves as its target travels, rather
+  // than consistently hiding the orbit or other worlds on narrow phones.
+  function calloutGeometry(pos,w,h,name,time=0){
     const profile=window.EventHorizonPlanetArt?.profile?.(name);
     const ringMultiplier=profile?.rings?
       (profile.rings==='thin'?1.88:2.27):1;
@@ -178,62 +181,139 @@
     const limit=Math.max(13,Math.floor((boxW-16)/(9*.60)));
     const description=wrap(descriptor?.description||'',limit,3);
     const boxH=96+12*description.length;
+    const safeTop=Math.min(84,Math.max(40,h*.115));
+    const safeBottom=Math.min(68,Math.max(35,h*.085));
+    const lowest=Math.max(margin,h-safeBottom-boxH);
+    const highest=Math.min(safeTop,lowest);
+    const sceneNow=scene();
+    const periodSec=period(name);
+    const orbit=[];
+    if(periodSec>0&&sceneNow?.projectedPlanet){
+      for(let i=0;i<=96;i++)
+        orbit.push(sceneNow.projectedPlanet(name,periodSec*i/96,w,h));
+    }
+    const worlds=sceneNow?.projectedPlanets?.(time,w,h)||[];
+    const otherWorlds=worlds.filter(p=>p.name!==name&&
+      Number.isFinite(p.x+p.y+p.radius));
+    const overlap=(a,b)=>Math.max(0,Math.min(a.x+a.w,b.x+b.w)-Math.max(a.x,b.x))*
+      Math.max(0,Math.min(a.y+a.h,b.y+b.h)-Math.max(a.y,b.y));
+    const selectedBox={x:pos.x-extent-5,y:pos.y-extent-5,
+      w:2*(extent+5),h:2*(extent+5)};
+    function pathInside(a,b,r){
+      if(!a||!b||!Number.isFinite(a.x+a.y+b.x+b.y))return 0;
+      const dx=b.x-a.x,dy=b.y-a.y,dist=Math.hypot(dx,dy);
+      if(!dist)return 0;
+      let enter=0,exit=1;
+      const cuts=[[-dx,a.x-r.x],[dx,r.x+r.w-a.x],
+        [-dy,a.y-r.y],[dy,r.y+r.h-a.y]];
+      for(const [s,q] of cuts){
+        if(Math.abs(s)<1e-9){if(q<0)return 0;continue;}
+        const t=q/s;
+        if(s<0)enter=Math.max(enter,t);
+        else exit=Math.min(exit,t);
+        if(enter>=exit)return 0;
+      }
+      return dist*Math.max(0,exit-enter);
+    }
+    function score(rect){
+      // An information box is never allowed to obscure the selected planet
+      // unless there is literally nowhere else for it to fit.
+      let result=overlap(rect,selectedBox)*120;
+      if(result>0)result+=100000;
+      for(const world of otherWorlds){
+        const rp=window.EventHorizonPlanetArt?.profile?.(world.name);
+        const mult=rp?.rings?(rp.rings==='thin'?1.9:2.3):1.2;
+        const radius=world.radius*mult+5;
+        result+=overlap(rect,{x:world.x-radius,y:world.y-radius,
+          w:radius*2,h:radius*2})*7;
+      }
+      let orbitLength=0;
+      for(let i=1;i<orbit.length;i++)
+        orbitLength+=pathInside(orbit[i-1],orbit[i],rect);
+      result+=orbitLength*24;
+      // Prefer dark sky to the centre of the luminous accretion disc if
+      // the planet/orbit constraints leave more than one acceptable site.
+      for(let y=rect.y+boxH*.18;y<rect.y+boxH;y+=boxH*.27){
+        for(let x=rect.x+boxW*.14;x<rect.x+boxW;x+=boxW*.25){
+          const dx=(x-w*.5)/(w*.48);
+          const dy=(y-h*.51-(x-w*.5)*.20)/(h*.155);
+          const inside=1-dx*dx-dy*dy;
+          if(inside>0)result+=Math.min(1,inside)*44;
+        }
+      }
+      // Keep leaders short, and preserve an edge of clean sky around the HUD.
+      const nx=clamp(pos.x,rect.x,rect.x+rect.w);
+      const ny=clamp(pos.y,rect.y,rect.y+rect.h);
+      result+=Math.hypot(pos.x-nx,pos.y-ny)*.11;
+      return result;
+    }
+    function geometry(rect,offscreen=false,offscreenSide=0){
+      const cx=rect.x+rect.w*.5,cy=rect.y+rect.h*.5;
+      const side=offscreen?offscreenSide:(cx>=pos.x?1:-1);
+      if(offscreen){
+        const entryX=side>0?rect.x+rect.w:rect.x;
+        const entryY=clamp(pos.y,rect.y+14,rect.y+rect.h-14);
+        return {offscreen:true,mode:'edge',extent,boxX:rect.x,boxY:rect.y,
+          boxW,boxH,description,side,entryX,entryY,
+          elbowX:entryX+side*11,elbowY:entryY,
+          startX:side>0?w-1:1,startY:clamp(pos.y,8,h-8)};
+      }
+      const above=rect.y+rect.h<=pos.y-extent-6;
+      const below=rect.y>=pos.y+extent+6;
+      const vertical=above?-1:below?1:cy>=pos.y?1:-1;
+      const lateral=!above&&!below;
+      const startX=pos.x+side*extent;
+      const startY=pos.y+vertical*(lateral?Math.min(12,extent*.25):extent);
+      const elbowX=startX+side*(lateral?19:16);
+      const elbowY=startY+vertical*(lateral?19:16);
+      const entryX=lateral?
+        (side>0?rect.x:rect.x+rect.w):
+        clamp(elbowX+side*18,rect.x+12,rect.x+rect.w-12);
+      const entryY=lateral?
+        clamp(elbowY,rect.y+10,rect.y+rect.h-10):
+        (above?rect.y+rect.h:rect.y);
+      return {offscreen:false,mode:lateral?'lateral':'vertical',
+        extent,boxX:rect.x,boxY:rect.y,boxW,boxH,description,side,
+        startX,startY,elbowX,elbowY,entryX,entryY};
+    }
     const offscreen=!visible(pos,w,h)||pos.x<0||pos.x>w||
       pos.y<0||pos.y>h;
+    const candidates=[],seen=new Set();
+    function add(x,y,side=0){
+      x=clamp(x,margin,Math.max(margin,w-boxW-margin));
+      y=clamp(y,highest,lowest);
+      const key=Math.round(x)+'/'+Math.round(y);
+      if(seen.has(key))return;
+      seen.add(key);
+      const rect={x,y,w:boxW,h:boxH};
+      const g=geometry(rect,offscreen,side);
+      candidates.push({g,score:score(rect)});
+    }
     if(offscreen){
-      // Box is pinned just inside the relevant screen edge. The short
-      // connector points toward the selected planet even when offscreen.
-      const side=pos.x<0?-1:pos.x>w?1:pos.x>=w/2?1:-1;
+      // The pointer stays anchored to the nearest edge; move the label
+      // vertically to avoid swallowing the orbit where space permits.
+      const side=pos.x<0?-1:pos.x>w?1:pos.x>=w*.5?1:-1;
       const gutter=Math.min(36,Math.max(24,w*.09));
-      const boxX=side>0?w-gutter-boxW:gutter;
-      const upper=Math.min(72,Math.max(margin,h*.10));
-      const lower=Math.max(upper,h-boxH-Math.min(60,h*.09));
-      const boxY=clamp(pos.y-boxH*.5,upper,lower);
-      const entryX=side>0?boxX+boxW:boxX;
-      const entryY=clamp(pos.y,boxY+14,boxY+boxH-14);
-      return {offscreen,extent,boxX,boxY,boxW,boxH,description,side,
-        entryX,entryY,elbowX:entryX+side*11,
-        startX:side>0?w-1:1,startY:clamp(pos.y,8,h-8)};
+      const x=side>0?w-gutter-boxW:gutter;
+      for(const y of [pos.y-boxH*.5,highest,lowest,
+        pos.y-boxH-42,pos.y+42, h*.5-boxH*.5])add(x,y,side);
+    }else{
+      const gap=24;
+      const aboveY=pos.y-extent-gap-boxH,belowY=pos.y+extent+gap;
+      const xChoices=[pos.x-boxW*.5,pos.x-boxW*.8,pos.x-boxW*.2,
+        margin,w-boxW-margin];
+      for(const x of xChoices){add(x,aboveY);add(x,belowY);}
+      const leftX=pos.x-extent-gap-boxW;
+      const rightX=pos.x+extent+gap;
+      for(const y of [pos.y-boxH*.5,pos.y-boxH+16,pos.y-16,
+        highest,lowest]){add(leftX,y);add(rightX,y);}
+      for(const x of [margin,w-boxW-margin]){
+        for(const y of [highest,lowest])add(x,y);
+      }
     }
-    const leftRoom=pos.x-extent-margin;
-    const rightRoom=w-pos.x-extent-margin;
-    const side=rightRoom>=leftRoom?1:-1;
-    const room=Math.max(leftRoom,rightRoom);
-    const vertical=pos.y<h*.5?1:-1;
-    if(room>=boxW+36){
-      // When space permits, the entire box stays outside the highlight.
-      const gap=Math.min(52,Math.max(36,room-boxW));
-      const boxX=side>0?pos.x+extent+gap:
-        pos.x-extent-gap-boxW;
-      const startX=pos.x+side*extent;
-      const startY=pos.y+vertical*Math.min(12,extent*.25);
-      const elbowX=startX+side*19;
-      const elbowY=startY+vertical*19;
-      const boxY=clamp(elbowY-(vertical>0?12:boxH-12),
-        margin,Math.max(margin,h-boxH-margin));
-      return {offscreen:false,mode:'lateral',extent,boxX,boxY,boxW,boxH,
-        description,side,startX,startY,elbowX,elbowY,
-        entryX:side>0?boxX:boxX+boxW,
-        entryY:clamp(elbowY,boxY+10,boxY+boxH-10)};
-    }
-    // Mobile cannot fit a large ringed planet and its label side by side.
-    // Switch above/below with a 24px gap, preserving the angular leader.
-    const downSpace=h-(pos.y+extent);
-    const upSpace=pos.y-extent;
-    const v=downSpace>=boxH+24?1:
-      upSpace>=boxH+24?-1:downSpace>=upSpace?1:-1;
-    const boxX=clamp(pos.x-boxW*.5+side*12,
-      margin,Math.max(margin,w-boxW-margin));
-    const boxY=clamp(v>0?pos.y+extent+24:
-      pos.y-extent-boxH-24,margin,Math.max(margin,h-boxH-margin));
-    const startX=pos.x+side*extent;
-    const startY=pos.y+v*extent;
-    const elbowX=startX+side*16;
-    const elbowY=startY+v*16;
-    return {offscreen:false,mode:'vertical',extent,boxX,boxY,boxW,boxH,
-      description,side,startX,startY,elbowX,elbowY,
-      entryX:clamp(elbowX+side*15,boxX+12,boxX+boxW-12),
-      entryY:v>0?boxY:boxY+boxH};
+    if(!candidates.length) return geometry({x:margin,y:margin,w:boxW,h:boxH},offscreen,pos.x>=w*.5?1:-1);
+    candidates.sort((a,b)=>a.score-b.score);
+    return candidates[0].g;
   }
   function drawCallout(ctx,width,height,time){
     if(!selected)return;
@@ -241,7 +321,7 @@
     if(!pos||!Number.isFinite(pos.x+pos.y+pos.radius))return;
     const metadata=info(selected);
     if(!metadata)return;
-    const g=calloutGeometry(pos,width,height,selected);
+    const g=calloutGeometry(pos,width,height,selected,time);
     ctx.save();
     ctx.globalCompositeOperation='source-over';ctx.globalAlpha=1;
     ctx.shadowBlur=0;ctx.lineWidth=1;ctx.setLineDash([]);
