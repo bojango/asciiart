@@ -325,6 +325,7 @@
     spinAngle,
     proximityLight,
     moonPositions,
+    moonCount(name){return (MOONS[name]||[]).length;},
     textureAt(name,normal,time,lod=0){
       const p=PROFILES[name];
       return p?sampleTexture({...p,name},normal,time,lod):null;
