@@ -170,6 +170,27 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
 .horizon-event-note{font-size:8px;color:rgba(140,160,180,.43);line-height:1.4;letter-spacing:.06em}
 @media(max-width:480px){.horizon-events{max-width:calc(100vw - 26px)}.horizon-events button{font-size:9px;letter-spacing:.06em}.horizon-event-line{font-size:8px;letter-spacing:.015em;line-height:1.6}.horizon-event-list{max-width:calc(100vw - 26px)}}
 @media(prefers-reduced-motion:reduce){.horizon-event-list{transition:none}}
+/* EVENT HORIZON: upward-opening planet index without a large UI panel. */
+.hud.bottom-left.horizon-mode{display:flex;align-items:baseline;gap:18px}
+.horizon-planets[hidden]{display:none!important}
+.horizon-planets{pointer-events:auto;position:relative;flex:none}
+.horizon-planets button{display:block;background:transparent;border:0;border-radius:0;
+  color:inherit;font:inherit;letter-spacing:inherit;text-align:left;text-transform:inherit;
+  cursor:pointer;padding:2px 0;-webkit-tap-highlight-color:transparent}
+.horizon-planets button:hover,.horizon-planets button:focus-visible{color:rgba(225,238,248,.9);outline-offset:2px}
+.horizon-planet-list{position:absolute;bottom:calc(100% + 5px);left:0;
+  min-width:130px;max-height:0;opacity:0;overflow:hidden;padding:0;
+  transition:max-height .32s ease,opacity .26s ease,padding .32s ease;
+  background:rgba(1,1,3,.88)}
+.horizon-planets[data-open="true"] .horizon-planet-list{max-height:285px;opacity:1;padding:5px 0}
+.horizon-planet-list button{width:100%;min-height:24px;color:rgba(174,190,205,.76);
+  font-size:10px;line-height:1.6;text-decoration:underline;
+  text-decoration-thickness:1px;text-underline-offset:3px}
+.horizon-planet-list button[aria-pressed="true"]{color:#fff;font-weight:700}
+@media(max-width:480px){.hud.bottom-left.horizon-mode{gap:12px}
+  .horizon-planets>button{font-size:9px;letter-spacing:.06em}
+  .horizon-planet-list button{font-size:9px}}
+@media(prefers-reduced-motion:reduce){.horizon-planet-list{transition:none}}
 </style>
 </head>
 <body>
@@ -188,7 +209,13 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
         </div>
       </div>
     </div>
-    <div class="hud bottom-left">MEDUSA <strong>ASTRALIS</strong></div>
+    <div class="hud bottom-left" id="horizonBottomLeft">
+      <div id="horizonPlanets" class="horizon-planets" data-open="false" hidden>
+        <div id="horizonPlanetList" class="horizon-planet-list" aria-hidden="true" inert></div>
+        <button type="button" id="horizonPlanetsToggle" aria-expanded="false" aria-controls="horizonPlanetList">+ PLANETS</button>
+      </div>
+      <span id="bottomLeftStatus">MEDUSA <strong>ASTRALIS</strong></span>
+    </div>
     <div class="hud bottom-right">DEPTH <strong>2480 M</strong><br>PROCEDURAL MOTION</div>
 
     <button type="button" class="exit-installation" id="exitInstallation" aria-label="Exit installation mode">EXIT</button>
@@ -271,12 +298,12 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
 <!-- Production EVENT HORIZON modules. Existing app UI and scene API remain intact. -->
 <script src="./event-horizon/source-compositor.js?v=1"></script>
 <script src="./event-horizon/hero-camera.js?v=1"></script>
-<script src="./event-horizon/planet-art.js?v=1"></script>
+<script src="./event-horizon/planet-art.js?v=20261120"></script>
 <script src="./event-horizon/physical-system.js?v=1"></script>
 <script src="./event-horizon/renderer.js?v=4"></script>
 <script src="./event-horizon/scene-clock.js?v=1"></script>
 <script src="./event-horizon/event-forecast.js?v=1"></script>
-<script src="./event-horizon/planet-interaction.js?v=1"></script>
+<script src="./event-horizon/planet-interaction.js?v=20261120"></script>
 <script src="./ecosystem.js"></script>
 <script src="./senses.js"></script>
 <script>
@@ -1317,7 +1344,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     devToggle.title=cosmos?'Orbital simulation and diagnostics':'Environmental simulator';
     document.getElementById('sceneName').textContent=cosmos?'◎ HORIZON':forest?'◇ GREENWOOD':'◌ PELAGIC';
     document.querySelector('.hud.top-left').innerHTML=cosmos?'EVENT HORIZON <strong>/</strong> 002<br>KEPLERIAN SYSTEM':forest?'GREENWOOD <strong>/</strong> 002<br>CINEMATIC CLEARING':'PELAGIC <strong>/</strong> 017<br>SENSORY ECOSYSTEM';
-    document.querySelector('.hud.bottom-left').innerHTML=cosmos?'ASCII: —':forest?'THE <strong>OLD GROVE</strong>':'MEDUSA <strong>ASTRALIS</strong>';
+    document.getElementById('bottomLeftStatus').innerHTML=cosmos?'ASCII: —':forest?'THE <strong>OLD GROVE</strong>':'MEDUSA <strong>ASTRALIS</strong>';
     document.querySelector('.hud.bottom-right').innerHTML=cosmos?`${horizonRateText()}<br>ORBITAL DYNAMICS`:forest?'FIELD STUDY <strong>01</strong><br>LAYERS / LIGHT / WIND':'DEPTH <strong>2480 M</strong><br>PROCEDURAL MOTION';
     document.getElementById('colorName').textContent=cosmos?horizon.palette:forest?greenwood.season:palettes[paletteIndex].name;
     document.getElementById('swatch').style.background=cosmos?horizon.swatch:forest?'linear-gradient(120deg,#315c4b,#a2b677,#b78d4a)':palettes[paletteIndex].swatch;
@@ -1326,7 +1353,10 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     document.getElementById('sea').setAttribute('aria-label',cosmos?'ASCII black hole with softly glowing accretion disc and orbiting planets':forest?'Living ASCII forest clearing with moving light and foliage':'Living ASCII jellyfish');
     document.title=cosmos?'EVENT HORIZON / Living ASCII':forest?'GREENWOOD / Living ASCII':'PELAGIC / Living ASCII';
     horizonEvents.hidden=!cosmos;
-    if(!cosmos)closeHorizonEvents();
+    horizonPlanets.hidden=!cosmos;
+    document.getElementById('horizonBottomLeft').classList.toggle('horizon-mode',cosmos);
+    if(!cosmos){closeHorizonEvents();closeHorizonPlanets();}
+    syncPlanetSelection();
     syncSpeedLabel();
     if(!cosmos&&!paused){horizonNode('status').textContent='LIVE';horizonNode('liveDot').classList.remove('off');}
     buildSource();render(t);
@@ -1358,6 +1388,48 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
   const horizonEventsToggle=document.getElementById('horizonEventsToggle');
   const horizonEventList=document.getElementById('horizonEventList');
   const horizonForecast=window.EventHorizonEventForecast;
+  const horizonPlanets=document.getElementById('horizonPlanets');
+  const horizonPlanetsToggle=document.getElementById('horizonPlanetsToggle');
+  const horizonPlanetList=document.getElementById('horizonPlanetList');
+  const planetInteraction=window.EventHorizonPlanetInteraction;
+  let horizonPlanetOpen=false;
+  for(const name of planetInteraction?.names?.()||[]){
+    const button=document.createElement('button');
+    button.type='button';
+    button.textContent=name;
+    button.dataset.planet=name;
+    button.setAttribute('aria-pressed','false');
+    button.addEventListener('click',()=>{
+      if(currentScene!=='event-horizon')return;
+      planetInteraction.select(name);
+      syncPlanetSelection();
+      render(t);
+    });
+    horizonPlanetList.appendChild(button);
+  }
+  function syncPlanetSelection(){
+    for(const button of horizonPlanetList.querySelectorAll('button'))
+      button.setAttribute('aria-pressed',
+        String(button.dataset.planet===planetInteraction?.selected));
+  }
+  function closeHorizonPlanets(){
+    horizonPlanetOpen=false;
+    horizonPlanets.dataset.open='false';
+    horizonPlanetsToggle.textContent='+ PLANETS';
+    horizonPlanetsToggle.setAttribute('aria-expanded','false');
+    horizonPlanetList.setAttribute('aria-hidden','true');
+    horizonPlanetList.inert=true;
+  }
+  horizonPlanetsToggle.addEventListener('click',()=>{
+    if(currentScene!=='event-horizon')return;
+    horizonPlanetOpen=!horizonPlanetOpen;
+    horizonPlanets.dataset.open=String(horizonPlanetOpen);
+    horizonPlanetsToggle.textContent=(horizonPlanetOpen?'-':'+')+' PLANETS';
+    horizonPlanetsToggle.setAttribute('aria-expanded',String(horizonPlanetOpen));
+    horizonPlanetList.setAttribute('aria-hidden',String(!horizonPlanetOpen));
+    horizonPlanetList.inert=!horizonPlanetOpen;
+    if(horizonPlanetOpen)syncPlanetSelection();
+  });
   let horizonEventOpen=false,forecastCancel=null,forecastCache=null;
   let lastHorizonHudUpdate=0;
   const eventNode=id=>document.getElementById(id);
@@ -1441,7 +1513,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
   function updateHorizonHUD(now=Date.now()){
     if(currentScene!=='event-horizon')return;
     const count=horizon.diagnostics?.().asciiCount;
-    document.querySelector('.hud.bottom-left').textContent=
+    document.getElementById('bottomLeftStatus').textContent=
       'ASCII: '+(Number.isFinite(count)?Math.round(count).toLocaleString('en-GB'):'—');
     document.querySelector('.hud.bottom-right').innerHTML=
       horizonRateText()+'<br>ORBITAL DYNAMICS';
@@ -1759,6 +1831,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
         window.EventHorizonPlanetInteraction?.tap?.(
           p.x,p.y,width,height,horizon.renderedOrbitTime??
             window.EventHorizonSceneClock?.visualTime?.()??t);
+        syncPlanetSelection();
         render(t);
       }
       return;
