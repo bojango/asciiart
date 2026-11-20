@@ -94,6 +94,7 @@
   function print(ctx, mark, x, y, colour) { ctx.fillStyle = colour; ctx.fillText(mark, x, y); }
 
   function drawBackground(ctx,time,view){
+    sceneASCII.stars=0;
     ctx.fillStyle='#010102';ctx.fillRect(0,0,view.width,view.height);
     setFont(ctx,clamp(view.font*0.84,6.8,9.4));
     for(const star of stars){
@@ -101,6 +102,7 @@
       if(Math.hypot(x-view.x,y-view.y)<view.hole*1.20)continue;
       const flicker=.96+.04*Math.sin(time*.18+star.phase);
       print(ctx,star.mark,x,y,rgba([192,200,226],(.15+.57*star.power)*flicker));
+      sceneASCII.stars++;
     }
   }
   // All field values are evaluated directly at screen positions. This keeps
@@ -187,6 +189,8 @@
   }
   let rearCanvas,frontCanvas,rearCtx,frontCtx,layerWidth=0,layerHeight=0;
   const diagnostics={glyphs:0,hot:0,maxHeat:0,meanHeat:0,offscreen:false};
+  const sceneASCII={stars:0,hints:0,planets:0,gas:0,total:0};
+  let usingRGBCompositor=false;
   function prepareLayers(w,h){
     if(rearCanvas&&w===layerWidth&&h===layerHeight)return true;
     const make=()=>typeof OffscreenCanvas!=='undefined'?new OffscreenCanvas(w,h):
@@ -244,6 +248,7 @@
     }
   }
   function renderBlackHole(ctx,view,time,highRes){
+    usingRGBCompositor=false;
     const precise=window.EventHorizonSourceCompositor;
     if(precise){
       try{
@@ -253,7 +258,9 @@
         const due=precise.needsFrame(time,view);
         const points=due?sampleFrame(time,sampled,highRes):[];
         const font=sampled.font+"px "+fontFamily;
-        if(precise.draw(ctx,view,time,points,paletteIndex,font,drawShadow))return;
+        if(precise.draw(ctx,view,time,points,paletteIndex,font,drawShadow)){
+          usingRGBCompositor=true;return;
+        }
       }catch(error){
         console.error("EVENT HORIZON source RGB compositor fallback:",error);
         precise.reset();
@@ -297,6 +304,7 @@
   }
 
   function drawOrbitHints(ctx, view) {
+    sceneASCII.hints=0;
     setFont(ctx, Math.max(6.3, view.font * 0.78));
     for (let k = 0; k < planets.length; k++) {
       const planet = planets[k];
@@ -309,6 +317,7 @@
           const p=hero.position(planet,time,view.width,view.height);
           if(p.x<8||p.x>view.width-8||p.y<8||p.y>view.height-8)continue;
           print(ctx,'.',p.x,p.y,'rgba(130,126,130,0.07)');
+          sceneASCII.hints++;
         }
         continue;
       }
@@ -320,6 +329,7 @@
         const y = view.y + a * sinRoll + b * cosRoll;
         if (x < 8 || x > view.width - 8 || y < 8 || y > view.height - 8) continue;
         print(ctx, '.', x, y, 'rgba(130,126,130,0.075)');
+        sceneASCII.hints++;
       }
     }
   }
@@ -423,6 +433,15 @@
 
     if(showPlanets)for (const world of worldPositions.filter(p => p.pos.depth <= 0).sort((a, b) => b.pos.depth - a.pos.depth))
       paintPlanet(ctx, world.planet, world.pos, view, time);
+    const surface=window.EventHorizonPlanetArt?.diagnostics?.();
+    sceneASCII.planets=showPlanets&&surface?
+      (surface.glyphs||0)+(surface.cloudGlyphs||0)+
+      (surface.ringGlyphs||0)+(surface.moonGlyphs||0)+
+      (surface.atmosphereGlyphs||0):0;
+    sceneASCII.gas=usingRGBCompositor?
+      (window.EventHorizonSourceCompositor?.stats?.().totalGlyphs??diagnostics.glyphs):
+      diagnostics.glyphs;
+    sceneASCII.total=sceneASCII.stars+sceneASCII.hints+sceneASCII.planets+sceneASCII.gas;
     ctx.shadowBlur = 0; ctx.globalAlpha = 1; ctx.restore();
   }
   function cyclePalette() { paletteIndex = (paletteIndex + 1) % palettes.length; return palettes[paletteIndex].name; }
@@ -445,7 +464,7 @@
     },
     nextHeroPass(time){return window.EventHorizonHeroCamera.nextClosestTime(planets[2],time)},
     camera(width,height){return window.EventHorizonHeroCamera.camera(width,height)},
-    diagnostics:()=>({...diagnostics}),
+    diagnostics:()=>({...diagnostics,asciiCount:sceneASCII.total,asciiBreakdown:{...sceneASCII}}),
     setShowPlanets(v){showPlanets=Boolean(v)},
     get showPlanets(){return showPlanets},
     get palette() { return palettes[paletteIndex].name; },
