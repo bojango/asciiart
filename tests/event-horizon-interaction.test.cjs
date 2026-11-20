@@ -170,3 +170,27 @@ test('existing app only attaches selection to EVENT HORIZON and retains PELAGIC 
   assert.ok(html.includes('e.pointerType===\'touch\''));
   assert.ok(!html.includes('src="./preview/event-horizon/planet-interaction.js'));
 });
+
+test('orbit renders behind disc and planets, callout above them, with exact hit-test timestamp',()=>{
+  const {w,scene}=environment(),events=[];
+  w.EventHorizonPlanetInteraction={
+    drawOrbit(){events.push('orbit')},
+    drawCallout(){events.push('callout')}
+  };
+  w.EventHorizonPlanetArt={
+    resetDiagnostics(){},
+    draw(){events.push('body');return true},
+    diagnostics(){return {glyphs:18,cloudGlyphs:0,ringGlyphs:0,moonGlyphs:0,atmosphereGlyphs:0}}
+  };
+  w.EventHorizonSourceCompositor={
+    needsFrame(){return false},draw(){events.push('disc');return true},
+    stats(){return {totalGlyphs:500}}
+  };
+  const {ctx}=context();
+  scene.draw(ctx,440,736,73,null,true);
+  assert.equal(scene.renderedOrbitTime,73);
+  assert.ok(events.indexOf('orbit')>=0&&events.indexOf('orbit')<events.indexOf('body'));
+  assert.ok(events.indexOf('body')<events.indexOf('disc'));
+  assert.ok(events.indexOf('disc')<events.indexOf('callout'));
+  assert.ok(scene.diagnostics().asciiCount>500);
+});
