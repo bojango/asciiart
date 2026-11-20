@@ -273,9 +273,10 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
 <script src="./event-horizon/hero-camera.js?v=1"></script>
 <script src="./event-horizon/planet-art.js?v=1"></script>
 <script src="./event-horizon/physical-system.js?v=1"></script>
-<script src="./event-horizon/renderer.js?v=3"></script>
+<script src="./event-horizon/renderer.js?v=4"></script>
 <script src="./event-horizon/scene-clock.js?v=1"></script>
 <script src="./event-horizon/event-forecast.js?v=1"></script>
+<script src="./event-horizon/planet-interaction.js?v=1"></script>
 <script src="./ecosystem.js"></script>
 <script src="./senses.js"></script>
 <script>
@@ -1309,6 +1310,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     const forest=currentScene==='greenwood',cosmos=currentScene==='event-horizon';
     if(currentScene!=='pelagic'){senses.stopCamera();senses.stopMotion();}
     if(cosmos||!horizonDevPanel.hidden)toggleDeveloper(false);
+    if(!cosmos)window.EventHorizonPlanetInteraction?.clear?.();
     devToggle.style.display='';
     devToggle.setAttribute('aria-controls',cosmos?'horizonDevPanel':'devPanel');
     devToggle.setAttribute('aria-label',cosmos?'Open EVENT HORIZON developer controls':'Open environmental developer controls');
@@ -1728,7 +1730,13 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     const bounds=canvas.getBoundingClientRect();
     return {x:e.clientX-bounds.left,y:e.clientY-bounds.top};
   };
+  let horizonTapStart=null;
   canvas.addEventListener('pointerdown',e=>{
+    if(currentScene==='event-horizon'){
+      const p=pointerCoords(e);
+      horizonTapStart={id:e.pointerId,x:p.x,y:p.y,started:Date.now()};
+      return;
+    }
     if(currentScene!=='pelagic')return;
     if(e.pointerType==='touch')e.preventDefault();
     const p=pointerCoords(e);
@@ -1742,10 +1750,25 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
   });
   canvas.addEventListener('pointerup',e=>{
     const p=pointerCoords(e);
+    if(currentScene==='event-horizon'){
+      const start=horizonTapStart;
+      horizonTapStart=null;
+      if(start&&start.id===e.pointerId&&
+         Math.hypot(p.x-start.x,p.y-start.y)<15&&
+         Date.now()-start.started<900){
+        window.EventHorizonPlanetInteraction?.tap?.(
+          p.x,p.y,width,height,window.EventHorizonSceneClock?.visualTime?.()??t);
+        render(t);
+      }
+      return;
+    }
     senses.pointerUp(e.pointerId,p.x,p.y,t);
     if(canvas.hasPointerCapture?.(e.pointerId))canvas.releasePointerCapture(e.pointerId);
   });
-  canvas.addEventListener('pointercancel',e=>senses.pointerCancel(e.pointerId));
+  canvas.addEventListener('pointercancel',e=>{
+    horizonTapStart=null;
+    if(currentScene==='pelagic')senses.pointerCancel(e.pointerId);
+  });
   // Local sensory events bias autonomy but never move the creature directly.
   senses.setCallbacks({
     onPresence:strength=>{if(currentScene==='pelagic')signalPresence(strength);},
