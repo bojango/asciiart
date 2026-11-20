@@ -23,6 +23,12 @@ function world(){
 test('fullscreen HUD has the approved collapsed astronomy accordion and original other-scene text',()=>{
   const html=read('index.html');
   assert.match(html,/id="horizonEvents"[^>]*data-open="false" hidden/);
+  assert.match(html,/id="horizonPlanets"[^>]*data-open="false" hidden/);
+  assert.match(html,/id="horizonPlanetsToggle"[^>]*aria-expanded="false"/);
+  assert.match(html,/id="horizonPlanetList"/);
+  assert.match(html,/\.hud\.bottom-left\.horizon-mode\{display:flex;flex-direction:column/);
+  assert.match(html,/\.horizon-planet-list\{[\s\S]*?background:transparent\}/);
+  assert.match(html,/document\.getElementById\('bottomLeftStatus'\)\.textContent=/);
   assert.match(html,/id="horizonEventsToggle"[^>]*aria-expanded="false"/);
   assert.match(html,/\+ ASTRONOMICAL EVENTS/);
   assert.match(html,/id="horizonEventApproach"/);
@@ -40,7 +46,7 @@ test('fullscreen HUD has the approved collapsed astronomy accordion and original
   assert.match(html,/THE <strong>OLD GROVE<\/strong>/);
   assert.match(html,/MEDUSA <strong>ASTRALIS<\/strong>/);
   assert.doesNotMatch(html,/src="\.\/preview\/event-horizon\//);
-  for(const name of ['event-horizon/renderer.js?v=4','event-horizon/event-forecast.js?v=1','event-horizon/planet-interaction.js?v=1'])
+  for(const name of ['event-horizon/renderer.js?v=4','event-horizon/event-forecast.js?v=1','event-horizon/planet-interaction.js?v=20261120'])
     assert.ok(html.includes('src="./'+name+'"'));
 });
 test('renderer counts stars, orbit hints, planetary glyphs and actual cached disc source glyphs',()=>{
