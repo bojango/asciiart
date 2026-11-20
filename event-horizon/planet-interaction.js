@@ -28,6 +28,7 @@
   });
   const scene=()=>window.EventHorizonRebuild;
   let selected=null;
+  const orbitGeometryCache=new Map();
 
   // Derive genuine values from the project's idealised circular Kepler model,
   // not from the arbitrary visual orbit radius or canvas projection.
@@ -187,10 +188,18 @@
     const highest=Math.min(safeTop,lowest);
     const sceneNow=scene();
     const periodSec=period(name);
-    const orbit=[];
-    if(periodSec>0&&sceneNow?.projectedPlanet){
-      for(let i=0;i<=96;i++)
-        orbit.push(sceneNow.projectedPlanet(name,periodSec*i/96,w,h));
+    // The orbit's projected shape does not vary with its phase. Cache it
+    // by viewport and planet instead of making 97 projections every frame.
+    const cacheKey=name+'/'+w+'/'+h;
+    let orbit=orbitGeometryCache.get(cacheKey);
+    if(!orbit){
+      orbit=[];
+      if(periodSec>0&&sceneNow?.projectedPlanet){
+        for(let i=0;i<=96;i++)
+          orbit.push(sceneNow.projectedPlanet(name,periodSec*i/96,w,h));
+      }
+      if(orbitGeometryCache.size>=16)orbitGeometryCache.clear();
+      orbitGeometryCache.set(cacheKey,orbit);
     }
     const worlds=sceneNow?.projectedPlanets?.(time,w,h)||[];
     const otherWorlds=worlds.filter(p=>p.name!==name&&
@@ -201,6 +210,10 @@
       w:2*(extent+5),h:2*(extent+5)};
     function pathInside(a,b,r){
       if(!a||!b||!Number.isFinite(a.x+a.y+b.x+b.y))return 0;
+      if((a.x<=r.x&&b.x<=r.x)||
+         (a.x>=r.x+r.w&&b.x>=r.x+r.w)||
+         (a.y<=r.y&&b.y<=r.y)||
+         (a.y>=r.y+r.h&&b.y>=r.y+r.h))return 0;
       const dx=b.x-a.x,dy=b.y-a.y,dist=Math.hypot(dx,dy);
       if(!dist)return 0;
       let enter=0,exit=1;
@@ -264,11 +277,16 @@
       const lateral=!above&&!below;
       const startX=pos.x+side*extent;
       const startY=pos.y+vertical*(lateral?Math.min(12,extent*.25):extent);
-      const elbowX=startX+side*(lateral?19:16);
-      const elbowY=startY+vertical*(lateral?19:16);
-      const entryX=lateral?
-        (side>0?rect.x:rect.x+rect.w):
+      const entryBoundary=side>0?rect.x:rect.x+rect.w;
+      const diagonal=lateral?
+        Math.max(6,Math.min(19,Math.abs(entryBoundary-startX)-11)):16;
+      const elbowX=startX+side*diagonal;
+      const elbowY=startY+vertical*diagonal;
+      let entryX=lateral?entryBoundary:
         clamp(elbowX+side*18,rect.x+12,rect.x+rect.w-12);
+      if(!lateral&&Math.abs(entryX-elbowX)<7)
+        entryX=clamp(elbowX+(elbowX<rect.x+rect.w*.5?14:-14),
+          rect.x+12,rect.x+rect.w-12);
       const entryY=lateral?
         clamp(elbowY,rect.y+10,rect.y+rect.h-10):
         (above?rect.y+rect.h:rect.y);
