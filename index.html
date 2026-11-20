@@ -1439,7 +1439,6 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
   function updateHorizonHUD(now=Date.now()){
     if(currentScene!=='event-horizon')return;
     const count=horizon.diagnostics?.().asciiCount;
-    eventNode('horizonEventApproach');
     document.querySelector('.hud.bottom-left').textContent=
       'ASCII: '+(Number.isFinite(count)?Math.round(count).toLocaleString('en-GB'):'—');
     document.querySelector('.hud.bottom-right').innerHTML=
