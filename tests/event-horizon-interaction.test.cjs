@@ -82,11 +82,16 @@ test('overlapping planets use front-most depth, while ringed bodies can be selec
   assert.equal(shell.window.EventHorizonPlanetInteraction.hitTest(50,60,150,200,0),'VERDANT');
   shell.window.EventHorizonRebuild.showPlanets=false;
   assert.equal(shell.window.EventHorizonPlanetInteraction.hitTest(50,60,150,200,0),null);
-  const {ui,scene}=environment();
-  const p=scene.projectedPlanet('HALO',0,440,736),angle=.42;
-  const a=2.15*p.radius,point={x:p.x+a*Math.cos(angle),y:p.y+a*Math.sin(angle)};
-  // Ring follows the same broad-ring orientation as planet-art.js.
-  assert.equal(ui.hitTest(point.x,point.y,440,736,0),ui.hitTest(point.x,point.y,440,736,0));
+  // Isolated visible ring can be tapped outside the solid planet sphere.
+  const ringWindow={EventHorizonRebuild:{
+    showPlanets:true,
+    projectedPlanets(){return [{name:'HALO',x:90,y:75,radius:20,depth:-.4}]}
+  },EventHorizonPlanetArt:{profile(){return {rings:'broad'}}}};
+  vm.runInNewContext(read('event-horizon/planet-interaction.js'),{window:ringWindow});
+  const a=2.15*20,roll=.42;
+  const x=90+a*Math.cos(roll),y=75+a*Math.sin(roll);
+  assert.ok(Math.hypot(x-90,y-75)>20+6,'tap is outside planetary sphere');
+  assert.equal(ringWindow.EventHorizonPlanetInteraction.hitTest(x,y,180,180,0),'HALO');
 });
 test('selected orbit follows the live projected 3D path with grey dashes and directional white fade',()=>{
   const {ui,scene}=environment();
