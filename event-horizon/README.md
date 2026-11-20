@@ -142,3 +142,43 @@ experimental LIGHT STUDIO UI are imported into production.
 
 Regression tests: `tests/event-horizon-hud.test.cjs` plus existing
 production, clock, planetary and PELAGIC depth regression suites.
+
+## On-canvas planet selection and orbit annotations
+
+The live EVENT HORIZON artwork now offers tap-to-inspect planets in
+portrait, landscape and full-art mode, without importing a preview UI.
+
+- Touch/click the visible planet (or a ring of ATLAS/HALO) to select it.
+  Small distant worlds have a modest extra hit radius. If planets
+  overlap, the nearer rendered object is selected.
+- Tap the same planet or empty space to dismiss. Dragging is **not** a
+  tap. Selection is cleared when switching to another scene. PELAGIC
+  touch, swipe, food and sensor interactions remain unchanged.
+- A minimal **1px white square outline**, 45-degree leader, short
+  horizontal connector, and black-backed **1px white rectangular
+  label** follow the moving selected planet. Text gives its name,
+  proposed diameter in kilometres, and a compact geology, ocean or
+  cloud description. Ringed worlds' selection frames include rings.
+- The highlighted orbital path uses the **same projected position
+  function as the actual rendered planet**, including VERDANT's
+  pinhole-perspective foreground pass. A grey 1px dashed line shows
+  the orbit. The last 62% of an orbit fades from grey behind to white
+  at the planet, while a short white forward arc indicates travel
+  direction. The orbit overlay sits behind the bright accretion disc
+  and planet bodies. Its callout is drawn on top.
+- Selection is hit-tested against the last **actually drawn** orbital
+  timestamp, avoiding drift in very fast developer simulation modes.
+- Labels fit within the canvas viewport and are drawn by Canvas 2D,
+  keeping the same graphic style in fullscreen.
+- Planet measurements and surface descriptions are **invented but
+  physically plausible proposals**. They are not measured observations
+  or fixed mass/radius outputs from the still-incomplete physical
+  model. The drawn orbital trajectories likewise remain illustrative.
+
+Files: `planet-interaction.js`, a small public projected-position
+API and hook in `renderer.js`, and scene-scoped canvas tap handling
+in the existing main `index.html`.
+
+Regression tests: `tests/event-horizon-interaction.test.cjs`.
+The 14 approved black-hole light values, source compositor, planet
+surface art, existing scene controls and simulation clock are unchanged.

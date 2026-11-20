@@ -9,7 +9,7 @@ const read=name=>fs.readFileSync(path.join(root,name),'utf8');
 const modules=['event-horizon/physical-system.js','event-horizon/hero-camera.js',
   'event-horizon/planet-art.js','event-horizon/source-compositor.js',
   'event-horizon/renderer.js','event-horizon/scene-clock.js',
-  'event-horizon/event-forecast.js'];
+  'event-horizon/event-forecast.js','event-horizon/planet-interaction.js'];
 const T0=Date.parse('2026-11-20T18:00:00Z');
 function world(){
   const tasks=[],storage=new Map(),shell={
@@ -40,7 +40,7 @@ test('fullscreen HUD has the approved collapsed astronomy accordion and original
   assert.match(html,/THE <strong>OLD GROVE<\/strong>/);
   assert.match(html,/MEDUSA <strong>ASTRALIS<\/strong>/);
   assert.doesNotMatch(html,/src="\.\/preview\/event-horizon\//);
-  for(const name of ['event-horizon/renderer.js?v=3','event-horizon/event-forecast.js?v=1'])
+  for(const name of ['event-horizon/renderer.js?v=4','event-horizon/event-forecast.js?v=1','event-horizon/planet-interaction.js?v=1'])
     assert.ok(html.includes('src="./'+name+'"'));
 });
 test('renderer counts stars, orbit hints, planetary glyphs and actual cached disc source glyphs',()=>{

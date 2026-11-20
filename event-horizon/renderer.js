@@ -191,6 +191,7 @@
   const diagnostics={glyphs:0,hot:0,maxHeat:0,meanHeat:0,offscreen:false};
   const sceneASCII={stars:0,hints:0,planets:0,gas:0,total:0};
   let usingRGBCompositor=false;
+  let lastRenderedOrbitTime=0;
   function prepareLayers(w,h){
     if(rearCanvas&&w===layerWidth&&h===layerHeight)return true;
     const make=()=>typeof OffscreenCanvas!=='undefined'?new OffscreenCanvas(w,h):
@@ -418,11 +419,14 @@
     ctx.save(); ctx.globalAlpha = 1; ctx.shadowBlur = 0;
     drawBackground(ctx, time, view);
     drawOrbitHints(ctx, view);
+    const orbitTime=window.EventHorizonSceneClock?.visualTime?.()??time;
+    lastRenderedOrbitTime=orbitTime;
+    if(showPlanets)window.EventHorizonPlanetInteraction?.drawOrbit?.(
+      ctx,width,height,orbitTime);
     if(window.EventHorizonPlanetArt)window.EventHorizonPlanetArt.resetDiagnostics();
     // Planetary travel uses the persisted wall-art clock, independent of the
     // fast local animation time for gas currents, rotation and cloud drift.
     // Display trajectories remain illustrative until the true ephemeris ships.
-    const orbitTime=window.EventHorizonSceneClock?.visualTime?.()??time;
     const worldPositions = planets.map(p => ({ planet: p, pos: orbitPosition(p, orbitTime, view) }));
     if(showPlanets)for (const world of worldPositions.filter(p => p.pos.depth > 0).sort((a, b) => b.pos.depth - a.pos.depth))
       paintPlanet(ctx, world.planet, world.pos, view, time);
@@ -442,6 +446,8 @@
       (window.EventHorizonSourceCompositor?.stats?.().totalGlyphs??diagnostics.glyphs):
       diagnostics.glyphs;
     sceneASCII.total=sceneASCII.stars+sceneASCII.hints+sceneASCII.planets+sceneASCII.gas;
+    if(showPlanets)window.EventHorizonPlanetInteraction?.drawCallout?.(
+      ctx,width,height,orbitTime);
     ctx.shadowBlur = 0; ctx.globalAlpha = 1; ctx.restore();
   }
   function cyclePalette() { paletteIndex = (paletteIndex + 1) % palettes.length; return palettes[paletteIndex].name; }
@@ -465,6 +471,18 @@
     nextHeroPass(time){return window.EventHorizonHeroCamera.nextClosestTime(planets[2],time)},
     camera(width,height){return window.EventHorizonHeroCamera.camera(width,height)},
     diagnostics:()=>({...diagnostics,asciiCount:sceneASCII.total,asciiBreakdown:{...sceneASCII}}),
+    projectedPlanets(time,width=440,height=736){
+      const view=layout(width,height);
+      return planets.map(p=>orbitPosition(p,time,view));
+    },
+    projectedPlanet(name,time,width=440,height=736){
+      const p=planets.find(p=>p.name===name);
+      return p?orbitPosition(p,time,layout(width,height)):null;
+    },
+    planetPeriod(name){
+      return planets.find(p=>p.name===name)?.period??null;
+    },
+    get renderedOrbitTime(){return lastRenderedOrbitTime;},
     setShowPlanets(v){showPlanets=Boolean(v)},
     get showPlanets(){return showPlanets},
     get palette() { return palettes[paletteIndex].name; },
