@@ -70,7 +70,7 @@
       transferText:Number.isFinite(rate)?rate.toExponential(1).toUpperCase()+
         ' M_SOL/YR':'—',
       massLossText:Number.isFinite(lossYears)?Math.round(lossYears/1e6)+
-        'M YEARS AT CONSTANT RATE':'—'};
+        'M YR (FIXED RATE)':'—'};
   }
   function info(name){
     const p=INFO[name];
@@ -206,7 +206,7 @@
     const descriptor=info(name);
     const limit=Math.max(13,Math.floor((boxW-16)/(9*.60)));
     const description=wrap(descriptor?.description||'',limit,3);
-    const boxH=(descriptor?.isStar?116:96)+12*description.length;
+    const boxH=(descriptor?.isStar?128:96)+12*description.length;
     const safeTop=Math.min(84,Math.max(40,h*.115));
     const safeBottom=Math.min(68,Math.max(35,h*.085));
     const lowest=Math.max(margin,h-safeBottom-boxH);
@@ -396,17 +396,20 @@
     ctx.textBaseline='top';
     ctx.fillStyle='rgba(255,255,255,0.96)';
     ctx.font='bold 10px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace';
-    ctx.fillText(metadata.name,g.boxX+8,g.boxY+8);
+    ctx.fillText(metadata.isStar?'DONOR STAR / RED DWARF':metadata.name,
+      g.boxX+8,g.boxY+8);
     ctx.font='9px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace';
     ctx.fillStyle='rgba(232,235,241,0.88)';
     ctx.fillText(metadata.diameterText,g.boxX+8,g.boxY+23);
     ctx.font=(g.boxW<221?'8.3':'9')+
       'px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace';
     if(metadata.isStar){
-      ctx.fillText('ORBIT TIME: '+metadata.orbitTimeText,g.boxX+8,g.boxY+41);
-      ctx.fillText('MASS: '+metadata.starMassText,g.boxX+8,g.boxY+54);
-      ctx.fillText('TRANSFER: '+metadata.transferText,g.boxX+8,g.boxY+67);
-      ctx.fillText('MASS-LOSS: '+metadata.massLossText,g.boxX+8,g.boxY+80);
+      ctx.fillText('MASS: '+metadata.starMassText,g.boxX+8,g.boxY+41);
+      ctx.fillText('ORBIT TIME: '+metadata.orbitTimeText,g.boxX+8,g.boxY+54);
+      ctx.fillText('ORBIT DISTANCE: '+metadata.orbitDistanceText,
+        g.boxX+8,g.boxY+67);
+      ctx.fillText('TRANSFER: '+metadata.transferText,g.boxX+8,g.boxY+80);
+      ctx.fillText('MASS LOSS: '+metadata.massLossText,g.boxX+8,g.boxY+93);
     }else{
       ctx.fillText('ORBIT TIME: '+metadata.orbitTimeText,g.boxX+8,g.boxY+41);
       ctx.fillText('ORBIT DISTANCE: '+metadata.orbitDistanceText,
@@ -417,7 +420,7 @@
     ctx.fillStyle='rgba(194,207,218,0.84)';
     for(let i=0;i<g.description.length;i++)
       ctx.fillText(g.description[i].toUpperCase(),
-        g.boxX+8,g.boxY+(metadata.isStar?105:86)+i*12);
+        g.boxX+8,g.boxY+(metadata.isStar?115:86)+i*12);
     ctx.restore();
   }
   window.EventHorizonPlanetInteraction=Object.freeze({
