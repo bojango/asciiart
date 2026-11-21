@@ -59,7 +59,7 @@ test('donor and planets share numeric orbit clock and nine interactive bodies',(
   assert.ok(donor&&Number.isFinite(donor.x+donor.y));
   assert.equal(ui.hitTest(donor.x,donor.y,390,690,t),'DONOR_STAR');
   assert.match(ui.info('DONOR_STAR').transferText,/1\.0E-9/);
-  assert.equal(ui.info('DONOR_STAR').massLossText,'400M YEARS AT CONSTANT RATE');
+  assert.equal(ui.info('DONOR_STAR').massLossText,'400M YR (FIXED RATE)');
 });
 test('model-derived conjunction converges on a real numerical longitude crossing',()=>{
   const w=model(),fc=w.EventHorizonEventForecast;
