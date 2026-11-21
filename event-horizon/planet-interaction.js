@@ -24,7 +24,9 @@
     AZURE:Object.freeze({diameterKm:49700,kind:'ICE GIANT',
       description:'Methane-blue atmosphere over deep, high-pressure fluid layers.'}),
     UMBRA:Object.freeze({diameterKm:34400,kind:'DARK ICE GIANT',
-      description:'Low-light carbon haze, cold clouds and a hidden dense mantle.'})
+      description:'Low-light carbon haze, cold clouds and a hidden dense mantle.'}),
+    DONOR_STAR:Object.freeze({diameterKm:578822,kind:'ROCHE-FILLING RED DWARF',
+      isStar:true,description:'A compact red dwarf transferring matter to the black hole. Display orbit magnified.'})
   });
   const scene=()=>window.EventHorizonRebuild;
   let selected=null;
@@ -35,8 +37,11 @@
   function orbitalStats(name){
     const physics=window.EventHorizonPhysicalSystem;
     const body=physics?.plannedPlanets?.find(p=>p.name===name);
-    const seconds=body?.keplerPeriodSeconds;
-    const axis=body?.semimajorAxisAU;
+    const isStar=name==='DONOR_STAR';
+    const seconds=isStar?physics?.binary?.periodSeconds:
+      body?.keplerPeriodSeconds;
+    const axis=isStar?physics?.binary?.donorBarycentricRadiusAU:
+      body?.semimajorAxisAU;
     const auMetres=physics?.SI?.AU_M;
     let orbitTimeText='—',orbitDistanceText='—';
     if(Number.isFinite(seconds)&&seconds>0){
@@ -51,14 +56,26 @@
       orbitDistanceText=Math.round(TAU*axis*auMetres/1609.344).
         toLocaleString('en-GB')+' MILES';
     const count=window.EventHorizonPlanetArt?.moonCount?.(name);
+    const rate=physics?.accretion?.nominalTransferSolarMassesPerJulianYear;
+    const starMass=physics?.companion?.massSolar;
+    const lossYears=starMass/rate;
     return {orbitTimeText,orbitDistanceText,
-      moonCount:Number.isInteger(count)?count:'—'};
+      moonCount:Number.isInteger(count)?count:'—',
+      starMassText:Number.isFinite(starMass)?starMass.toFixed(2)+' SOLAR MASSES':'—',
+      transferText:Number.isFinite(rate)?rate.toExponential(1).toUpperCase()+
+        ' M_SOL/YR':'—',
+      massLossText:Number.isFinite(lossYears)?Math.round(lossYears/1e6)+
+        'M YEARS AT CONSTANT RATE':'—'};
   }
   function info(name){
     const p=INFO[name];
-    return p?Object.freeze({...p,...orbitalStats(name),name,
-      radiusEarth:p.diameterKm/EARTH_DIAMETER_KM,
-      diameterText:p.diameterKm.toLocaleString('en-GB')+' KM DIAMETER'}):null;
+    const phys=window.EventHorizonPhysicalSystem;
+    const diameterKm=p?.isStar&&phys?
+      Math.round(2*phys.companion.radiusSolar*phys.SI.SOLAR_RADIUS_M/1000):
+      p?.diameterKm;
+    return p?Object.freeze({...p,...orbitalStats(name),name,diameterKm,
+      radiusEarth:diameterKm/EARTH_DIAMETER_KM,
+      diameterText:diameterKm.toLocaleString('en-GB')+' KM DIAMETER'}):null;
   }
   function current(name,time,width,height){
     return scene()?.projectedPlanet?.(name,time,width,height)||null;
@@ -86,7 +103,8 @@
   }
   function hitTest(x,y,w,h,time){
     if(!scene()?.showPlanets)return null;
-    const ps=scene()?.projectedPlanets?.(time,w,h)||[];
+    const ps=scene()?.projectedBodies?.(time,w,h)||
+      scene()?.projectedPlanets?.(time,w,h)||[];
     const matches=ps.filter(pos=>{
       if(!visible(pos,w,h))return false;
       const radius=Math.max(12,pos.radius+6);
@@ -115,11 +133,13 @@
        typeof ctx.setLineDash!=='function')return;
     // Equally spaced 4px dashes in screen-space arc length, including on
     // the foreshortened elliptical orbits.
-    const SAMPLES=480,DASH=4,GAP=4,points=[];
-    for(let i=0;i<=SAMPLES;i++)
-      points.push(sceneNow.projectedPlanet(
-        selected,periodSec*i/SAMPLES,width,height));
-    const currentPhase=((time%periodSec)+periodSec)%periodSec/periodSec;
+    const SAMPLES=480,DASH=4,GAP=4;
+    const guide=sceneNow.projectedOrbit?.(selected,time,width,height,SAMPLES);
+    const points=guide?.points||Array.from({length:SAMPLES+1},(_,i)=>
+      sceneNow.projectedPlanet(selected,periodSec*i/SAMPLES,width,height));
+    const currentPhase=guide?.period?
+      ((time-guide.baseTime)%guide.period+guide.period)%guide.period/guide.period:
+      ((time%periodSec)+periodSec)%periodSec/periodSec;
     ctx.save();
     ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';
     ctx.lineWidth=1;ctx.lineCap='butt';ctx.setLineDash([]);
@@ -181,7 +201,7 @@
     const descriptor=info(name);
     const limit=Math.max(13,Math.floor((boxW-16)/(9*.60)));
     const description=wrap(descriptor?.description||'',limit,3);
-    const boxH=96+12*description.length;
+    const boxH=(descriptor?.isStar?116:96)+12*description.length;
     const safeTop=Math.min(84,Math.max(40,h*.115));
     const safeBottom=Math.min(68,Math.max(35,h*.085));
     const lowest=Math.max(margin,h-safeBottom-boxH);
@@ -190,8 +210,9 @@
     const periodSec=period(name);
     // The orbit's projected shape does not vary with its phase. Cache it
     // by viewport and planet instead of making 97 projections every frame.
-    const cacheKey=name+'/'+w+'/'+h;
-    let orbit=orbitGeometryCache.get(cacheKey);
+    const path=sceneNow?.projectedOrbit?.(name,time,w,h,96);
+    const cacheKey=name+'/'+w+'/'+h+'/'+(path?.baseTime??0);
+    let orbit=path?.points||orbitGeometryCache.get(cacheKey);
     if(!orbit){
       orbit=[];
       if(periodSec>0&&sceneNow?.projectedPlanet){
@@ -201,7 +222,8 @@
       if(orbitGeometryCache.size>=16)orbitGeometryCache.clear();
       orbitGeometryCache.set(cacheKey,orbit);
     }
-    const worlds=sceneNow?.projectedPlanets?.(time,w,h)||[];
+    const worlds=sceneNow?.projectedBodies?.(time,w,h)||
+      sceneNow?.projectedPlanets?.(time,w,h)||[];
     const otherWorlds=worlds.filter(p=>p.name!==name&&
       Number.isFinite(p.x+p.y+p.radius));
     const overlap=(a,b)=>Math.max(0,Math.min(a.x+a.w,b.x+b.w)-Math.max(a.x,b.x))*
@@ -375,15 +397,22 @@
     ctx.fillText(metadata.diameterText,g.boxX+8,g.boxY+23);
     ctx.font=(g.boxW<221?'8.3':'9')+
       'px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace';
-    ctx.fillText('ORBIT TIME: '+metadata.orbitTimeText,g.boxX+8,g.boxY+41);
-    ctx.fillText('ORBIT DISTANCE: '+metadata.orbitDistanceText,
-      g.boxX+8,g.boxY+54);
-    ctx.fillText('MOONS: '+metadata.moonCount,g.boxX+8,g.boxY+67);
+    if(metadata.isStar){
+      ctx.fillText('ORBIT TIME: '+metadata.orbitTimeText,g.boxX+8,g.boxY+41);
+      ctx.fillText('MASS: '+metadata.starMassText,g.boxX+8,g.boxY+54);
+      ctx.fillText('TRANSFER: '+metadata.transferText,g.boxX+8,g.boxY+67);
+      ctx.fillText('MASS-LOSS: '+metadata.massLossText,g.boxX+8,g.boxY+80);
+    }else{
+      ctx.fillText('ORBIT TIME: '+metadata.orbitTimeText,g.boxX+8,g.boxY+41);
+      ctx.fillText('ORBIT DISTANCE: '+metadata.orbitDistanceText,
+        g.boxX+8,g.boxY+54);
+      ctx.fillText('MOONS: '+metadata.moonCount,g.boxX+8,g.boxY+67);
+    }
     ctx.font='9px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace';
     ctx.fillStyle='rgba(194,207,218,0.84)';
     for(let i=0;i<g.description.length;i++)
       ctx.fillText(g.description[i].toUpperCase(),
-        g.boxX+8,g.boxY+86+i*12);
+        g.boxX+8,g.boxY+(metadata.isStar?105:86)+i*12);
     ctx.restore();
   }
   window.EventHorizonPlanetInteraction=Object.freeze({
