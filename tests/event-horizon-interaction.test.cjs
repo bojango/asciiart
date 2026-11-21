@@ -10,7 +10,8 @@ function environment(){
   const w={},shell={window:w,document:{},console:{warn(){},error(){}}};
   for(const file of ['event-horizon/hero-camera.js','event-horizon/planet-art.js',
       'event-horizon/source-compositor.js','event-horizon/renderer.js',
-      'event-horizon/physical-system.js','event-horizon/planet-interaction.js'])
+      'event-horizon/physical-system.js','event-horizon/nbody-system.js',
+      'event-horizon/planet-interaction.js'])
     vm.runInNewContext(read(file),shell,{filename:file});
   return {w,scene:w.EventHorizonRebuild,ui:w.EventHorizonPlanetInteraction};
 }
@@ -37,7 +38,7 @@ function context(){
 test('all eight bodies have distinct plausible fictional sizes and concise surface descriptions',()=>{
   const {ui,scene}=environment();
   const expected=['CINDER','SILEX','VERDANT','RUST','ATLAS','HALO','AZURE','UMBRA'];
-  assert.deepEqual(Array.from(ui.names()),expected);
+  assert.deepEqual(Array.from(ui.names()),[...expected,'DONOR_STAR']);
   for(const name of expected){
     const meta=ui.info(name),p=scene.projectedPlanet(name,0,440,736);
     assert.ok(meta&&p&&meta.diameterKm>9000&&meta.diameterKm<160000);
@@ -154,7 +155,9 @@ test('planetary callout uses two 1px white square frames and clipped readable mo
       assert.ok(frames.every(a=>a.width===1));
       assert.ok(actions.some(a=>a.type==='text'&&a.text===name));
       assert.ok(actions.some(a=>a.type==='text'&&a.text.includes('KM DIAMETER')));
-      for(const stat of ['ORBIT TIME:','ORBIT DISTANCE:','MOONS:'])
+      for(const stat of (name==='DONOR_STAR'?
+        ['ORBIT TIME:','MASS:','TRANSFER:','MASS-LOSS:']:
+        ['ORBIT TIME:','ORBIT DISTANCE:','MOONS:']))
         assert.ok(actions.some(a=>a.type==='text'&&a.text.startsWith(stat)),stat);
       assert.ok(actions.some(a=>a.type==='fillRect'),'dark readable text background');
       assert.equal(getBalance(),0);
@@ -203,10 +206,21 @@ test('planet selector and physical data come from actual model definitions',()=>
   ui.clear();
   assert.equal(ui.selected,null);
 });
+test('donor is selectable and its position follows the integrated binary phase',()=>{
+  const {ui,scene}=environment();
+  const t=86400,w=390,h=690,star=scene.projectedPlanet('DONOR_STAR',t,w,h);
+  assert.ok(star&&star.markerScale==='ENLARGED');
+  assert.equal(ui.hitTest(star.x,star.y,w,h,t),'DONOR_STAR');
+  assert.equal(ui.select('DONOR_STAR'),'DONOR_STAR');
+  const {ctx,actions}=context();
+  ui.drawOrbit(ctx,w,h,t);ui.drawCallout(ctx,w,h,t);
+  assert.ok(actions.some(a=>a.type==='text'&&a.text.includes('TRANSFER:')));
+  assert.equal(ui.info('DONOR_STAR').massLossText,'400M YEARS AT CONSTANT RATE');
+});
 test('existing app only attaches selection to EVENT HORIZON and retains PELAGIC touch handlers',()=>{
   const html=read('index.html');
-  assert.ok(html.includes('src="./event-horizon/planet-interaction.js?v=20261120"'));
-  assert.ok(html.includes('src="./event-horizon/renderer.js?v=4"'));
+  assert.ok(html.includes('src="./event-horizon/planet-interaction.js?v=20261121"'));
+  assert.ok(html.includes('src="./event-horizon/renderer.js?v=20261121"'));
   assert.ok(html.includes("if(currentScene==='event-horizon'){"));
   assert.ok(html.includes('window.EventHorizonPlanetInteraction?.tap?.('));
   assert.ok(html.includes('window.EventHorizonPlanetInteraction?.clear?.()'));
