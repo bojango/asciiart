@@ -12,6 +12,7 @@ const modules=[
   'event-horizon/hero-camera.js',
   'event-horizon/planet-art.js',
   'event-horizon/physical-system.js',
+  'event-horizon/nbody-system.js',
   'event-horizon/renderer.js',
   'event-horizon/scene-clock.js',
   'event-horizon/event-forecast.js',
@@ -39,14 +40,21 @@ test('original production UI remains in place and loads no preview controls',()=
   assert.match(html,/const sceneOrder=\['pelagic','greenwood','event-horizon'\]/);
   assert.match(html,/horizon\.draw\(ctx,width,height,time,null,highRes\)/);
   for(const file of modules){
-    const version=file==='event-horizon/renderer.js'?'4':'1';
+    const version={
+      'event-horizon/renderer.js':'20261121',
+      'event-horizon/nbody-system.js':'20261121',
+      'event-horizon/scene-clock.js':'20261121',
+      'event-horizon/event-forecast.js':'20261121',
+      'event-horizon/planet-art.js':'20261120',
+      'event-horizon/planet-interaction.js':'20261121'
+    }[file]||'1';
     assert.ok(html.includes('src="./'+file+'?v='+version+'"'),file+' included on main page');
   }
   for(const forbidden of ['preview/event-horizon/','tuneToggle','jumpPass','sceneMenuToggle',
     'LIGHT STUDIO','VIEW PASS','ILLUSTRATIVE ORBIT'])
     assert.ok(!html.includes(forbidden),'experimental control excluded: '+forbidden);
   assert.ok(html.indexOf('src="./event-horizon.js?v=20261119"')<
-    html.indexOf('src="./event-horizon/renderer.js?v=4"'),
+    html.indexOf('src="./event-horizon/renderer.js?v=20261121"'),
     'baseline loaded before optional enhancement');
 });
 
@@ -64,8 +72,10 @@ test('enhanced renderer takes original window.PelagicEventHorizon interface',()=
   assert.equal(horizon.state(0,440,736).planets.length,8);
   const t=horizon.nextHeroPass(0),p=horizon.heroAt(t,440,736);
   assert.equal(p.name,'VERDANT');
-  assert.ok(p.radius>126&&p.radius<131);
-  assert.equal(p.heroLOD,'CLOSE');
+  assert.ok(p.radius>0&&Number.isFinite(p.x+p.y));
+  assert.ok(t>0&&t<70*86400,'next Verdant camera approach within its orbit');
+  assert.ok(Math.abs(horizon.planetPeriod('VERDANT')-
+    shell.window.EventHorizonPhysicalSystem.plannedPlanets[2].keplerPeriodSeconds)<1e-6);
   assert.match(horizon.source(),/orbitPosition/);
 });
 
@@ -84,7 +94,7 @@ test('all 14 approved light values are intact and separate from main UI',()=>{
     shell.window.EventHorizonSourceCompositor.getParams())),approved);
 });
 
-test('hidden binary module is loaded but never shown as a body',()=>{
+test('ten-body model synchronises the eight orbits and exposes donor marker',()=>{
   const {shell,horizon}=makeShell(),model=shell.window.EventHorizonPhysicalSystem;
   assert.ok(model);
   assert.equal(model.blackHole.massSolar,5);
@@ -97,9 +107,14 @@ test('hidden binary module is loaded but never shown as a body',()=>{
   assert.equal(model.metadata.visualIntegration,false);
   assert.equal(model.metadata.eventClockIntegrated,false);
   assert.equal(shell.window.EventHorizonSceneClock.snapshot().mode,'WALL');
-  assert.ok(horizon.state(0,440,736).planets[2].period!==
-    model.plannedPlanets[2].keplerPeriodSeconds,
-    'physical periods not falsely passed off as already-integrated visual orbits');
+  const nbody=shell.window.EventHorizonNBody;
+  assert.ok(nbody&&nbody.names.length===10);
+  assert.equal(horizon.state(0,440,736).planets.length,8);
+  assert.equal(horizon.projectedBodies(0,440,736).length,9);
+  assert.ok(horizon.projectedPlanet('DONOR_STAR',0,440,736));
+  for(const planet of model.plannedPlanets)
+    assert.ok(Math.abs(horizon.planetPeriod(planet.name)-
+      planet.keplerPeriodSeconds)<1e-5,'physical timing: '+planet.name);
 });
 
 test('new modules gracefully preserve original renderer when a dependency is missing',()=>{
