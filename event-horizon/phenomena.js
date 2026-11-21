@@ -115,6 +115,7 @@
   }
   function toggle(next){enabled=Boolean(next);if(!enabled)clear();return enabled}
   function force(kind='COMET',t=0){
+    enabled=true;
     const id=100000+(++serial);
     const visitor=encounter(id,t-2*DAY,kind,true);
     // Skip the long approach ONLY for the dev demonstration. Subsequent
