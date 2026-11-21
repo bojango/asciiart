@@ -329,7 +329,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
 <script src="./event-horizon/nbody-system.js?v=2026112102"></script>
 <script src="./event-horizon/renderer.js?v=20261121e"></script>
 <script src="./event-horizon/scene-clock.js?v=20261121"></script>
-<script src="./event-horizon/phenomena.js?v=20261121a"></script>
+<script src="./event-horizon/phenomena.js?v=20261121b"></script>
 <script src="./event-horizon/event-forecast.js?v=20261121"></script>
 <script src="./event-horizon/planet-interaction.js?v=2026112102"></script>
 <script src="./ecosystem.js"></script>
@@ -1914,8 +1914,8 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
          Date.now()-start.started<900){
         const orbitT=horizon.renderedOrbitTime??
           window.EventHorizonSceneClock?.visualTime?.()??t;
-        const visitor=horizonPhenomena?.hitTest?.(
-          p.x,p.y,width,height,orbitT,horizon.projectedVisitor);
+        const visitor=horizon.projectedVisitor?horizonPhenomena?.hitTest?.(
+          p.x,p.y,width,height,orbitT,horizon.projectedVisitor):null;
         if(visitor){
           horizonPhenomena.select(visitor,orbitT);
           planetInteraction?.clear?.();
