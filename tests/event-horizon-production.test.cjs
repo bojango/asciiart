@@ -15,6 +15,7 @@ const modules=[
   'event-horizon/nbody-system.js',
   'event-horizon/renderer.js',
   'event-horizon/scene-clock.js',
+  'event-horizon/phenomena.js',
   'event-horizon/event-forecast.js',
   'event-horizon/planet-interaction.js'
 ];
@@ -41,8 +42,9 @@ test('original production UI remains in place and loads no preview controls',()=
   assert.match(html,/horizon\.draw\(ctx,width,height,time,null,highRes\)/);
   for(const file of modules){
     const version={
-      'event-horizon/renderer.js':'20261121',
+      'event-horizon/renderer.js':'20261121e',
       'event-horizon/nbody-system.js':'2026112102',
+      'event-horizon/phenomena.js':'20261121a',
       'event-horizon/scene-clock.js':'20261121',
       'event-horizon/event-forecast.js':'20261121',
       'event-horizon/planet-art.js':'20261120',
@@ -54,7 +56,7 @@ test('original production UI remains in place and loads no preview controls',()=
     'LIGHT STUDIO','ILLUSTRATIVE ORBIT'])
     assert.ok(!html.includes(forbidden),'experimental control excluded: '+forbidden);
   assert.ok(html.indexOf('src="./event-horizon.js?v=20261119"')<
-    html.indexOf('src="./event-horizon/renderer.js?v=20261121"'),
+    html.indexOf('src="./event-horizon/renderer.js?v=20261121e"'),
     'baseline loaded before optional enhancement');
 });
 
