@@ -44,7 +44,7 @@ test('original production UI remains in place and loads no preview controls',()=
     const version={
       'event-horizon/renderer.js':'20261121e',
       'event-horizon/nbody-system.js':'2026112102',
-      'event-horizon/phenomena.js':'20261121a',
+      'event-horizon/phenomena.js':'20261121b',
       'event-horizon/scene-clock.js':'20261121',
       'event-horizon/event-forecast.js':'20261121',
       'event-horizon/planet-art.js':'20261120',
