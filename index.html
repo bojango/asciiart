@@ -203,9 +203,9 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
         <button type="button" id="horizonEventsToggle" aria-expanded="false" aria-controls="horizonEventList">+ ASTRONOMICAL EVENTS</button>
         <div id="horizonEventList" class="horizon-event-list" aria-hidden="true">
           <span class="horizon-event-line" id="horizonEventApproach">VERDANT NEXT APPROACH: —</span>
-          <span class="horizon-event-line" id="horizonEventAlignment">NEXT ALIGNMENT: —</span>
-          <span class="horizon-event-line" id="horizonEventAccretion">NEXT ACCRETION PASSING: —</span>
-          <span class="horizon-event-note">ILLUSTRATIVE VISUAL FORECAST · UK TIME</span>
+          <span class="horizon-event-line" id="horizonEventAlignment">NEXT PAIR CONJUNCTION: —</span>
+          <span class="horizon-event-line" id="horizonEventAccretion">NEXT DISC VIEW PASS: —</span>
+          <span class="horizon-event-note">MODEL CONJUNCTIONS · VISUAL DISC PASS · UK TIME</span>
         </div>
       </div>
     </div>
@@ -288,7 +288,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
         <div class="astro-stat"><span>BLACK HOLE + DONOR</span><output id="horizonBodies">—</output></div>
         <div class="astro-stat"><span>RENDER DIAGNOSTICS</span><output id="horizonGlyphs">—</output></div>
       </div>
-      <p class="astro-note" id="horizonClockNote">The 5.4-solar-mass physical binary is modelled, but these visual planetary trajectories are still illustrative. Pass estimates are camera events, not scientifically validated conjunction predictions. Clock progress is stored on this browser.</p>
+      <p class="astro-note" id="horizonClockNote">3D Newtonian ten-body gravity integrates eight assumed-mass planets and the mass-transferring binary. Initial masses, eccentricities and inclinations are fictional, not observed. Orbital radii are compressed for composition; the donor is visibly magnified. The accretion disc is not physically to scale. Predictions describe this model only. Clock progress is stored on this browser.</p>
     </aside>
   </section>
 </main>
@@ -300,10 +300,11 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
 <script src="./event-horizon/hero-camera.js?v=1"></script>
 <script src="./event-horizon/planet-art.js?v=20261120"></script>
 <script src="./event-horizon/physical-system.js?v=1"></script>
-<script src="./event-horizon/renderer.js?v=4"></script>
-<script src="./event-horizon/scene-clock.js?v=1"></script>
-<script src="./event-horizon/event-forecast.js?v=1"></script>
-<script src="./event-horizon/planet-interaction.js?v=20261120"></script>
+<script src="./event-horizon/nbody-system.js?v=20261121"></script>
+<script src="./event-horizon/renderer.js?v=20261121"></script>
+<script src="./event-horizon/scene-clock.js?v=20261121"></script>
+<script src="./event-horizon/event-forecast.js?v=20261121"></script>
+<script src="./event-horizon/planet-interaction.js?v=20261121"></script>
 <script src="./ecosystem.js"></script>
 <script src="./senses.js"></script>
 <script>
@@ -1396,7 +1397,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
   for(const name of planetInteraction?.names?.()||[]){
     const button=document.createElement('button');
     button.type='button';
-    button.textContent=name;
+    button.textContent=name.replace(/_/g,' ');
     button.dataset.planet=name;
     button.setAttribute('aria-pressed','false');
     button.addEventListener('click',()=>{
@@ -1471,13 +1472,13 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
         snap.paused?'PAUSED':'NOT FORECAST');
     const alignment=forecastCache?.alignment;
     const aDate=alignment&&horizonForecast?.wallDate?.(alignment.visualTime,now);
-    eventNode('horizonEventAlignment').textContent='NEXT ALIGNMENT: '+
-      (alignment===undefined?'SEARCHING 10 SIM YEARS':
-        alignment===null?'NO DATE FORECAST (10 SIM YEARS)':
-        aDate?eventUKDate(aDate):snap.paused?'PAUSED':'NOT FORECAST');
+    eventNode('horizonEventAlignment').textContent='NEXT PAIR CONJUNCTION: '+
+      (alignment===undefined?'CALCULATING':
+        alignment===null?'NOT FORECAST (365 SIM DAYS)':
+        alignment.name+', '+(aDate?eventUKDate(aDate):snap.paused?'PAUSED':'NOT FORECAST'));
     const disc=forecastCache?.disc;
     const dDate=disc&&horizonForecast?.wallDate?.(disc.visualTime,now);
-    eventNode('horizonEventAccretion').textContent='NEXT ACCRETION PASSING: '+
+    eventNode('horizonEventAccretion').textContent='NEXT DISC VIEW PASS: '+
       (disc===undefined?'SEARCHING':
         disc===null?'NOT FORECAST (365 SIM DAYS)':
         disc.name+', '+(dDate?eventUKDate(dDate):snap.paused?'PAUSED':'NOT FORECAST'));
@@ -1495,11 +1496,10 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     // A foreground-disc crossing is a screen-space entry event.
     active.disc=horizonForecast.nextAccretionVisual(snap.visualTime,widthNow,heightNow);
     showHorizonEvents();
-    forecastCancel=horizonForecast.searchAlignmentAsync(
-      snap.visualTime,widthNow,heightNow,result=>{
-        if(forecastCache!==active)return;
-        active.alignment=result;showHorizonEvents();
-      });
+    // The all-eight screen-centre alignment was not an astronomical
+    // conjunction. Predict the earliest longitude conjunction instead.
+    active.alignment=horizonForecast.nextConjunctionVisual?.(snap.visualTime)??null;
+    showHorizonEvents();
   }
   horizonEventsToggle.addEventListener('click',()=>{
     if(currentScene!=='event-horizon')return;
