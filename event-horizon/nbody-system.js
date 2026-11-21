@@ -149,6 +149,62 @@
     }
     return {kinetic:ke,potential:pe,total:ke+pe};
   }
+  // Tangent Kepler ellipse at the current integrated state. Useful for a
+  // smooth and cheap guide curve. This is a local approximation: the actual
+  // ten-body numerical trajectory is used for every displayed body position.
+  function osculating(name,t){
+    const bodies=stateAtSeconds(t),idx=names.indexOf(name);
+    if(idx<2)return null;
+    const body=bodies[idx],bh=bodies[0],donor=bodies[1];
+    const mass=bh.massSolar+donor.massSolar;
+    const central=[
+      (bh.x*bh.massSolar+donor.x*donor.massSolar)/mass,
+      (bh.y*bh.massSolar+donor.y*donor.massSolar)/mass,
+      (bh.z*bh.massSolar+donor.z*donor.massSolar)/mass
+    ];
+    const velocity=[
+      (bh.vx*bh.massSolar+donor.vx*donor.massSolar)/mass,
+      (bh.vy*bh.massSolar+donor.vy*donor.massSolar)/mass,
+      (bh.vz*bh.massSolar+donor.vz*donor.massSolar)/mass
+    ];
+    const r=[body.x-central[0],body.y-central[1],body.z-central[2]];
+    const v=[body.vx-velocity[0],body.vy-velocity[1],body.vz-velocity[2]];
+    const cross=(a,b)=>[
+      a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]
+    ];
+    const dot=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
+    const norm=a=>Math.hypot(...a),u=(a)=>a.map(x=>x/norm(a));
+    const rr=norm(r),mu=G*(mass+body.massSolar);
+    const h=cross(r,v),hn=u(h);
+    const eccentricityVector=cross(v,h).map((x,i)=>x/mu-r[i]/rr);
+    const e=norm(eccentricityVector);
+    const a=1/(2/rr-dot(v,v)/mu);
+    if(!(a>0&&e<1))return null;
+    const p=e>1e-8?u(eccentricityVector):u(r),q=cross(hn,p);
+    const cosNu=dot(r,p)/rr,sinNu=dot(r,q)/rr;
+    const denom=1+e*cosNu;
+    const anomaly= Math.atan2(Math.sqrt(1-e*e)*sinNu/denom,
+      (e+cosNu)/denom);
+    const M0=anomaly-e*Math.sin(anomaly);
+    const n=Math.sqrt(mu/(a*a*a));
+    function point(deltaSeconds){
+      const M=M0+n*deltaSeconds/DAY;
+      let E=phase(M);
+      for(let i=0;i<8;i++)E-=(E-e*Math.sin(E)-M)/(1-e*Math.cos(E));
+      const xp=a*(Math.cos(E)-e),yq=a*Math.sqrt(1-e*e)*Math.sin(E);
+      return {name,
+        x:central[0]+p[0]*xp+q[0]*yq,
+        y:central[1]+p[1]*xp+q[1]*yq,
+        z:central[2]+p[2]*xp+q[2]*yq};
+    }
+    return {name,a,e,periodSeconds:TAU/n*DAY,point};
+  }
+  function osculatingPath(name,t,count=96){
+    const path=osculating(name,t);
+    if(!path)return [];
+    return Array.from({length:count+1},(_,i)=>
+      path.point(path.periodSeconds*i/count));
+  }
   function estimate(name){
     const p=ELEMENTS.find(p=>p.name===name);
     if(!p)return null;
@@ -165,7 +221,7 @@
   const api=Object.freeze({
     version:'newtonian-nbody-v1',names,ELEMENTS,
     constants:Object.freeze({G,AU_M,DT_S,EARTH,JUPITER}),
-    stateAtSeconds,position,estimate,energyAt,
+    stateAtSeconds,position,estimate,energyAt,osculating,osculatingPath,
     donorMassLossTimescaleYears:physical.companion.massSolar/
       physical.accretion.nominalTransferSolarMassesPerJulianYear,
     assumptions:'Fictional starting masses/angles; no measured ephemeris; '+
