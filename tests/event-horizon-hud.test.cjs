@@ -46,7 +46,7 @@ test('fullscreen HUD has the approved collapsed astronomy accordion and original
   assert.match(html,/THE <strong>OLD GROVE<\/strong>/);
   assert.match(html,/MEDUSA <strong>ASTRALIS<\/strong>/);
   assert.doesNotMatch(html,/src="\.\/preview\/event-horizon\//);
-  for(const name of ['event-horizon/nbody-system.js?v=20261121','event-horizon/renderer.js?v=20261121','event-horizon/event-forecast.js?v=20261121','event-horizon/planet-interaction.js?v=20261121'])
+  for(const name of ['event-horizon/nbody-system.js?v=2026112102','event-horizon/renderer.js?v=20261121','event-horizon/event-forecast.js?v=20261121','event-horizon/planet-interaction.js?v=2026112102'])
     assert.ok(html.includes('src="./'+name+'"'));
 });
 test('renderer counts stars, orbit hints, planetary glyphs and actual cached disc source glyphs',()=>{
