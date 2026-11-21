@@ -19,11 +19,11 @@
     ['CINDER',.30,.007,5,10,0.35,.7*EARTH],
     ['SILEX',.42,.015,17,78,2.20,1.1*EARTH],
     ['VERDANT',.55,.010,9,148,4.10,1.0*EARTH],
-    ['RUST',.75,.022,31,228,1.25,.65*EARTH],
+    ['RUST',.75,.022,50,228,1.25,.65*EARTH],
     ['ATLAS',1.00,.012,4,302,3.80,.55*JUPITER],
     ['HALO',1.30,.016,25,28,5.20,.35*JUPITER],
     ['AZURE',1.75,.018,38,126,2.72,14*EARTH],
-    ['UMBRA',2.40,.025,12,254,.90,8*EARTH]
+    ['UMBRA',2.40,.025,55,254,.90,8*EARTH]
   ].map(([name,a,e,inclinationDeg,nodeDeg,meanAnomaly,massSolar])=>
     Object.freeze({name,a,e,inclinationDeg,nodeDeg,meanAnomaly,massSolar})));
   const names=Object.freeze(['BLACK_HOLE','DONOR_STAR',...ELEMENTS.map(p=>p.name)]);
