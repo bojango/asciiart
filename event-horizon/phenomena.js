@@ -275,10 +275,91 @@
       class:b.record.volatile?'VOLATILE / ICY':'ROCKY',
       timeToPeriSeconds:b.record.periTime-t};
   }
+  function hitTest(x,y,w,h,t,project){
+    let chosen=null,nearest=15;
+    for(const b of active(t)){
+      const p=project(b,w,h);
+      if(!p)continue;
+      const d=Math.hypot(x-p.x,y-p.y);
+      if(d<nearest){chosen=b.id;nearest=d}
+    }
+    return chosen;
+  }
+  function tap(x,y,w,h,t,project){
+    const id=hitTest(x,y,w,h,t,project);
+    if(id)select(id,t);else clear();
+    return id;
+  }
+  function drawCallout(ctx,w,h,t,project){
+    const b=selectedBody(t);
+    if(!b)return;
+    const meta=info(b.id,t),p=project(b,w,h);
+    if(!p||!meta||!Number.isFinite(p.x+p.y))return;
+    const boxW=Math.min(244,w-18),boxH=162,margin=9;
+    const choose=[
+      [p.x+22,p.y-boxH*.5],[p.x-boxW-22,p.y-boxH*.5],
+      [p.x-boxW*.5,p.y-boxH-30],[p.x-boxW*.5,p.y+30],
+      [margin,Math.max(55,h*.10)],[w-boxW-margin,Math.max(55,h*.10)],
+      [margin,h-boxH-50],[w-boxW-margin,h-boxH-50]
+    ];
+    const worlds=window.EventHorizonRebuild?.projectedPlanets?.(t,w,h)||[];
+    const path=[],record=b.record;
+    for(let i=0;i<=48;i++){
+      const at=record.enters+(record.exits-record.enters)*i/48;
+      path.push(project(bodyAt(record,at),w,h));
+    }
+    let best=null;
+    for(const [rx,ry] of choose){
+      const x=clamp(rx,margin,Math.max(margin,w-boxW-margin));
+      const y=clamp(ry,margin,Math.max(margin,h-boxH-margin));
+      const distance=Math.hypot(p.x-clamp(p.x,x,x+boxW),
+        p.y-clamp(p.y,y,y+boxH));
+      let penalty=distance<16?20000:distance*.16;
+      for(const q of worlds){
+        const dist=Math.hypot(q.x-clamp(q.x,x,x+boxW),
+          q.y-clamp(q.y,y,y+boxH));
+        if(dist<q.radius+8)penalty+=3000;
+      }
+      for(const q of path)if(q&&q.x>=x&&q.x<=x+boxW&&q.y>=y&&q.y<=y+boxH)
+        penalty+=15;
+      if(!best||penalty<best.penalty)best={x,y,penalty};
+    }
+    const x=best.x,y=best.y,edgeX=x+boxW*.5<p.x?x+boxW:x;
+    const edgeY=clamp(p.y,y+14,y+boxH-14);
+    ctx.save();ctx.globalCompositeOperation='source-over';ctx.globalAlpha=1;
+    ctx.lineWidth=1;ctx.strokeStyle='rgba(245,246,249,.94)';
+    ctx.setLineDash([]);
+    if(p.x>=0&&p.x<w&&p.y>=0&&p.y<h)
+      ctx.strokeRect(Math.round(p.x-9)+.5,Math.round(p.y-9)+.5,18,18);
+    ctx.beginPath();ctx.moveTo(clamp(p.x,0,w),clamp(p.y,0,h));
+    const elbowX=(p.x+edgeX)*.5;
+    ctx.lineTo(elbowX,edgeY);ctx.lineTo(edgeX,edgeY);ctx.stroke();
+    ctx.fillStyle='rgba(0,0,0,.87)';ctx.fillRect(x,y,boxW,boxH);
+    ctx.strokeRect(Math.round(x)+.5,Math.round(y)+.5,boxW,boxH);
+    ctx.textBaseline='top';
+    ctx.font='bold 10px ui-monospace,SFMono-Regular,Menlo,monospace';
+    ctx.fillStyle='rgba(255,255,255,.97)';
+    ctx.fillText(meta.id+' / INTERSTELLAR',x+8,y+8);
+    ctx.font='9px ui-monospace,SFMono-Regular,Menlo,monospace';
+    ctx.fillStyle='rgba(204,217,228,.91)';
+    const number=(n,d=1)=>Number(n).toFixed(d);
+    const rows=[
+      'CLASS: '+meta.class,
+      'SIZE: '+number(meta.diameterKm,2)+' KM',
+      'SPEED: '+number(meta.speedKms)+' KM/S',
+      'ECCENTRICITY: '+number(meta.eccentricity,3),
+      'PERIAPSIS: '+number(meta.periapsisAU,3)+' AU',
+      'T TO PERI: '+number(meta.timeToPeriSeconds/3600)+' H',
+      'TRAJECTORY: '+(meta.fragmented?'FRAGMENTING':'UNBOUND'),
+      'OUTGASSING: '+(meta.dustActivity>.2?'ACTIVE':'QUIET')
+    ];
+    for(let i=0;i<rows.length;i++)ctx.fillText(rows[i],x+8,y+27+i*16);
+    ctx.restore();
+  }
   window.EventHorizonPhenomena=Object.freeze({
     version:'experimental-encounters-v1',active,bodyAt,snapshot,info,
     select,clear,force,trigger,modeSet,toggle,motion,discState,
-    drawPath,drawObjects,drawTransients,
+    drawPath,drawObjects,drawTransients,drawCallout,hitTest,tap,
     get selected(){return selected},get enabled(){return enabled},
     get mode(){return mode},
     limitations:'Restricted point-mass hyperbolas; test particles are not '+
