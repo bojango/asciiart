@@ -158,7 +158,7 @@ test('planetary callout uses two 1px white square frames and clipped readable mo
 
       assert.ok(actions.some(a=>a.type==='text'&&a.text.includes('KM DIAMETER')));
       for(const stat of (name==='DONOR_STAR'?
-        ['ORBIT TIME:','MASS:','TRANSFER:','MASS-LOSS:']:
+        ['ORBIT TIME:','ORBIT DISTANCE:','MASS:','TRANSFER:','MASS LOSS:']:
         ['ORBIT TIME:','ORBIT DISTANCE:','MOONS:']))
         assert.ok(actions.some(a=>a.type==='text'&&a.text.startsWith(stat)),stat);
       assert.ok(actions.some(a=>a.type==='fillRect'),'dark readable text background');
