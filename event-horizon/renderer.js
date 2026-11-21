@@ -36,6 +36,21 @@
   ];
   let paletteIndex = 0;
   let showPlanets=true;
+  const physicalOrbits=window.EventHorizonNBody||null;
+  const skyDirection=[.23,.86,.46],skyNorm=Math.hypot(...skyDirection);
+  const look=skyDirection.map(v=>v/skyNorm);
+  const rightNorm=Math.hypot(look[1],look[0]);
+  const right=[look[1]/rightNorm,-look[0]/rightNorm,0];
+  const up=[look[1]*right[2]-look[2]*right[1],look[2]*right[0]-look[0]*right[2],look[0]*right[1]-look[1]*right[0]];
+  const SKY_ROLL=1.10,skyC=Math.cos(SKY_ROLL),skyS=Math.sin(SKY_ROLL);
+  const dot3=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
+  let sampledAt=null,sampledBodies=null;
+  const physicalSnapshot=time=>{
+    if(!physicalOrbits)return null;
+    if(time!==sampledAt){sampledAt=time;sampledBodies=physicalOrbits.stateAtSeconds(time)}
+    return sampledBodies;
+  };
+  const guideCache=new Map();
 
   // Worlds are deliberately fictional.  The positions, phase offsets and
   // visual sizes are composed for portrait viewing, not to mimic our Sun.
@@ -75,7 +90,36 @@
       halfSpan:228.8*sceneScale,halfHeight:hole*3.85
     };
   }
+  function projectedPhysicalPoint(body,view){
+    const r=Math.hypot(body.x,body.y,body.z)||.000001;
+    const v=[body.x/r,body.y/r,body.z/r];
+    const a=dot3(v,right),b=dot3(v,up);
+    // Monotone radial compression keeps the eight circumbinary orbits
+    // legible alongside the deliberately enlarged accretion disc.
+    // Orbital phase, 3D inclination and time remain physical.
+    const scale=view.orbitUnit*.40*Math.pow(r/.30,.60);
+    return {x:view.x+scale*(a*skyC-b*skyS),
+      y:view.y+scale*(a*skyS+b*skyC),
+      depth:-dot3(v,look),orbitAU:r};
+  }
   function orbitPosition(planet,time,view){
+    if(physicalOrbits){
+      const body=physicalSnapshot(time)?.find(p=>p.name===planet.name);
+      if(body){
+        const projection=projectedPhysicalPoint(body,view);
+        const near=clamp(-projection.depth,0,1);
+        const focus=planet.name==='VERDANT'?
+          1+12*smooth(.84,.995,near):1;
+        const radius=planet.radius*view.sceneScale*(440/390)*
+          (1+projection.depth*.075)*focus;
+        return {...projection,name:planet.name,radius,depth:projection.depth,
+          period:physicalOrbits.estimate(planet.name).periodSeconds,
+          orbit:planet.orbit,
+          heroLOD:planet.name==='VERDANT'?
+            radius>=116?'CLOSE':radius>=70?'NEAR':radius>=22?'MID':
+              radius>=10?'FAR':'MIN':undefined};
+      }
+    }
     if(planet.name==='VERDANT')
       return window.EventHorizonHeroCamera.position(planet,time,view.width,view.height);
     const angle=planet.phase+time*TAU/planet.period;
@@ -304,9 +348,24 @@
     ctx.beginPath(); ctx.arc(view.x, view.y, r, 0, TAU); ctx.fill();
   }
 
-  function drawOrbitHints(ctx, view) {
+  function drawOrbitHints(ctx, view, time=0) {
     sceneASCII.hints=0;
     setFont(ctx, Math.max(6.3, view.font * 0.78));
+    if(physicalOrbits){
+      // Tiny background orbit hints follow the osculating 3D planes too.
+      for(let i=0;i<planets.length;i++){
+        const p=planets[i];
+        const points=physicalOrbits.osculatingPath(p.name,time,64);
+        for(let k=0;k<points.length;k++){
+          if((k*7+i*13)%23>1)continue;
+          const q=projectedPhysicalPoint(points[k],view);
+          if(q.x<8||q.x>view.width-8||q.y<8||q.y>view.height-8)continue;
+          print(ctx,'.',q.x,q.y,'rgba(130,126,130,0.075)');
+          sceneASCII.hints++;
+        }
+      }
+      return;
+    }
     for (let k = 0; k < planets.length; k++) {
       const planet = planets[k];
       if(planet.name==='VERDANT'){
@@ -414,11 +473,81 @@
     ctx.fill();
     ctx.restore();
   }
+  function donorPosition(time,view){
+    if(!physicalOrbits)return null;
+    const bodies=physicalSnapshot(time);
+    const bh=bodies?.[0],star=bodies?.[1];
+    if(!bh||!star)return null;
+    const theta=Math.atan2(star.y-bh.y,star.x-bh.x);
+    // The actual donor orbit is only 0.01 AU across while the accretion
+    // artwork spans several hundred pixels. Enlarge the *marker/guide*
+    // to make it selectable; angular phase and period remain numerical.
+    const radius=view.hole*1.85;
+    return {name:'DONOR_STAR',x:view.x+radius*Math.cos(theta+.32),
+      y:view.y+radius*.65*Math.sin(theta+.32),depth:-.12,
+      radius:7.2*view.sceneScale,period:window.EventHorizonPhysicalSystem?.
+        binary?.periodSeconds??13580,markerScale:'ENLARGED'};
+  }
+  function drawDonor(ctx,pos,view,time){
+    if(!pos||pos.x<-15||pos.x>view.width+15||
+       pos.y<-15||pos.y>view.height+15)return;
+    setFont(ctx,Math.max(6.8,7.8*view.sceneScale));
+    const pulse=.78+.16*Math.sin(time*.7);
+    print(ctx,'@',pos.x,pos.y,rgba([252,122,73],pulse));
+    print(ctx,'.',pos.x-pos.radius*.7,pos.y-pos.radius*.40,rgba([239,81,52],.48));
+    print(ctx,'+',pos.x+pos.radius*.8,pos.y+pos.radius*.2,rgba([244,150,83],.52));
+    sceneASCII.planets+=3;
+  }
+  function projectedOrbit(name,time,width,height,count=480){
+    if(!physicalOrbits)return null;
+    const view=layout(width,height);
+    const anchor=Math.floor(time/3600)*3600;
+    const key=name+'/'+anchor+'/'+width+'/'+height+'/'+count;
+    if(guideCache.has(key))return guideCache.get(key);
+    let points=[],period=null;
+    if(name==='DONOR_STAR'){
+      period=window.EventHorizonPhysicalSystem?.binary?.periodSeconds;
+      const donor=donorPosition(anchor,view);
+      if(donor&&period){
+        const phase=Math.atan2((donor.y-view.y)/.65,donor.x-view.x);
+        const r=view.hole*1.85;
+        points=Array.from({length:count+1},(_,i)=>{
+          const theta=phase+i/count*TAU;
+          return {x:view.x+r*Math.cos(theta),
+            y:view.y+r*.65*Math.sin(theta)};
+        });
+      }
+    }else{
+      const osc=physicalOrbits.osculating(name,anchor);
+      if(osc){
+        period=osc.periodSeconds;
+        points=Array.from({length:count+1},(_,i)=>
+          projectedPhysicalPoint(osc.point(period*i/count),view));
+      }
+    }
+    const result={points,period,baseTime:anchor,approximate:true};
+    if(guideCache.size>=24)guideCache.clear();
+    guideCache.set(key,result);
+    return result;
+  }
+  function nextPhysicalHeroPass(time){
+    const orbit=physicalOrbits?.osculating('VERDANT',time);
+    if(!orbit)return null;
+    const view=layout(440,736),period=orbit.periodSeconds;
+    let best=-Infinity,when=period;
+    for(let i=1;i<=96;i++){
+      const delta=period*i/96,point=orbit.point(delta);
+      const projection=projectedPhysicalPoint(point,view);
+      const nearness=-projection.depth;
+      if(nearness>best){best=nearness;when=delta}
+    }
+    return time+when;
+  }
   function drawScene(ctx, width, height, time, ignoredEffects, highRes = true) {
     const view = layout(width, height);
     ctx.save(); ctx.globalAlpha = 1; ctx.shadowBlur = 0;
     drawBackground(ctx, time, view);
-    drawOrbitHints(ctx, view);
+    drawOrbitHints(ctx, view, window.EventHorizonSceneClock?.visualTime?.()??time);
     const orbitTime=window.EventHorizonSceneClock?.visualTime?.()??time;
     lastRenderedOrbitTime=orbitTime;
     if(showPlanets)window.EventHorizonPlanetInteraction?.drawOrbit?.(
@@ -434,6 +563,7 @@
     // and the luminous disc. Nearby planets are painted afterwards.
     drawAccretionOcclusion(ctx,view);
     renderBlackHole(ctx,view,time,highRes);
+    if(showPlanets&&physicalOrbits)drawDonor(ctx,donorPosition(orbitTime,view),view,time);
 
     if(showPlanets)for (const world of worldPositions.filter(p => p.pos.depth <= 0).sort((a, b) => b.pos.depth - a.pos.depth))
       paintPlanet(ctx, world.planet, world.pos, view, time);
@@ -461,26 +591,40 @@
   function state(time = 0, width = 390, height = 620) {
     const view = layout(width, height);
     return { palette: palettes[paletteIndex].name,
-      planets: planets.map(p => ({ ...orbitPosition(p, time, view), radius: p.radius })) };
+      planets: planets.map(p => ({ ...orbitPosition(p, time, view),
+        radius:p.radius,period:physicalOrbits?
+          physicalOrbits.estimate(p.name).periodSeconds:p.period })) };
   }
   window.EventHorizonRebuild = Object.freeze({
     draw: drawScene, cyclePalette, source, state,
     heroAt(time,width=440,height=736){
       return orbitPosition(planets[2],time,layout(width,height));
     },
-    nextHeroPass(time){return window.EventHorizonHeroCamera.nextClosestTime(planets[2],time)},
+    nextHeroPass(time){return physicalOrbits?nextPhysicalHeroPass(time):
+      window.EventHorizonHeroCamera.nextClosestTime(planets[2],time)},
     camera(width,height){return window.EventHorizonHeroCamera.camera(width,height)},
     diagnostics:()=>({...diagnostics,asciiCount:sceneASCII.total,asciiBreakdown:{...sceneASCII}}),
     projectedPlanets(time,width=440,height=736){
       const view=layout(width,height);
       return planets.map(p=>orbitPosition(p,time,view));
     },
-    projectedPlanet(name,time,width=440,height=736){
-      const p=planets.find(p=>p.name===name);
-      return p?orbitPosition(p,time,layout(width,height)):null;
+    projectedBodies(time,width=440,height=736){
+      const worlds=this.projectedPlanets(time,width,height);
+      if(physicalOrbits)worlds.push(donorPosition(time,layout(width,height)));
+      return worlds;
     },
+    projectedPlanet(name,time,width=440,height=736){
+      const view=layout(width,height);
+      if(name==='DONOR_STAR')return donorPosition(time,view);
+      const p=planets.find(p=>p.name===name);
+      return p?orbitPosition(p,time,view):null;
+    },
+    projectedOrbit,
     planetPeriod(name){
-      return planets.find(p=>p.name===name)?.period??null;
+      if(name==='DONOR_STAR')
+        return window.EventHorizonPhysicalSystem?.binary?.periodSeconds??null;
+      return physicalOrbits?.estimate(name)?.periodSeconds??
+        planets.find(p=>p.name===name)?.period??null;
     },
     get renderedOrbitTime(){return lastRenderedOrbitTime;},
     setShowPlanets(v){showPlanets=Boolean(v)},
