@@ -111,7 +111,7 @@ test('main page exposes explicit test controls and visitor tracking',()=>{
     'horizonForceFlare','horizonForceJet','horizonEventVisitor',
     'horizonEncounterMode','horizonEncounterEnabled'])
     assert.ok(html.includes('id="'+name+'"'),name);
-  assert.ok(html.includes('src="./event-horizon/phenomena.js?v=20261121a"'));
+  assert.ok(html.includes('src="./event-horizon/phenomena.js?v=20261121b"'));
   assert.ok(html.includes('horizonPhenomena?.hitTest?.('));
   assert.ok(html.includes('horizonPhenomena?.clear?.()'));
   assert.ok(!html.includes('src="./preview/event-horizon/phenomena.js"'));
