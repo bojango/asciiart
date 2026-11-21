@@ -191,6 +191,13 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
   .horizon-planets>button{font-size:9px;letter-spacing:.06em}
   .horizon-planet-list button{font-size:9px}}
 @media(prefers-reduced-motion:reduce){.horizon-planet-list{transition:none}}
+/* Event Horizon experimental encounters: same restrained technical HUD. */
+.horizon-events .horizon-visitor-button{width:100%;text-align:right;font-size:9px;
+  line-height:1.55;color:rgba(197,220,240,.82)}
+.horizon-events .horizon-visitor-button:disabled{opacity:.54;cursor:default}
+.horizon-dev-panel .horizon-encounter-actions label{color:#94afc9;font-size:9px}
+.horizon-dev-panel .horizon-encounter-actions button{flex:1 1 auto;min-width:68px}
+@media(max-width:480px){.horizon-dev-panel .horizon-encounter-actions button{min-width:60px;font-size:8px}}
 </style>
 </head>
 <body>
@@ -205,7 +212,9 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
           <span class="horizon-event-line" id="horizonEventApproach">VERDANT NEXT APPROACH: —</span>
           <span class="horizon-event-line" id="horizonEventAlignment">NEXT PAIR CONJUNCTION: —</span>
           <span class="horizon-event-line" id="horizonEventAccretion">NEXT DISC VIEW PASS: —</span>
-          <span class="horizon-event-note">MODEL CONJUNCTIONS · VISUAL DISC PASS · UK TIME</span>
+          <button id="horizonEventVisitor" class="horizon-event-line horizon-visitor-button" type="button" disabled>ACTIVE VISITOR: NONE</button>
+      <span class="horizon-event-line" id="horizonEventTransient">DISC ACTIVITY: QUIET</span>
+      <span class="horizon-event-note">MODEL CONJUNCTIONS · TEST VISITORS · UK TIME</span>
         </div>
       </div>
     </div>
@@ -278,6 +287,22 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
         <button id="horizonJumpPass" type="button">JUMP TO VERDANT</button>
         <button id="horizonClockReset" type="button">RESET EPOCH</button>
       </div>
+      <div class="astro-actions horizon-encounter-actions">
+        <label for="horizonEncounterMode">ARRIVALS</label>
+        <select id="horizonEncounterMode" aria-label="Accelerated interstellar arrival rate">
+          <option value="RARE">RARE</option>
+          <option value="NORMAL" selected>NORMAL</option>
+          <option value="ACTIVE">ACTIVE / TEST</option>
+        </select>
+        <button id="horizonEncounterEnabled" type="button" aria-pressed="true">ENCOUNTERS ON</button>
+      </div>
+      <div class="astro-actions horizon-encounter-actions">
+        <button id="horizonForceComet" type="button">COMET</button>
+        <button id="horizonForceAsteroid" type="button">ACTIVE ASTEROID</button>
+        <button id="horizonForceTidal" type="button">TIDAL BODY</button>
+        <button id="horizonForceFlare" type="button">DISC FLARE</button>
+        <button id="horizonForceJet" type="button">TEST JET</button>
+      </div>
       <div class="astro-grid" aria-live="off">
         <div class="astro-stat"><span>SIMULATION DATE · UTC</span><output id="horizonSimDate">—</output></div>
         <div class="astro-stat"><span>SIMULATED DAYS ELAPSED</span><output id="horizonSimDays">—</output></div>
@@ -287,6 +312,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
         <div class="astro-stat"><span>PLANET VIEW · DETAIL</span><output id="horizonCamera">—</output></div>
         <div class="astro-stat"><span>BLACK HOLE + DONOR</span><output id="horizonBodies">—</output></div>
         <div class="astro-stat"><span>RENDER DIAGNOSTICS</span><output id="horizonGlyphs">—</output></div>
+        <div class="astro-stat"><span>ENCOUNTER EXPERIMENT</span><output id="horizonEncounterStatus">NO VISITORS</output></div>
       </div>
       <p class="astro-note" id="horizonClockNote">3D Newtonian ten-body gravity integrates eight assumed-mass planets and the mass-transferring binary. Initial masses, eccentricities and inclinations are fictional, not observed. Orbital radii are compressed for composition; the donor is visibly magnified. The accretion disc is not physically to scale. Predictions describe this model only. Clock progress is stored on this browser.</p>
     </aside>
@@ -301,8 +327,9 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
 <script src="./event-horizon/planet-art.js?v=20261120"></script>
 <script src="./event-horizon/physical-system.js?v=1"></script>
 <script src="./event-horizon/nbody-system.js?v=2026112102"></script>
-<script src="./event-horizon/renderer.js?v=20261121"></script>
+<script src="./event-horizon/renderer.js?v=20261121e"></script>
 <script src="./event-horizon/scene-clock.js?v=20261121"></script>
+<script src="./event-horizon/phenomena.js?v=20261121a"></script>
 <script src="./event-horizon/event-forecast.js?v=20261121"></script>
 <script src="./event-horizon/planet-interaction.js?v=2026112102"></script>
 <script src="./ecosystem.js"></script>
@@ -1338,7 +1365,8 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     const forest=currentScene==='greenwood',cosmos=currentScene==='event-horizon';
     if(currentScene!=='pelagic'){senses.stopCamera();senses.stopMotion();}
     if(cosmos||!horizonDevPanel.hidden)toggleDeveloper(false);
-    if(!cosmos)window.EventHorizonPlanetInteraction?.clear?.();
+    if(!cosmos){window.EventHorizonPlanetInteraction?.clear?.();
+      window.EventHorizonPhenomena?.clear?.();}
     devToggle.style.display='';
     devToggle.setAttribute('aria-controls',cosmos?'horizonDevPanel':'devPanel');
     devToggle.setAttribute('aria-label',cosmos?'Open EVENT HORIZON developer controls':'Open environmental developer controls');
@@ -1389,6 +1417,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
   const horizonEventsToggle=document.getElementById('horizonEventsToggle');
   const horizonEventList=document.getElementById('horizonEventList');
   const horizonForecast=window.EventHorizonEventForecast;
+  const horizonPhenomena=window.EventHorizonPhenomena;
   const horizonPlanets=document.getElementById('horizonPlanets');
   const horizonPlanetsToggle=document.getElementById('horizonPlanetsToggle');
   const horizonPlanetList=document.getElementById('horizonPlanetList');
@@ -1403,6 +1432,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     button.addEventListener('click',()=>{
       if(currentScene!=='event-horizon')return;
       planetInteraction.select(name);
+      horizonPhenomena?.clear?.();
       syncPlanetSelection();
       render(t);
     });
@@ -1476,6 +1506,19 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
       (alignment===undefined?'CALCULATING':
         alignment===null?'NOT FORECAST (365 SIM DAYS)':
         alignment.name+', '+(aDate?eventUKDate(aDate):snap.paused?'PAUSED':'NOT FORECAST'));
+    const encounter=horizonPhenomena?.snapshot?.(snap.visualTime);
+    const visitor=encounter?.visitors?.[0];
+    const visitorButton=eventNode('horizonEventVisitor');
+    visitorButton.disabled=!visitor;
+    visitorButton.dataset.visitor=visitor?.id||'';
+    visitorButton.textContent=visitor?
+      'TRACK VISITOR: '+visitor.id+' / '+visitor.kind+
+        ' / '+visitor.distanceAU.toFixed(2)+' AU':
+      'ACTIVE VISITOR: NONE';
+    eventNode('horizonEventTransient').textContent=
+      encounter?.jet>.08?'DISC ACTIVITY: TEST JET':
+      encounter?.flare>.08?'DISC ACTIVITY: OUTBURST':
+      'DISC ACTIVITY: QUIET';
     const disc=forecastCache?.disc;
     const dDate=disc&&horizonForecast?.wallDate?.(disc.visualTime,now);
     eventNode('horizonEventAccretion').textContent='NEXT DISC VIEW PASS: '+
@@ -1501,6 +1544,16 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     active.alignment=horizonForecast.nextConjunctionVisual?.(snap.visualTime)??null;
     showHorizonEvents();
   }
+  eventNode('horizonEventVisitor').addEventListener('click',()=>{
+    const id=eventNode('horizonEventVisitor').dataset.visitor;
+    if(!id||currentScene!=='event-horizon')return;
+    const now=horizonClock?.snapshot?.().visualTime??t;
+    if(horizonPhenomena?.select?.(id,now)){
+      planetInteraction?.clear?.();
+      syncPlanetSelection();
+      render(t);
+    }
+  });
   horizonEventsToggle.addEventListener('click',()=>{
     if(currentScene!=='event-horizon')return;
     horizonEventOpen=!horizonEventOpen;
@@ -1555,6 +1608,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     const camera=horizon.heroAt?.(snap.visualTime,width,height);
     const art=window.EventHorizonPlanetArt?.diagnostics?.();
     const light=window.EventHorizonSourceCompositor?.stats?.();
+    const encounter=horizonPhenomena?.snapshot?.(snap.visualTime);
     horizonNode('horizonClockMode').value=snap.mode;
     if(document.activeElement!==horizonNode('horizonCustomRate'))
       horizonNode('horizonCustomRate').value=String(snap.rate);
@@ -1574,6 +1628,14 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
       (camera.heroLOD||'MIN')+' · r='+camera.radius.toFixed(1)+'px':'—';
     horizonNode('horizonGlyphs').textContent=art?
       art.glyphs+' body · '+art.cloudGlyphs+' cloud · '+(light?.totalGlyphs||0)+' gas':'—';
+    horizonNode('horizonEncounterMode').value=horizonPhenomena?.mode||'NORMAL';
+    horizonNode('horizonEncounterEnabled').setAttribute('aria-pressed',
+      String(horizonPhenomena?.enabled??false));
+    horizonNode('horizonEncounterEnabled').textContent=
+      horizonPhenomena?.enabled?'ENCOUNTERS ON':'ENCOUNTERS OFF';
+    horizonNode('horizonEncounterStatus').textContent=encounter?
+      encounter.visitors.length+' VISITOR(S) · FLARE '+Math.round(encounter.flare*100)+
+      '% · JET '+Math.round(encounter.jet*100)+'%':'MODULE UNAVAILABLE';
     syncSpeedLabel();
     if(!paused){
       horizonNode('status').textContent=snap.paused?'ORBIT HOLD':'LIVE';
@@ -1606,6 +1668,28 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     horizonClock.jumpToNextPass()));
   horizonNode('horizonClockReset').addEventListener('click',()=>orbitClockAction(()=>
     horizonClock.reset()));
+  const encounterAction=fn=>{
+    if(!horizonPhenomena||currentScene!=='event-horizon')return;
+    const now=horizonClock?.snapshot?.().visualTime??0;
+    fn(now);
+    planetInteraction?.clear?.();
+    syncPlanetSelection();
+    render(t);syncHorizonDev();updateHorizonHUD();
+  };
+  horizonNode('horizonEncounterMode').addEventListener('change',()=>encounterAction(()=>
+    horizonPhenomena.modeSet(horizonNode('horizonEncounterMode').value)));
+  horizonNode('horizonEncounterEnabled').addEventListener('click',()=>encounterAction(()=>
+    horizonPhenomena.toggle(!horizonPhenomena.enabled)));
+  horizonNode('horizonForceComet').addEventListener('click',()=>encounterAction(now=>
+    horizonPhenomena.force('COMET',now)));
+  horizonNode('horizonForceAsteroid').addEventListener('click',()=>encounterAction(now=>
+    horizonPhenomena.force('ACTIVE ASTEROID',now)));
+  horizonNode('horizonForceTidal').addEventListener('click',()=>encounterAction(now=>
+    horizonPhenomena.force('TIDAL BODY',now)));
+  horizonNode('horizonForceFlare').addEventListener('click',()=>encounterAction(now=>
+    horizonPhenomena.trigger('FLARE',now)));
+  horizonNode('horizonForceJet').addEventListener('click',()=>encounterAction(now=>
+    horizonPhenomena.trigger('JET',now)));
   horizonNode('horizonDevClose').addEventListener('click',()=>toggleDeveloper(false));
   const fields=[
     ['temperature','Temperature','temperatureC','°C'],
@@ -1828,9 +1912,18 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
       if(start&&start.id===e.pointerId&&
          Math.hypot(p.x-start.x,p.y-start.y)<15&&
          Date.now()-start.started<900){
-        window.EventHorizonPlanetInteraction?.tap?.(
-          p.x,p.y,width,height,horizon.renderedOrbitTime??
-            window.EventHorizonSceneClock?.visualTime?.()??t);
+        const orbitT=horizon.renderedOrbitTime??
+          window.EventHorizonSceneClock?.visualTime?.()??t;
+        const visitor=horizonPhenomena?.hitTest?.(
+          p.x,p.y,width,height,orbitT,horizon.projectedVisitor);
+        if(visitor){
+          horizonPhenomena.select(visitor,orbitT);
+          planetInteraction?.clear?.();
+        }else{
+          window.EventHorizonPlanetInteraction?.tap?.(
+            p.x,p.y,width,height,orbitT);
+          horizonPhenomena?.clear?.();
+        }
         syncPlanetSelection();
         render(t);
       }
