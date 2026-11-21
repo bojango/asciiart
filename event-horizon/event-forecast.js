@@ -99,6 +99,47 @@
     setTimeout(chunk,0);
     return ()=>{cancelled=true};
   }
+  // First pairwise conjunction in *barycentric orbital longitude*.
+  // This is a model prediction from the evolving 3D ten-body state, not
+  // a claim that the two worlds are physically adjacent or observable.
+  function nextConjunctionVisual(startVisual,horizonDays=365){
+    const nbody=window.EventHorizonNBody;
+    if(!nbody)return null;
+    const names=nbody.ELEMENTS.map(p=>p.name);
+    const differences=(t)=>{
+      const bodies=nbody.stateAtSeconds(t).slice(2);
+      const result=[];
+      for(let i=0;i<bodies.length;i++)for(let j=i+1;j<bodies.length;j++){
+        const a=Math.atan2(bodies[i].y,bodies[i].x);
+        const b=Math.atan2(bodies[j].y,bodies[j].x);
+        result.push({i,j,delta:Math.atan2(Math.sin(a-b),Math.cos(a-b))});
+      }
+      return result;
+    };
+    const step=6*SIM_HOUR,limit=Math.ceil(horizonDays*DAY/step);
+    let previous=differences(startVisual);
+    for(let i=1;i<=limit;i++){
+      const t=startVisual+i*step,current=differences(t);
+      for(let j=0;j<current.length;j++){
+        const old=previous[j].delta,next=current[j].delta;
+        if(old*next>0||Math.abs(old)>Math.PI/2||
+           Math.abs(next)>Math.PI/2)continue;
+        const a=current[j].i,b=current[j].j;
+        let lo=t-step,hi=t;
+        const firstSign=Math.sign(old)||1;
+        for(let k=0;k<21;k++){
+          const mid=(lo+hi)*.5;
+          const d=differences(mid)[j].delta;
+          if(Math.sign(d)===firstSign)lo=mid;else hi=mid;
+        }
+        return Object.freeze({name:names[a]+' / '+names[b],
+          visualTime:hi,event:'barycentric longitude conjunction',
+          physicallyPredicted:false,origin:'assumed-parameter N-body numerical model'});
+      }
+      previous=current;
+    }
+    return null;
+  }
   function wallDate(visualTime,now=Date.now()){
     if(!Number.isFinite(visualTime))return null;
     const snapshot=clock.snapshot(now);
@@ -111,7 +152,7 @@
       new Date(millis).toISOString():null;
   }
   window.EventHorizonEventForecast=Object.freeze({
-    nextAccretionVisual,searchAlignmentAsync,wallDate,discPresence,
+    nextAccretionVisual,nextConjunctionVisual,searchAlignmentAsync,wallDate,discPresence,
     MAX_ALIGNMENT_YEARS,alignmentTolerance:'55% of reference hole radius',
     physicallyPredicted:false
   });
