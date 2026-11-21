@@ -599,7 +599,7 @@
     sceneASCII.total=sceneASCII.stars+sceneASCII.hints+sceneASCII.planets+sceneASCII.gas;
     if(showPlanets)window.EventHorizonPlanetInteraction?.drawCallout?.(
       ctx,width,height,orbitTime);
-    if(showPlanets)window.EventHorizonEncounterUI?.drawCallout?.(
+    if(showPlanets)phenomena()?.drawCallout?.(
       ctx,width,height,orbitTime,projectedVisitor);
     ctx.shadowBlur = 0; ctx.globalAlpha = 1; ctx.restore();
   }
