@@ -1,5 +1,18 @@
 # PELAGIC - Living ASCII
 
+## EVENT HORIZON / 002 — stochastic encounter preview (21 November 2026)
+
+**Now running on the main GitHub Pages scene.** The test layer \`event-horizon/phenomena.js\` adds procedurally generated interstellar comets, active/rocky asteroids, intermittent ASCII outgassing, uncommon tidal breakups, a selectable white 1px callout, dashed past/future route, transient disc outbursts and rare stylised jets. It does **not** modify the integrated planetary orbits, the binary, the approved 14-value RGB lighting preset, PELAGIC or GREENWOOD.
+
+**Testing on a phone:** Exit fullscreen → open EVENT HORIZON's **DEV** panel. Under **ARRIVALS**, choose RARE (90 simulated days per arrival), NORMAL (22 days), or ACTIVE / TEST (6 days), and use **COMET**, **ACTIVE ASTEROID**, **TIDAL BODY**, **DISC FLARE**, or **TEST JET** to create immediate demonstration events. Forced visitors arrive already close to periapsis for testing and take six simulated hours to reach it. Switch orbit speed to TEST or DEMO to preview subsequent passage or fragmentation. The developer panel also reports visitor count and current flare/jet intensity. In fullscreen, tap an object to track it; the expanded top-right ASTRONOMICAL EVENTS menu has a **TRACK VISITOR** item.
+
+**Physical boundary:** Visitors follow mathematically correct *restricted two-body* hyperbolic trajectories under a 5.4-solar-mass point-mass approximation. Each random visitor has its own incoming speed (25–120 km/s), composition, density, inclination, impact parameter, periapsis and velocity derived by the vis-viva relation. Small icy objects eject reproducible, intermittent dot/colon/star glyphs based on a simplified activity proxy. Roche-density thresholds determine the rare **TIDAL FRAGMENTATION** visual. The visitor is a test particle and does not yet experience moving-planet gravitational perturbations or capture; gravitational slingshots need a separate restricted N-body integrator. The existing planets continue running the full gravitational model.
+
+**Visual boundary:** Orbital and encounter directions are projected using the same radially compressed camera. The sampled accretion-disc ASCII glyphs now shift tangentially with subtle time-varying flow; outbursts both move and brighten glyphs before the existing RGB compositor. Transient disc emission and jet visuals are illustrative, not magnetohydrodynamics; they do not change physical mass transfer, energy budgets or real-world ephemerides. Event *frequency* is intentionally accelerated and the DEV forced spawn also skips most of an inbound approach.
+
+**Validation:** 39 of 39 Event Horizon simulated-JavaScript tests passed before the final fallback/asset-refresh changes. Additional renderer smoke checks with three forced visitors on portrait and landscape viewports passed. A controlled flare test moved all 3,393 sampled ASCII glyphs and increased the heat of 2,112 of them in the comparison. Final browser/iPhone compositing and interactive visual acceptance remain to be checked.
+
+
 ## EVENT HORIZON / 002 — interacting binary and eight-body planetary system (21 November 2026)
 
 **Active implementation:** `event-horizon/nbody-system.js` integrates the black hole, Roche-filling donor red dwarf and eight individually inclined planets as a single Newtonian 10-body system, with a fixed 300-second kick-drift-kick velocity-Verlet timestep. The donor and every planet mutually affect the others gravitationally. `renderer.js` projects the integrated 3D positions rather than using independent invented visual periods. The eight orbital periods now match the physical baseline; displayed path guides are *instantaneous osculating Kepler ellipses*, not a guarantee of a permanently closed N-body orbit.
