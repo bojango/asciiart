@@ -42,11 +42,11 @@ test('original production UI remains in place and loads no preview controls',()=
   for(const file of modules){
     const version={
       'event-horizon/renderer.js':'20261121',
-      'event-horizon/nbody-system.js':'20261121',
+      'event-horizon/nbody-system.js':'2026112102',
       'event-horizon/scene-clock.js':'20261121',
       'event-horizon/event-forecast.js':'20261121',
       'event-horizon/planet-art.js':'20261120',
-      'event-horizon/planet-interaction.js':'20261121'
+      'event-horizon/planet-interaction.js':'2026112102'
     }[file]||'1';
     assert.ok(html.includes('src="./'+file+'?v='+version+'"'),file+' included on main page');
   }
