@@ -8,9 +8,9 @@ const root=path.join(__dirname,'..');
 const read=file=>fs.readFileSync(path.join(root,file),'utf8');
 function environment(){
   const w={},shell={window:w,document:{},console:{warn(){},error(){}}};
-  for(const file of ['event-horizon/hero-camera.js','event-horizon/planet-art.js',
+  for(const file of ['event-horizon/physical-system.js','event-horizon/nbody-system.js',
+      'event-horizon/hero-camera.js','event-horizon/planet-art.js',
       'event-horizon/source-compositor.js','event-horizon/renderer.js',
-      'event-horizon/physical-system.js','event-horizon/nbody-system.js',
       'event-horizon/planet-interaction.js'])
     vm.runInNewContext(read(file),shell,{filename:file});
   return {w,scene:w.EventHorizonRebuild,ui:w.EventHorizonPlanetInteraction};
