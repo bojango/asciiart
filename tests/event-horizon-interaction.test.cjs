@@ -11,7 +11,7 @@ function environment(){
   for(const file of ['event-horizon/physical-system.js','event-horizon/nbody-system.js',
       'event-horizon/hero-camera.js','event-horizon/planet-art.js',
       'event-horizon/source-compositor.js','event-horizon/renderer.js',
-      'event-horizon/planet-interaction.js'])
+      'event-horizon/phenomena.js','event-horizon/planet-interaction.js'])
     vm.runInNewContext(read(file),shell,{filename:file});
   return {w,scene:w.EventHorizonRebuild,ui:w.EventHorizonPlanetInteraction};
 }
@@ -222,7 +222,7 @@ test('donor is selectable and its position follows the integrated binary phase',
 test('existing app only attaches selection to EVENT HORIZON and retains PELAGIC touch handlers',()=>{
   const html=read('index.html');
   assert.ok(html.includes('src="./event-horizon/planet-interaction.js?v=2026112102"'));
-  assert.ok(html.includes('src="./event-horizon/renderer.js?v=20261121"'));
+  assert.ok(html.includes('src="./event-horizon/renderer.js?v=20261121e"'));
   assert.ok(html.includes("if(currentScene==='event-horizon'){"));
   assert.ok(html.includes('window.EventHorizonPlanetInteraction?.tap?.('));
   assert.ok(html.includes('window.EventHorizonPlanetInteraction?.clear?.()'));
