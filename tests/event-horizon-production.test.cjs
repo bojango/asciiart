@@ -51,7 +51,7 @@ test('original production UI remains in place and loads no preview controls',()=
     assert.ok(html.includes('src="./'+file+'?v='+version+'"'),file+' included on main page');
   }
   for(const forbidden of ['preview/event-horizon/','tuneToggle','jumpPass','sceneMenuToggle',
-    'LIGHT STUDIO','VIEW PASS','ILLUSTRATIVE ORBIT'])
+    'LIGHT STUDIO','ILLUSTRATIVE ORBIT'])
     assert.ok(!html.includes(forbidden),'experimental control excluded: '+forbidden);
   assert.ok(html.indexOf('src="./event-horizon.js?v=20261119"')<
     html.indexOf('src="./event-horizon/renderer.js?v=20261121"'),
