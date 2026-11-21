@@ -153,7 +153,9 @@ test('planetary callout uses two 1px white square frames and clipped readable mo
       const frames=actions.filter(a=>a.type==='strokeRect');
       assert.equal(frames.length,2);
       assert.ok(frames.every(a=>a.width===1));
-      assert.ok(actions.some(a=>a.type==='text'&&a.text===name));
+      assert.ok(actions.some(a=>a.type==='text'&&
+        a.text===(name==='DONOR_STAR'?'DONOR STAR / RED DWARF':name)));
+
       assert.ok(actions.some(a=>a.type==='text'&&a.text.includes('KM DIAMETER')));
       for(const stat of (name==='DONOR_STAR'?
         ['ORBIT TIME:','MASS:','TRANSFER:','MASS-LOSS:']:
@@ -215,7 +217,7 @@ test('donor is selectable and its position follows the integrated binary phase',
   const {ctx,actions}=context();
   ui.drawOrbit(ctx,w,h,t);ui.drawCallout(ctx,w,h,t);
   assert.ok(actions.some(a=>a.type==='text'&&a.text.includes('TRANSFER:')));
-  assert.equal(ui.info('DONOR_STAR').massLossText,'400M YEARS AT CONSTANT RATE');
+  assert.equal(ui.info('DONOR_STAR').massLossText,'400M YR (FIXED RATE)');
 });
 test('existing app only attaches selection to EVENT HORIZON and retains PELAGIC touch handlers',()=>{
   const html=read('index.html');
