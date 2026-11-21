@@ -37,6 +37,7 @@
   let paletteIndex = 0;
   let showPlanets=true;
   const physicalOrbits=window.EventHorizonNBody||null;
+  const phenomena=()=>window.EventHorizonPhenomena||null;
   const skyDirection=[.23,.86,.46],skyNorm=Math.hypot(...skyDirection);
   const look=skyDirection.map(v=>v/skyNorm);
   const rightNorm=Math.hypot(look[1],look[0]);
@@ -253,6 +254,9 @@
     return ringFalloff*litGas;
   };
   function sampleFrame(time,view,highRes){
+    const sim=window.EventHorizonSceneClock?.visualTime?.()??time;
+    const effects=phenomena();
+    const flare=effects?.discState?.(sim).flare||0;
     const stepX=view.stepX*(highRes?1:1.30),stepY=view.stepY*(highRes?1:1.2);
     const xmin=Math.max(0,view.x-view.halfSpan),xmax=Math.min(view.width,view.x+view.halfSpan);
     const ymin=Math.max(0,view.y-view.halfHeight),ymax=Math.min(view.height,view.y+view.halfHeight);
@@ -260,14 +264,18 @@
     diagnostics.glyphs=0;diagnostics.hot=0;diagnostics.maxHeat=0;diagnostics.meanHeat=0;
     for(let y=ymin;y<ymax;y+=stepY){
       for(let x=xmin;x<xmax;x+=stepX){
-        const gas=sampleGas(x,y,time,view),heat=gas.heat;
+        const gas=sampleGas(x,y,time,view);
+        // Transient activity modifies luminous sampled gas, not the fixed
+        // approved RGB compositor controls. Flow changes character positions.
+        const heat=clamp(gas.heat*(1+.37*flare),0,1.8);
         if(heat<.07||(heat<.16&&gas.grain<.18))continue;
         const ring=gas.ring>.3&&gas.ring>gas.disc&&gas.ring>gas.lensed;
         const char=markForHeat(heat,gas.grain,gas.phase,gas.lr,ring,gas.ang);
         const coreLight=innerLuminance(heat,gas.shadowDistance);
         const luminousHeat=heat*(1+1.70*coreLight);
         const colour=inkForHeat(luminousHeat,gas.shadowDistance,gas.grain);
-        const point={x,y,char,colour,heat,near:gas.near,hot:heat>.68&&gas.shadowDistance<2.75,
+        const displaced=effects?.motion?.(x,y,sim,view)||{x,y};
+        const point={x:displaced.x,y:displaced.y,char,colour,heat,near:gas.near,hot:heat>.68&&gas.shadowDistance<2.75,
           coreLight};
         points.push(point);
         diagnostics.glyphs++;diagnostics.maxHeat=Math.max(diagnostics.maxHeat,heat);
@@ -543,6 +551,11 @@
     }
     return time+when;
   }
+  function projectedVisitor(position,width,height){
+    if(!position)return null;
+    const point=projectedPhysicalPoint(position,layout(width,height));
+    return {...point,name:position.id,radius:6};
+  }
   function drawScene(ctx, width, height, time, ignoredEffects, highRes = true) {
     const view = layout(width, height);
     ctx.save(); ctx.globalAlpha = 1; ctx.shadowBlur = 0;
@@ -552,6 +565,8 @@
     lastRenderedOrbitTime=orbitTime;
     if(showPlanets)window.EventHorizonPlanetInteraction?.drawOrbit?.(
       ctx,width,height,orbitTime);
+    if(showPlanets)phenomena()?.drawPath?.(
+      ctx,width,height,orbitTime,projectedVisitor);
     if(window.EventHorizonPlanetArt)window.EventHorizonPlanetArt.resetDiagnostics();
     // Planetary travel uses the persisted wall-art clock, independent of the
     // fast local animation time for gas currents, rotation and cloud drift.
@@ -563,21 +578,29 @@
     // and the luminous disc. Nearby planets are painted afterwards.
     drawAccretionOcclusion(ctx,view);
     renderBlackHole(ctx,view,time,highRes);
+    const transientMarks=phenomena()?.drawTransients?.(
+      ctx,view,orbitTime,time)||0;
     if(showPlanets&&physicalOrbits)drawDonor(ctx,donorPosition(orbitTime,view),view,time);
 
     if(showPlanets)for (const world of worldPositions.filter(p => p.pos.depth <= 0).sort((a, b) => b.pos.depth - a.pos.depth))
       paintPlanet(ctx, world.planet, world.pos, view, time);
+    const visitorMarks=showPlanets?phenomena()?.drawObjects?.(
+      ctx,width,height,orbitTime,projectedVisitor)||0:0;
     const surface=window.EventHorizonPlanetArt?.diagnostics?.();
     sceneASCII.planets=showPlanets&&surface?
       (surface.glyphs||0)+(surface.cloudGlyphs||0)+
       (surface.ringGlyphs||0)+(surface.moonGlyphs||0)+
       (surface.atmosphereGlyphs||0):0;
+    sceneASCII.planets+=visitorMarks;
     sceneASCII.gas=usingRGBCompositor?
       (window.EventHorizonSourceCompositor?.stats?.().totalGlyphs??diagnostics.glyphs):
       diagnostics.glyphs;
+    sceneASCII.gas+=transientMarks;
     sceneASCII.total=sceneASCII.stars+sceneASCII.hints+sceneASCII.planets+sceneASCII.gas;
     if(showPlanets)window.EventHorizonPlanetInteraction?.drawCallout?.(
       ctx,width,height,orbitTime);
+    if(showPlanets)window.EventHorizonEncounterUI?.drawCallout?.(
+      ctx,width,height,orbitTime,projectedVisitor);
     ctx.shadowBlur = 0; ctx.globalAlpha = 1; ctx.restore();
   }
   function cyclePalette() { paletteIndex = (paletteIndex + 1) % palettes.length; return palettes[paletteIndex].name; }
@@ -596,7 +619,7 @@
           physicalOrbits.estimate(p.name).periodSeconds:p.period })) };
   }
   window.EventHorizonRebuild = Object.freeze({
-    draw: drawScene, cyclePalette, source, state,
+    draw: drawScene, cyclePalette, source, state,projectedVisitor,
     heroAt(time,width=440,height=736){
       return orbitPosition(planets[2],time,layout(width,height));
     },
