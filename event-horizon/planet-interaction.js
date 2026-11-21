@@ -52,7 +52,12 @@
       orbitTimeText=days+'d '+pad(Math.floor(remainder/3600))+':'+
         pad(Math.floor(remainder%3600/60))+':'+pad(remainder%60);
     }
-    if(Number.isFinite(axis)&&axis>0&&Number.isFinite(auMetres))
+    const osculatingMiles=!isStar?
+      window.EventHorizonNBody?.estimate?.(name)?.orbitDistanceMiles:null;
+    if(Number.isFinite(osculatingMiles)&&osculatingMiles>0)
+      orbitDistanceText=Math.round(osculatingMiles).
+        toLocaleString('en-GB')+' MILES';
+    else if(Number.isFinite(axis)&&axis>0&&Number.isFinite(auMetres))
       orbitDistanceText=Math.round(TAU*axis*auMetres/1609.344).
         toLocaleString('en-GB')+' MILES';
     const count=window.EventHorizonPlanetArt?.moonCount?.(name);
