@@ -6,7 +6,7 @@ const path=require('node:path');
 const vm=require('node:vm');
 const root=path.join(__dirname,'..');
 const read=name=>fs.readFileSync(path.join(root,name),'utf8');
-const modules=['event-horizon/physical-system.js','event-horizon/hero-camera.js',
+const modules=['event-horizon/physical-system.js','event-horizon/nbody-system.js','event-horizon/hero-camera.js',
   'event-horizon/planet-art.js','event-horizon/source-compositor.js',
   'event-horizon/renderer.js','event-horizon/scene-clock.js',
   'event-horizon/event-forecast.js','event-horizon/planet-interaction.js'];
@@ -35,8 +35,8 @@ test('fullscreen HUD has the approved collapsed astronomy accordion and original
   assert.match(html,/id="horizonEventAlignment"/);
   assert.match(html,/id="horizonEventAccretion"/);
   assert.match(html,/VERDANT NEXT APPROACH:/);
-  assert.match(html,/NEXT ALIGNMENT:/);
-  assert.match(html,/NEXT ACCRETION PASSING:/);
+  assert.match(html,/NEXT PAIR CONJUNCTION:/);
+  assert.match(html,/NEXT DISC VIEW PASS:/);
   assert.match(html,/\.horizon-event-list\{max-height:0;opacity:0/);
   assert.match(html,/transition:max-height \.32s ease,opacity \.26s ease/);
   assert.match(html,/text-decoration:none/);
@@ -46,7 +46,7 @@ test('fullscreen HUD has the approved collapsed astronomy accordion and original
   assert.match(html,/THE <strong>OLD GROVE<\/strong>/);
   assert.match(html,/MEDUSA <strong>ASTRALIS<\/strong>/);
   assert.doesNotMatch(html,/src="\.\/preview\/event-horizon\//);
-  for(const name of ['event-horizon/renderer.js?v=4','event-horizon/event-forecast.js?v=1','event-horizon/planet-interaction.js?v=20261120'])
+  for(const name of ['event-horizon/nbody-system.js?v=20261121','event-horizon/renderer.js?v=20261121','event-horizon/event-forecast.js?v=20261121','event-horizon/planet-interaction.js?v=20261121'])
     assert.ok(html.includes('src="./'+name+'"'));
 });
 test('renderer counts stars, orbit hints, planetary glyphs and actual cached disc source glyphs',()=>{
@@ -81,15 +81,21 @@ test('next disc passing is a future foreground entry into the projected luminous
   const stamp=forecast.wallDate(hit.visualTime,T0);
   assert.ok(stamp&&Date.parse(stamp)>T0);
 });
-test('rare all-eight centre-line alignment is searched, never assigned an invented date',()=>{
-  const {world:w,tasks}=world(),clock=w.EventHorizonSceneClock,forecast=w.EventHorizonEventForecast;
+test('N-body barycentric conjunction is computed, not fabricated',()=>{
+  const {world:w}=world(),clock=w.EventHorizonSceneClock,forecast=w.EventHorizonEventForecast;
   clock.reset(T0);
-  let result='pending';
-  forecast.searchAlignmentAsync(clock.snapshot(T0).visualTime,440,736,x=>{result=x});
-  let jobs=0;
-  while(tasks.length){tasks.shift()();if(++jobs>100)throw Error('unbounded event search')}
-  assert.equal(result,null,'no verified all-eight centre alignment in ten illustrative years');
-  assert.equal(forecast.MAX_ALIGNMENT_YEARS,10);
+  const start=clock.snapshot(T0).visualTime;
+  const event=forecast.nextConjunctionVisual(start,365);
+  assert.ok(event&&event.visualTime>start);
+  assert.match(event.name,/^[A-Z]+ \/ [A-Z]+$/);
+  assert.equal(event.event,'barycentric longitude conjunction');
+  const epochSeconds=event.visualTime;
+  const p=w.EventHorizonNBody.stateAtSeconds(epochSeconds).slice(2);
+  const [first,second]=event.name.split(' / ').map(n=>p.find(body=>body.name===n));
+  const d=Math.atan2(Math.sin(Math.atan2(first.y,first.x)-
+    Math.atan2(second.y,second.x)),
+    Math.cos(Math.atan2(first.y,first.x)-Math.atan2(second.y,second.x)));
+  assert.ok(Math.abs(d)<.001,'true integrated longitude conjunction');
 });
 test('changing clock speeds updates calendar forecasts; pausing suppresses real dates',()=>{
   const {world:w}=world(),clock=w.EventHorizonSceneClock,forecast=w.EventHorizonEventForecast;
