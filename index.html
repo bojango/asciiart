@@ -199,24 +199,32 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
 .horizon-dev-panel .horizon-encounter-actions button{flex:1 1 auto;min-width:68px}
 @media(max-width:480px){.horizon-dev-panel .horizon-encounter-actions button{min-width:60px;font-size:8px}}
 
-/* Halcyon observer terminal: deliberately secondary to the artwork. */
+/* Halcyon observer terminal: uses the same unboxed typography as the HUD accordions. */
 .greenwood-offline[hidden],.halcyon-console[hidden]{display:none!important}
 .greenwood-offline{position:absolute;inset:0;z-index:1;display:flex;align-items:center;justify-content:center;background:#010307;color:#84928c;text-align:center;pointer-events:none}
 .greenwood-offline .signal{font:600 clamp(21px,5vw,44px)/1.3 "Courier New",monospace;letter-spacing:.23em;color:#b7c7be}
 .greenwood-offline .detail{font:10px/2 "Courier New",monospace;letter-spacing:.13em;margin-top:14px}
 .greenwood-offline .classification{opacity:.48;margin-top:36px;font:9px/1.8 "Courier New",monospace;letter-spacing:.15em}
 .app.installation .exit-installation{display:none!important}
-.console-launch{position:fixed;z-index:20;right:max(14px,env(safe-area-inset-right));bottom:max(14px,env(safe-area-inset-bottom));padding:7px 9px;border:1px solid rgba(136,161,171,.32);background:rgba(0,0,0,.55);color:rgba(180,195,199,.66);font:10px/1 "Courier New",monospace;letter-spacing:.15em;cursor:pointer}
-.console-launch:hover,.console-launch:focus-visible,.console-launch[aria-expanded="true"]{color:#fff;border-color:#c2d2d5}
-.halcyon-console{position:fixed;z-index:21;right:max(14px,env(safe-area-inset-right));bottom:calc(50px + env(safe-area-inset-bottom));width:min(430px,calc(100vw - 28px));max-height:min(360px,60dvh);display:flex;flex-direction:column;gap:9px;border:1px solid #52616a;background:rgba(2,7,11,.97);box-shadow:0 6px 32px #000;color:#b9c8c8;padding:12px;font:11px/1.5 "Courier New",monospace}
-.console-header{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #263640;padding-bottom:7px;font-size:10px;letter-spacing:.06em;color:#dae1df}
-.console-header button{background:none;border:0;color:#b9c8c8;font:15px/1 monospace;cursor:pointer}
-.console-log{white-space:pre-wrap;overflow-y:auto;overflow-wrap:anywhere;min-height:75px;max-height:240px;display:flex;flex-direction:column;gap:5px}
-.console-entry{color:#859d9e}
-.console-entry.operator{color:#d0dedb}
-.console-prompt{display:flex;align-items:center;gap:8px;border-top:1px solid #263640;padding-top:8px;color:#a7c0ba}
-.console-prompt input{flex:1;min-width:0;background:transparent;border:0;outline:0;color:#fff;font:12px/1.5 "Courier New",monospace;border-radius:0}
-.console-prompt input::placeholder{color:#607478}
+.console-dock{position:fixed;z-index:21;right:max(13px,env(safe-area-inset-right));top:calc(100dvh - 95px);display:flex;flex-direction:column;align-items:flex-end;gap:4px;max-width:calc(100vw - 26px);color:rgba(156,178,202,.55);font:9px/1.7 ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono",monospace;letter-spacing:.09em;text-transform:uppercase;pointer-events:none}
+.console-launch{display:block;pointer-events:auto;border:0;border-radius:0;background:transparent;color:inherit;cursor:pointer;text-align:right;font:inherit;letter-spacing:inherit;text-transform:inherit;padding:2px 0;-webkit-tap-highlight-color:transparent;min-height:24px;white-space:nowrap}
+.console-launch:hover,.console-launch:focus-visible,.console-launch[aria-expanded="true"]{color:rgba(205,225,238,.9);outline-offset:3px}
+.halcyon-console{pointer-events:auto;width:min(310px,calc(100vw - 28px));max-height:min(38dvh,calc(var(--console-visible-height,700px) - 120px));display:flex;flex-direction:column;gap:5px;border:0;background:transparent;box-shadow:none;padding:0;text-align:right;color:rgba(174,194,207,.75);overflow:hidden}
+.console-log{white-space:pre-wrap;overflow-y:auto;overscroll-behavior:contain;overflow-wrap:anywhere;min-height:0;max-height:min(21dvh,calc(var(--console-visible-height,700px) - 200px));display:flex;flex-direction:column;gap:5px;text-align:right;scrollbar-width:none}
+.console-log:empty{display:none}
+.console-log::-webkit-scrollbar{display:none}
+.console-entry{color:rgba(168,190,202,.76);font:inherit;letter-spacing:.04em}
+.console-entry.operator{color:rgba(209,224,228,.87)}
+.console-hints{display:flex;flex-direction:column;gap:0;text-align:right;color:rgba(144,165,180,.48);font-size:9px;line-height:1.7;letter-spacing:.045em}
+.console-hints span{display:block;white-space:nowrap}
+.console-prompt{display:flex;align-items:center;gap:6px;width:100%;height:29px;min-height:29px;color:rgba(205,222,228,.92);text-align:left;border-bottom:1px solid rgba(139,162,174,.36);font:12px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:0;text-transform:none}
+.console-prompt>span:first-child{flex:none}
+.console-field{display:block;flex:1;min-width:0;height:28px;overflow:visible}
+.console-field input{display:block;width:128%;height:34px;margin:0;padding:0 0 1px;transform:scale(.78);transform-origin:top left;box-sizing:border-box;background:transparent;border:0;border-radius:0;outline:0;box-shadow:none;color:#d8e8e7;caret-color:#e6f9ef;font:16px/34px ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:0;appearance:none;-webkit-appearance:none}
+.console-field input::placeholder{color:rgba(136,161,175,.48);opacity:1}
+.console-prompt:focus-within{border-bottom-color:rgba(206,229,233,.72)}
+@media(max-height:560px){.halcyon-console{max-height:min(46dvh,calc(var(--console-visible-height,700px) - 105px))}.console-hints{font-size:8px}.console-log{max-height:min(15dvh,calc(var(--console-visible-height,700px) - 155px))}}
+@media(prefers-reduced-motion:reduce){.console-launch,.halcyon-console{transition:none}}
 
 </style>
 </head>
@@ -343,12 +351,19 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     </aside>
   </section>
 </main>
-<button type="button" class="console-launch" id="consoleLaunch" aria-controls="halcyonConsole" aria-expanded="false">CONSOLE</button>
-<section id="halcyonConsole" class="halcyon-console" aria-label="Halcyon observation console" hidden>
-  <div class="console-header"><span>HALCYON FOUNDATIONS / TERMINAL</span><button type="button" id="consoleClose" aria-label="Close terminal">×</button></div>
-  <div id="consoleLog" class="console-log" aria-live="polite"></div>
-  <label class="console-prompt"><span>&gt;</span><input id="consoleInput" type="text" aria-label="Terminal command" placeholder="HELP" autocomplete="off" autocapitalize="off" spellcheck="false"></label>
-</section>
+<div class="console-dock" id="consoleDock">
+  <section id="halcyonConsole" class="halcyon-console" aria-label="Halcyon observation console" hidden>
+    <div id="consoleLog" class="console-log" aria-live="polite" aria-relevant="additions"></div>
+    <div class="console-hints" aria-hidden="true">
+      <span>HELP / COMMAND INDEX</span>
+      <span>PROJECTS / EXPERIMENTS</span>
+      <span>FILES / ARCHIVE</span>
+      <span>DEV / OPERATOR ACCESS</span>
+    </div>
+    <label class="console-prompt"><span>&gt;</span><span class="console-field"><input id="consoleInput" type="text" aria-label="Terminal command" placeholder=" " autocomplete="off" autocapitalize="off" autocorrect="off" enterkeyhint="go" spellcheck="false"></span></label>
+  </section>
+  <button type="button" class="console-launch" id="consoleLaunch" aria-controls="halcyonConsole" aria-expanded="false">+ CONSOLE</button>
+</div>
 <script src="./environment.js"></script>
 <script src="./greenwood.js"></script>
 <script src="./event-horizon.js?v=20261119"></script>
@@ -2028,10 +2043,27 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
 
   // Public GitHub Pages cannot enforce real authentication. The operator key
   // is a per-browser convenience gate, never a security boundary.
+  const consoleDock=document.getElementById('consoleDock');
   const consoleLaunch=document.getElementById('consoleLaunch');
   const consolePane=document.getElementById('halcyonConsole');
   const consoleLog=document.getElementById('consoleLog');
   const consoleInput=document.getElementById('consoleInput');
+  // Track the visible Safari viewport instead of relying on CSS bottom when
+  // the iOS keyboard overlays the page. This moves only the console HUD,
+  // never changes the artwork's fullscreen installation mode.
+  function positionConsole(){
+    const viewport=window.visualViewport;
+    const visibleHeight=viewport?.height||window.innerHeight;
+    const visibleTop=viewport?.offsetTop||0;
+    consoleDock.style.setProperty('--console-visible-height',Math.round(visibleHeight)+'px');
+    const footer=consolePane.hidden?48:22;
+    const top=Math.max(8,visibleTop+visibleHeight-consoleDock.offsetHeight-footer);
+    consoleDock.style.top=Math.round(top)+'px';
+  }
+  window.visualViewport?.addEventListener('resize',positionConsole,{passive:true});
+  window.visualViewport?.addEventListener('scroll',positionConsole,{passive:true});
+  window.addEventListener('orientationchange',positionConsole,{passive:true});
+  window.addEventListener('resize',positionConsole,{passive:true});
   const operatorKeyName='halcyon.operator.key.sha256';
   let operatorUnlocked=false,secretIntent=null,greenwoodUnsealed=false;
   const savedOperatorKey=()=>{try{return localStorage.getItem(operatorKeyName);}catch(_){return null;}};
@@ -2044,12 +2076,27 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     item.textContent=message;consoleLog.appendChild(item);
     while(consoleLog.children.length>36)consoleLog.firstChild.remove();
     consoleLog.scrollTop=consoleLog.scrollHeight;
+    positionConsole();
   }
   function showConsole(show=true){
     consolePane.hidden=!show;
     consoleLaunch.setAttribute('aria-expanded',String(show));
-    if(show){if(!consoleLog.children.length)terminalLine('HFN TERMINAL READY. TYPE HELP.');consoleInput.focus();}
-    else{secretIntent=null;consoleInput.type='text';consoleInput.value='';}
+    consoleLaunch.textContent=show?'− CONSOLE':'+ CONSOLE';
+    if(show){
+      if(!consoleLog.children.length)terminalLine('HALCYON TERMINAL / READY');
+      closeHorizonPlanets();
+      positionConsole();
+      // Synchronous focus from the user's tap opens the iOS keyboard.
+      consoleInput.focus({preventScroll:true});
+      positionConsole();
+    }else{
+      secretIntent=null;
+      consoleInput.blur();
+      consoleInput.type='text';
+      consoleInput.value='';
+      consoleInput.placeholder=' ';
+      positionConsole();
+    }
   }
   function requestDeveloper(){
     if(operatorUnlocked){showConsole(false);toggleInstallation(false);toggleDeveloper(true);}
@@ -2057,10 +2104,10 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
   }
   function beginSecret(mode){
     secretIntent=mode;consoleInput.type='password';consoleInput.value='';
-    consoleInput.placeholder='Passphrase (hidden)';consoleInput.focus();
+    consoleInput.placeholder=' ';consoleInput.focus({preventScroll:true});
   }
   async function acceptSecret(secret){
-    const mode=secretIntent;secretIntent=null;consoleInput.type='text';consoleInput.placeholder='HELP';
+    const mode=secretIntent;secretIntent=null;consoleInput.type='text';consoleInput.placeholder=' ';
     if(secret.length<4){terminalLine('PASSPHRASE MUST CONTAIN AT LEAST FOUR CHARACTERS.');return;}
     try{
       const hash=await fingerprint(secret);
@@ -2072,7 +2119,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
   function terminalCommand(raw){
     const command=raw.trim(),upper=command.toUpperCase();
     if(!command)return;
-    if(upper==='HELP'||upper==='?'){terminalLine('COMMANDS: PROJECTS, STATUS, SCENE <ID>, FILE <ID>, AUTH, DEV, KEY SET, VIEW, INSTALL, CLEAR, CLOSE');return;}
+    if(upper==='HELP'||upper==='?'){terminalLine('AVAILABLE COMMANDS\nPROJECTS  / LIST EXPERIMENTS\nSTATUS    / CURRENT SIGNAL\nSCENE ID  / CHANGE FEED\nFILES     / ARCHIVE INDEX\nFILE ID   / READ RECORD\nAUTH      / OPERATOR LOGIN\nKEY SET   / CREATE LOCAL KEY\nDEV       / DEVELOPER PANEL\nVIEW      / STANDARD CONTROLS\nINSTALL   / FULL ART\nCLEAR     / CLEAR LOG\nCLOSE     / CLOSE CONSOLE');return;}
     if(upper==='CLEAR'){consoleLog.replaceChildren();return;}
     if(upper==='CLOSE'){showConsole(false);return;}
     if(upper==='STATUS'){terminalLine('HALCYON / OBSERVATION ARRAY\nACTIVE: '+(currentScene==='pelagic'?'PL-002':currentScene==='greenwood'?'GW-003':'EH-001')+'\nFEED: '+(currentScene==='greenwood'?'OFFLINE':'LIVE')+'\nOPERATOR: '+(operatorUnlocked?'AUTHORISED':'RESTRICTED'));return;}
@@ -2103,7 +2150,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     terminalLine('UNRECOGNISED INPUT. TYPE HELP.');
   }
   consoleLaunch.addEventListener('click',()=>showConsole(consolePane.hidden));
-  document.getElementById('consoleClose').addEventListener('click',()=>showConsole(false));
+  consoleInput.addEventListener('focus',positionConsole);
   consoleInput.addEventListener('keydown',async e=>{
     e.stopPropagation();
     if(e.key==='Escape'){showConsole(false);return;}
@@ -2123,7 +2170,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
   document.addEventListener('keydown',e=>{if(e.code==='Space'&&!['BUTTON','INPUT'].includes(document.activeElement.tagName)){e.preventDefault();togglePause();}if(e.key==='c')changePalette();if(e.key==='d')toggleDetail();if(e.key==='`')requestDeveloper();if(e.key==='Escape'){toggleDeveloper(false);if(app.classList.contains('installation'))toggleInstallation(false);}});
   let resizePending=0;
   window.addEventListener('resize',()=>{cancelAnimationFrame(resizePending);resizePending=requestAnimationFrame(()=>{resize();buildSource();swim(0,t);advanceRopes(0,t);render(t);});},{passive:true});
-  resize();swim(0,0);advanceRopes(0,0);switchScene(currentScene);toggleInstallation(true);
+  resize();swim(0,0);advanceRopes(0,0);switchScene(currentScene);toggleInstallation(true);positionConsole();
   if(matchMedia('(prefers-reduced-motion:reduce)').matches)togglePause();
   requestAnimationFrame(frame);
 })();
