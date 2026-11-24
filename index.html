@@ -192,18 +192,56 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
   .horizon-planet-list button{font-size:9px}}
 @media(prefers-reduced-motion:reduce){.horizon-planet-list{transition:none}}
 /* Event Horizon experimental encounters: same restrained technical HUD. */
-.horizon-events .horizon-visitor-button{width:100%;text-align:right;font-size:9px;
-  line-height:1.55;color:rgba(197,220,240,.82)}
-.horizon-events .horizon-visitor-button:disabled{opacity:.54;cursor:default}
+.horizon-events .horizon-visitor-button{width:100%;text-align:right;
+  margin:0 0 5px;padding:0;border:0;background:transparent;
+  font:400 9px/1.55 ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;
+  letter-spacing:.055em;color:rgba(156,178,202,.57)}
+.horizon-events .horizon-visitor-button:disabled{opacity:1;cursor:default}
+.horizon-events .horizon-visitor-button:hover:not(:disabled){color:rgba(205,225,238,.9)}
+.horizon-event-line.active-transit{color:#e66d69}
+@media(max-width:480px){.horizon-events .horizon-visitor-button{font-size:8px;letter-spacing:.015em}}
 .horizon-dev-panel .horizon-encounter-actions label{color:#94afc9;font-size:9px}
 .horizon-dev-panel .horizon-encounter-actions button{flex:1 1 auto;min-width:68px}
 @media(max-width:480px){.horizon-dev-panel .horizon-encounter-actions button{min-width:60px;font-size:8px}}
+
+/* Halcyon observer terminal: uses the same unboxed typography as the HUD accordions. */
+.greenwood-offline[hidden],.halcyon-console[hidden]{display:none!important}
+.greenwood-offline{position:absolute;inset:0;z-index:1;display:flex;align-items:center;justify-content:center;background:#010307;color:#84928c;text-align:center;pointer-events:none}
+.greenwood-offline .signal{font:600 clamp(21px,5vw,44px)/1.3 "Courier New",monospace;letter-spacing:.23em;color:#b7c7be}
+.greenwood-offline .detail{font:10px/2 "Courier New",monospace;letter-spacing:.13em;margin-top:14px}
+.greenwood-offline .classification{opacity:.48;margin-top:36px;font:9px/1.8 "Courier New",monospace;letter-spacing:.15em}
+.app.installation .exit-installation{display:none!important}
+.console-dock{position:fixed;z-index:21;right:max(13px,env(safe-area-inset-right));top:calc(100dvh - 95px);display:flex;flex-direction:column;align-items:flex-end;gap:4px;max-width:calc(100vw - 26px);color:rgba(156,178,202,.55);font:9px/1.7 ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono",monospace;letter-spacing:.09em;text-transform:uppercase;pointer-events:none}
+.console-launch{display:block;pointer-events:auto;border:0;border-radius:0;background:transparent;color:inherit;cursor:pointer;text-align:right;font:inherit;letter-spacing:inherit;text-transform:inherit;padding:2px 0;-webkit-tap-highlight-color:transparent;min-height:24px;white-space:nowrap}
+.console-launch:hover,.console-launch:focus-visible,.console-launch[aria-expanded="true"]{color:rgba(205,225,238,.9);outline-offset:3px}
+.halcyon-console{pointer-events:auto;width:min(310px,calc(100vw - 28px));max-height:min(38dvh,calc(var(--console-visible-height,700px) - 120px));display:flex;flex-direction:column;gap:5px;border:0;background:transparent;box-shadow:none;padding:0;text-align:right;color:rgba(174,194,207,.75);overflow:hidden}
+.console-log{white-space:pre-wrap;overflow-y:auto;overscroll-behavior:contain;overflow-wrap:anywhere;min-height:0;max-height:min(21dvh,calc(var(--console-visible-height,700px) - 200px));display:flex;flex-direction:column;gap:5px;text-align:right;scrollbar-width:none}
+.console-log:empty{display:none}
+.console-log::-webkit-scrollbar{display:none}
+.console-entry{color:rgba(168,190,202,.76);font:inherit;letter-spacing:.04em}
+.console-entry.operator{color:rgba(209,224,228,.87)}
+.console-hints{display:flex;flex-direction:column;gap:0;text-align:right;color:rgba(144,165,180,.48);font-size:9px;line-height:1.7;letter-spacing:.045em}
+.console-hints span{display:block;white-space:nowrap}
+.console-prompt{display:flex;align-items:center;gap:6px;width:100%;height:29px;min-height:29px;color:rgba(205,222,228,.92);text-align:left;border-bottom:1px solid rgba(139,162,174,.36);font:12px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:0;text-transform:none}
+.console-prompt>span:first-child{flex:none}
+.console-field{display:block;flex:1;min-width:0;height:28px;overflow:visible}
+.console-field input{display:block;width:128%;height:34px;margin:0;padding:0 0 1px;transform:scale(.78);transform-origin:top left;box-sizing:border-box;background:transparent;border:0;border-radius:0;outline:0;box-shadow:none;color:#d8e8e7;caret-color:#e6f9ef;font:16px/34px ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:0;appearance:none;-webkit-appearance:none}
+.console-field input::placeholder{color:rgba(136,161,175,.48);opacity:1}
+.console-prompt:focus-within{border-bottom-color:rgba(206,229,233,.72)}
+@media(max-height:560px){.halcyon-console{max-height:min(46dvh,calc(var(--console-visible-height,700px) - 105px))}.console-hints{font-size:8px}.console-log{max-height:min(15dvh,calc(var(--console-visible-height,700px) - 155px))}}
+@media(prefers-reduced-motion:reduce){.console-launch,.halcyon-console{transition:none}}
+
 </style>
 </head>
 <body>
 <main class="app" aria-label="Procedural ASCII art experiment">
   <section class="art" id="art" aria-label="Animated ASCII jellyfish with bioluminescent tentacles and moving ASCII sea life">
     <canvas id="sea" role="img" aria-label="Colourful animated ASCII jellyfish in a dark deep-sea scene"></canvas>
+    <div id="greenwoodOffline" class="greenwood-offline" role="status" hidden>
+      <div><div class="signal">SIGNAL OFFLINE</div>
+        <div class="detail">GREENWOOD / GW-003<br>NO ACTIVE VISUAL FEED<br>RECONNECTION: NOT SCHEDULED</div>
+        <div class="classification">HALCYON FOUNDATIONS · INTERNAL OBSERVATION NODE<br>RECORD STATUS: RESTRICTED</div></div>
+    </div>
     <div class="hud top-left">PELAGIC <strong>/</strong> 017<br>SENSORY ECOSYSTEM</div>
     <div class="hud top-right"><span id="status">LIVE</span> <span id="liveDot" class="live-indicator" aria-label="Animation running"></span>
       <div id="horizonEvents" class="horizon-events" data-open="false" hidden>
@@ -318,6 +356,19 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     </aside>
   </section>
 </main>
+<div class="console-dock" id="consoleDock">
+  <section id="halcyonConsole" class="halcyon-console" aria-label="Halcyon observation console" hidden>
+    <div id="consoleLog" class="console-log" aria-live="polite" aria-relevant="additions"></div>
+    <div class="console-hints" aria-hidden="true">
+      <span>CHANGE FEED</span>
+      <span>DEV</span>
+      <span>PROJECTS / EXPERIMENTS</span>
+      <span>FILES / ARCHIVE</span>
+    </div>
+    <label class="console-prompt"><span>&gt;</span><span class="console-field"><input id="consoleInput" type="text" aria-label="Terminal command" placeholder=" " autocomplete="off" autocapitalize="off" autocorrect="off" enterkeyhint="go" spellcheck="false"></span></label>
+  </section>
+  <button type="button" class="console-launch" id="consoleLaunch" aria-controls="halcyonConsole" aria-expanded="false">+ CONSOLE</button>
+</div>
 <script src="./environment.js"></script>
 <script src="./greenwood.js"></script>
 <script src="./event-horizon.js?v=20261119"></script>
@@ -330,7 +381,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
 <script src="./event-horizon/renderer.js?v=20261121e"></script>
 <script src="./event-horizon/scene-clock.js?v=20261121"></script>
 <script src="./event-horizon/phenomena.js?v=20261121b"></script>
-<script src="./event-horizon/event-forecast.js?v=20261121"></script>
+<script src="./event-horizon/event-forecast.js?v=20261124a"></script>
 <script src="./event-horizon/planet-interaction.js?v=2026112102"></script>
 <script src="./ecosystem.js"></script>
 <script src="./senses.js"></script>
@@ -1260,7 +1311,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     }
   }
   function render(time){
-    if(currentScene==='greenwood'){greenwood.draw(ctx,width,height,time,environmentalFx,highRes);return;}
+    if(currentScene==='greenwood'){ctx.fillStyle='#010307';ctx.fillRect(0,0,width,height);return;}
     if(currentScene==='event-horizon'){
       horizon.draw(ctx,width,height,time,null,highRes);
       const now=Date.now();
@@ -1372,22 +1423,24 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     devToggle.setAttribute('aria-label',cosmos?'Open EVENT HORIZON developer controls':'Open environmental developer controls');
     devToggle.title=cosmos?'Orbital simulation and diagnostics':'Environmental simulator';
     document.getElementById('sceneName').textContent=cosmos?'◎ HORIZON':forest?'◇ GREENWOOD':'◌ PELAGIC';
-    document.querySelector('.hud.top-left').innerHTML=cosmos?'EVENT HORIZON <strong>/</strong> 002<br>KEPLERIAN SYSTEM':forest?'GREENWOOD <strong>/</strong> 002<br>CINEMATIC CLEARING':'PELAGIC <strong>/</strong> 017<br>SENSORY ECOSYSTEM';
-    document.getElementById('bottomLeftStatus').innerHTML=cosmos?'ASCII: —':forest?'THE <strong>OLD GROVE</strong>':'MEDUSA <strong>ASTRALIS</strong>';
-    document.querySelector('.hud.bottom-right').innerHTML=cosmos?`${horizonRateText()}<br>ORBITAL DYNAMICS`:forest?'FIELD STUDY <strong>01</strong><br>LAYERS / LIGHT / WIND':'DEPTH <strong>2480 M</strong><br>PROCEDURAL MOTION';
+    document.querySelector('.hud.top-left').innerHTML=cosmos?'EVENT HORIZON <strong>/</strong> EH-001<br>SPACETIME OBSERVATION':forest?'GREENWOOD <strong>/</strong> GW-003<br>FIELD TELEMETRY':'PELAGIC <strong>/</strong> PL-002<br>COGNITIVE OBSERVATION';
+    document.getElementById('bottomLeftStatus').innerHTML=cosmos?'ASCII: —':forest?'GW-003 <strong>/ NO FEED</strong>':'MEDUSA <strong>ASTRALIS</strong>';
+    document.querySelector('.hud.bottom-right').innerHTML=cosmos?`${horizonRateText()}<br>ORBITAL DYNAMICS`:forest?'LINK <strong>INACTIVE</strong><br>LAST CONTACT: WITHHELD':'DEPTH <strong>2480 M</strong><br>PROCEDURAL MOTION';
     document.getElementById('colorName').textContent=cosmos?horizon.palette:forest?greenwood.season:palettes[paletteIndex].name;
     document.getElementById('swatch').style.background=cosmos?horizon.swatch:forest?'linear-gradient(120deg,#315c4b,#a2b677,#b78d4a)':palettes[paletteIndex].swatch;
     document.getElementById('color').setAttribute('aria-label',cosmos?'Change accretion disc palette':forest?'Change forest season':'Change colour palette');
-    document.getElementById('art').setAttribute('aria-label',cosmos?'Animated ASCII black hole with eight orbiting planets':forest?'Animated ASCII ancient woodland clearing':'Animated ASCII jellyfish');
-    document.getElementById('sea').setAttribute('aria-label',cosmos?'ASCII black hole with softly glowing accretion disc and orbiting planets':forest?'Living ASCII forest clearing with moving light and foliage':'Living ASCII jellyfish');
+    document.getElementById('art').setAttribute('aria-label',cosmos?'Animated ASCII black hole with eight orbiting planets':forest?'GREENWOOD observation feed offline':'Animated ASCII jellyfish');
+    document.getElementById('sea').setAttribute('aria-label',cosmos?'ASCII black hole with softly glowing accretion disc and orbiting planets':forest?'Inactive GREENWOOD video feed':'Living ASCII jellyfish');
     document.title=cosmos?'EVENT HORIZON / Living ASCII':forest?'GREENWOOD / Living ASCII':'PELAGIC / Living ASCII';
     horizonEvents.hidden=!cosmos;
     horizonPlanets.hidden=!cosmos;
+    document.getElementById('greenwoodOffline').hidden=!forest;
     document.getElementById('horizonBottomLeft').classList.toggle('horizon-mode',cosmos);
     if(!cosmos){closeHorizonEvents();closeHorizonPlanets();}
     syncPlanetSelection();
     syncSpeedLabel();
-    if(!cosmos&&!paused){horizonNode('status').textContent='LIVE';horizonNode('liveDot').classList.remove('off');}
+    if(forest){horizonNode('status').textContent='OFFLINE';horizonNode('liveDot').classList.add('off');}
+    else if(!cosmos&&!paused){horizonNode('status').textContent='LIVE';horizonNode('liveDot').classList.remove('off');}
     buildSource();render(t);
     if(cosmos){updateHorizonHUD();syncHorizonDev();}
   }
@@ -1405,8 +1458,8 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
   function togglePause(){
     paused=!paused;
     document.getElementById('led').classList.toggle('off',paused);
-    document.getElementById('status').textContent=paused?'PAUSED':'LIVE';
-    document.getElementById('liveDot').classList.toggle('off',paused);
+    document.getElementById('status').textContent=currentScene==='greenwood'?'OFFLINE':paused?'PAUSED':'LIVE';
+    document.getElementById('liveDot').classList.toggle('off',paused||currentScene==='greenwood');
   }
   // DEV offers live Open-Meteo data and a separate offline test simulator.
   const devPanel=document.getElementById('devPanel');
@@ -1519,24 +1572,50 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
       encounter?.jet>.08?'DISC ACTIVITY: TEST JET':
       encounter?.flare>.08?'DISC ACTIVITY: OUTBURST':
       'DISC ACTIVITY: QUIET';
-    const disc=forecastCache?.disc;
-    const dDate=disc&&horizonForecast?.wallDate?.(disc.visualTime,now);
-    eventNode('horizonEventAccretion').textContent='NEXT DISC VIEW PASS: '+
-      (disc===undefined?'SEARCHING':
-        disc===null?'NOT FORECAST (365 SIM DAYS)':
-        disc.name+', '+(dDate?eventUKDate(dDate):snap.paused?'PAUSED':'NOT FORECAST'));
+    const active=forecastCache?.activeDisc;
+    const isActive=Boolean(active&&
+      (active.exitVisualTime===null||active.exitVisualTime>snap.visualTime));
+    const discLine=eventNode('horizonEventAccretion');
+    discLine.classList.toggle('active-transit',isActive);
+    if(isActive){
+      const remaining=active.exitVisualTime===null?null:
+        Math.max(0,(active.exitVisualTime-snap.visualTime)/
+          snap.orbitToPhysicalRatio/Math.max(.001,snap.rate));
+      discLine.textContent='ACTIVE DISC TRANSIT: '+active.name+' - '+
+        (remaining===null?'TIME UNKNOWN':discTransitCountdown(remaining))+
+        (snap.paused?' (PAUSED)':'');
+    }else{
+      const disc=forecastCache?.disc;
+      const dDate=disc&&horizonForecast?.wallDate?.(disc.visualTime,now);
+      discLine.textContent='NEXT DISC VIEW PASS: '+
+        (disc===undefined?'SEARCHING':
+          disc===null?'NOT FORECAST (365 SIM DAYS)':
+          disc.name+', '+(dDate?eventUKDate(dDate):snap.paused?'PAUSED':'NOT FORECAST'));
+    }
+  }
+  function discTransitCountdown(seconds){
+    const total=Math.max(0,Math.ceil(seconds));
+    const days=Math.floor(total/86400);
+    const hours=Math.floor(total%86400/3600);
+    const minutes=Math.floor(total%3600/60);
+    const secs=total%60;
+    const two=n=>String(n).padStart(2,'0');
+    return days+'d, '+two(hours)+':'+two(minutes)+':'+two(secs);
   }
   function beginHorizonForecast(){
     if(!horizonEventOpen||currentScene!=='event-horizon'||!horizonClock)return;
     if(forecastCancel)forecastCancel();
     const snap=horizonClock.snapshot(),widthNow=width,heightNow=height;
     forecastCache={origin:snap.visualTime,width:widthNow,height:heightNow,
-      disc:undefined,alignment:undefined};
+      disc:undefined,activeDisc:undefined,alignment:undefined};
     showHorizonEvents();
-    if(!horizonForecast){forecastCache.disc=null;forecastCache.alignment=null;
-      showHorizonEvents();return;}
+    if(!horizonForecast){forecastCache.disc=null;forecastCache.activeDisc=null;
+      forecastCache.alignment=null;showHorizonEvents();return;}
     const active=forecastCache;
-    // A foreground-disc crossing is a screen-space entry event.
+    // The active transit and upcoming entry share the same projected
+    // foreground/disc geometry; the countdown uses the actual clock rate.
+    active.activeDisc=horizonForecast.activeAccretionVisual?.(
+      snap.visualTime,widthNow,heightNow)??null;
     active.disc=horizonForecast.nextAccretionVisual(snap.visualTime,widthNow,heightNow);
     showHorizonEvents();
     // The all-eight screen-centre alignment was not an astronomical
@@ -1574,6 +1653,8 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
       const snap=horizonClock?.snapshot?.(now);
       if(!forecastCache||forecastCache.width!==width||forecastCache.height!==height||
          (forecastCache.disc&&forecastCache.disc.visualTime<=snap.visualTime)||
+         (forecastCache.activeDisc&&forecastCache.activeDisc.exitVisualTime!==null&&
+           forecastCache.activeDisc.exitVisualTime<=snap.visualTime)||
          (forecastCache.alignment&&forecastCache.alignment.visualTime<=snap.visualTime)||
          snap.visualTime<forecastCache.origin-1)
         beginHorizonForecast();
@@ -1866,7 +1947,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
       if(activeDevTab==='sense')syncSenseControls();
     }
   }
-  devToggle.addEventListener('click',()=>toggleDeveloper());
+  devToggle.addEventListener('click',()=>requestDeveloper());
   document.getElementById('devClose').addEventListener('click',()=>toggleDeveloper(false));
   document.getElementById('weatherPreset').addEventListener('change',e=>{
     environment.preset(e.target.value);syncDeveloperControls();
@@ -1992,15 +2073,103 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     }
     requestAnimationFrame(frame);
   }
+
+  // Public GitHub Pages cannot enforce real authentication. The operator key
+  // is a per-browser convenience gate, never a security boundary.
+  const consoleDock=document.getElementById('consoleDock');
+  const consoleLaunch=document.getElementById('consoleLaunch');
+  const consolePane=document.getElementById('halcyonConsole');
+  const consoleLog=document.getElementById('consoleLog');
+  const consoleInput=document.getElementById('consoleInput');
+  // Track the visible Safari viewport instead of relying on CSS bottom when
+  // the iOS keyboard overlays the page. This moves only the console HUD,
+  // never changes the artwork's fullscreen installation mode.
+  function positionConsole(){
+    const viewport=window.visualViewport;
+    const visibleHeight=viewport?.height||window.innerHeight;
+    const visibleTop=viewport?.offsetTop||0;
+    consoleDock.style.setProperty('--console-visible-height',Math.round(visibleHeight)+'px');
+    // Anchor above the real lower-right status (two lines), not merely a
+    // fixed distance from the viewport bottom. This also works after the
+    // iOS keyboard is dismissed without closing the console.
+    const statusTop=document.querySelector('.hud.bottom-right').getBoundingClientRect().top;
+    const dockBottom=Math.min(visibleTop+visibleHeight-18,statusTop-12);
+    const top=Math.max(8,dockBottom-consoleDock.offsetHeight);
+    consoleDock.style.top=Math.round(top)+'px';
+  }
+  window.visualViewport?.addEventListener('resize',positionConsole,{passive:true});
+  window.visualViewport?.addEventListener('scroll',positionConsole,{passive:true});
+  window.addEventListener('orientationchange',positionConsole,{passive:true});
+  window.addEventListener('resize',positionConsole,{passive:true});
+  // For this prototype, only two commands are routed. Archive labels
+  // deliberately remain inaccessible until the lore system is finished.
+  function terminalLine(message,operator=false){
+    const item=document.createElement('div');
+    item.className='console-entry'+(operator?' operator':'');
+    item.textContent=message;
+    consoleLog.appendChild(item);
+    while(consoleLog.children.length>12)consoleLog.firstChild.remove();
+    consoleLog.scrollTop=consoleLog.scrollHeight;
+    positionConsole();
+  }
+  function showConsole(show=true){
+    consolePane.hidden=!show;
+    consoleLaunch.setAttribute('aria-expanded',String(show));
+    consoleLaunch.textContent=show?'− CONSOLE':'+ CONSOLE';
+    if(show){
+      closeHorizonPlanets();
+      positionConsole();
+      consoleInput.focus({preventScroll:true});
+      positionConsole();
+    }else{
+      consoleInput.blur();
+      consoleInput.value='';
+      positionConsole();
+    }
+  }
+  function requestDeveloper(){
+    showConsole(false);
+    toggleInstallation(false);
+    toggleDeveloper(true);
+    positionConsole();
+  }
+  function terminalCommand(raw){
+    const command=raw.trim().replace(/\s+/g,' ').toUpperCase();
+    if(!command)return;
+    if(command==='CHANGE FEED'){
+      switchScene();
+      showConsole(false);
+      return;
+    }
+    if(command==='DEV'){
+      requestDeveloper();
+      return;
+    }
+    terminalLine('Unauthorised access, admin only');
+  }
+  consoleLaunch.addEventListener('click',()=>showConsole(consolePane.hidden));
+  consoleInput.addEventListener('focus',positionConsole);
+  consoleInput.addEventListener('blur',positionConsole);
+  consoleInput.addEventListener('keydown',e=>{
+    e.stopPropagation();
+    if(e.key==='Escape'){showConsole(false);return;}
+    if(e.key!=='Enter')return;
+    e.preventDefault();
+    const command=consoleInput.value;consoleInput.value='';
+    if(!command.trim())return;
+    terminalLine('> '+command,true);
+    terminalCommand(command);
+  });
+
   document.getElementById('sceneToggle').addEventListener('click',()=>switchScene());
   document.getElementById('color').addEventListener('click',changePalette);
   document.getElementById('density').addEventListener('click',toggleDetail);
   document.getElementById('speed').addEventListener('click',changeSpeed);
   document.getElementById('expandArt').addEventListener('click',()=>toggleInstallation(true));
-  document.addEventListener('keydown',e=>{if(e.code==='Space'&&!['BUTTON','INPUT'].includes(document.activeElement.tagName)){e.preventDefault();togglePause();}if(e.key==='c')changePalette();if(e.key==='d')toggleDetail();if(e.key==='`')toggleDeveloper();if(e.key==='Escape'){toggleDeveloper(false);if(app.classList.contains('installation'))toggleInstallation(false);}});
+  document.addEventListener('keydown',e=>{if(e.code==='Space'&&!['BUTTON','INPUT'].includes(document.activeElement.tagName)){e.preventDefault();togglePause();}if(e.key==='c')changePalette();if(e.key==='d')toggleDetail();if(e.key==='`')requestDeveloper();if(e.key==='Escape'){toggleDeveloper(false);if(app.classList.contains('installation'))toggleInstallation(false);}});
   let resizePending=0;
   window.addEventListener('resize',()=>{cancelAnimationFrame(resizePending);resizePending=requestAnimationFrame(()=>{resize();buildSource();swim(0,t);advanceRopes(0,t);render(t);});},{passive:true});
-  resize();swim(0,0);advanceRopes(0,0);switchScene(currentScene);
+  resize();swim(0,0);advanceRopes(0,0);switchScene(currentScene);toggleInstallation(true);positionConsole();
   if(matchMedia('(prefers-reduced-motion:reduce)').matches)togglePause();
   requestAnimationFrame(frame);
 })();
