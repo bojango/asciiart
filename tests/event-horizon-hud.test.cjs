@@ -20,7 +20,7 @@ function world(){
   for(const file of modules)vm.runInNewContext(read(file),shell,{filename:file});
   return {shell,world:shell.window,tasks,storage};
 }
-test('fullscreen HUD has the approved collapsed astronomy accordion and original other-scene text',()=>{
+test('fullscreen HUD has the approved astronomy accordion and Halcyon observer state',()=>{
   const html=read('index.html');
   assert.match(html,/id="horizonEvents"[^>]*data-open="false" hidden/);
   assert.match(html,/id="horizonPlanets"[^>]*data-open="false" hidden/);
@@ -43,10 +43,17 @@ test('fullscreen HUD has the approved collapsed astronomy accordion and original
   assert.match(html,/ASCII: /);
   assert.match(html,/REAL TIME X /);
   assert.match(html,/ORBITAL DYNAMICS/);
-  assert.match(html,/THE <strong>OLD GROVE<\/strong>/);
+  assert.match(html,/GW-003 <strong>\/ NO FEED<\/strong>/);
+  assert.match(html,/SIGNAL OFFLINE/);
+  assert.match(html,/ACTIVE DISC TRANSIT:/);
+  assert.match(html,/horizon-event-line\.active-transit/);
+  assert.match(html,/CHANGE FEED/);
+  assert.match(html,/Unauthorised access, admin only/);
+  assert.match(html,/statusTop-12/);
+  assert.match(html,/command==='DEV'/);
   assert.match(html,/MEDUSA <strong>ASTRALIS<\/strong>/);
   assert.doesNotMatch(html,/src="\.\/preview\/event-horizon\//);
-  for(const name of ['event-horizon/nbody-system.js?v=2026112102','event-horizon/renderer.js?v=20261121e','event-horizon/phenomena.js?v=20261121b','event-horizon/event-forecast.js?v=20261121','event-horizon/planet-interaction.js?v=2026112102'])
+  for(const name of ['event-horizon/nbody-system.js?v=2026112102','event-horizon/renderer.js?v=20261121e','event-horizon/phenomena.js?v=20261121b','event-horizon/event-forecast.js?v=20261124a','event-horizon/planet-interaction.js?v=2026112102'])
     assert.ok(html.includes('src="./'+name+'"'));
 });
 test('renderer counts stars, orbit hints, planetary glyphs and actual cached disc source glyphs',()=>{
@@ -80,6 +87,25 @@ test('next disc passing is a future foreground entry into the projected luminous
   assert.ok(body.depth<=0&&forecast.discPresence(body,view));
   const stamp=forecast.wallDate(hit.visualTime,T0);
   assert.ok(stamp&&Date.parse(stamp)>T0);
+});
+test('active transit has a foreground planet and a modelled exit, including crossing the central shadow',()=>{
+  const {world:w}=world(),clock=w.EventHorizonSceneClock,forecast=w.EventHorizonEventForecast;
+  clock.reset(T0);
+  const viewCam=w.EventHorizonRebuild.camera(440,736);
+  const view={camera:viewCam,hole:45.76*viewCam.scale,width:440,height:736};
+  const centre={name:'TEST',x:viewCam.cx,y:viewCam.cy,radius:5,depth:-.5};
+  assert.equal(forecast.discPresence(centre,view),true,
+    'crossing over the black-hole shadow must not interrupt the transit');
+  const next=forecast.nextAccretionVisual(clock.snapshot(T0).visualTime,440,736);
+  assert.ok(next);
+  const ongoing=forecast.activeAccretionVisual(next.visualTime+1,440,736);
+  assert.ok(ongoing,'newly entering planet should produce an active transit');
+  assert.equal(ongoing.name,next.name);
+  assert.ok(Number.isFinite(ongoing.exitVisualTime)&&
+    ongoing.exitVisualTime>next.visualTime);
+  const departed=w.EventHorizonRebuild.state(ongoing.exitVisualTime+1,440,736)
+    .planets.find(p=>p.name===ongoing.name);
+  assert.equal(forecast.discPresence(departed,view),false);
 });
 test('N-body barycentric conjunction is computed, not fabricated',()=>{
   const {world:w}=world(),clock=w.EventHorizonSceneClock,forecast=w.EventHorizonEventForecast;
