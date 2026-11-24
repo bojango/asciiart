@@ -26,7 +26,9 @@
     const dx=planet.x-view.camera.cx,dy=planet.y-view.camera.cy;
     const u=dx*C+dy*S,v=-dx*S+dy*C;
     const rho=Math.hypot(u/view.hole,v/(view.hole*.27));
-    return rho>=1.35&&rho<=5.1;
+    // Include the central shadow so a foreground transit stays active while
+    // the planet crosses the black hole, not just the illuminated annulus.
+    return rho<=5.1;
   }
   function aligned(planetPositions,view){
     // All EIGHT planet centres must be near the screen's vertical centre,
@@ -42,6 +44,39 @@
       if(accept(mid))hi=mid;else lo=mid;
     }
     return hi;
+  }
+  // A transit uses the same foreground projection as the 'next disc'
+  // forecast. Count down to the modelled exit, not an invented duration.
+  function activeAccretionVisual(startVisual,width,height){
+    const view=frame(width,height);
+    const active=positions(startVisual,view).filter(p=>discPresence(p,view));
+    if(!active.length)return null;
+    const hole=view.camera;
+    // When two bodies overlap, track the one closest to the central shadow.
+    active.sort((a,b)=>Math.hypot(a.x-hole.cx,a.y-hole.cy)-
+      Math.hypot(b.x-hole.cx,b.y-hole.cy));
+    const bodyName=active[0].name;
+    const present=t=>{
+      const body=positions(t,view).find(p=>p.name===bodyName);
+      return Boolean(body&&discPresence(body,view));
+    };
+    const ratio=clock.snapshot().orbitToPhysicalRatio;
+    const step=2*SIM_HOUR*ratio;
+    const count=Math.ceil(365*DAY/(2*SIM_HOUR));
+    let prior=startVisual;
+    for(let i=1;i<=count;i++){
+      const now=startVisual+i*step;
+      if(!present(now)){
+        const exit=bisection(prior,now,t=>!present(t));
+        return Object.freeze({name:bodyName,exitVisualTime:exit,
+          event:'planet exits projected foreground accretion-disc region',
+          physicallyPredicted:false});
+      }
+      prior=now;
+    }
+    return Object.freeze({name:bodyName,exitVisualTime:null,
+      event:'projected foreground accretion-disc transit; exit not found',
+      physicallyPredicted:false});
   }
   function nextAccretionVisual(startVisual,width,height){
     const view=frame(width,height);
@@ -152,7 +187,7 @@
       new Date(millis).toISOString():null;
   }
   window.EventHorizonEventForecast=Object.freeze({
-    nextAccretionVisual,nextConjunctionVisual,searchAlignmentAsync,wallDate,discPresence,
+    nextAccretionVisual,activeAccretionVisual,nextConjunctionVisual,searchAlignmentAsync,wallDate,discPresence,
     MAX_ALIGNMENT_YEARS,alignmentTolerance:'55% of reference hole radius',
     physicallyPredicted:false
   });
