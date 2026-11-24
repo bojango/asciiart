@@ -192,9 +192,14 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
   .horizon-planet-list button{font-size:9px}}
 @media(prefers-reduced-motion:reduce){.horizon-planet-list{transition:none}}
 /* Event Horizon experimental encounters: same restrained technical HUD. */
-.horizon-events .horizon-visitor-button{width:100%;text-align:right;font-size:9px;
-  line-height:1.55;color:rgba(197,220,240,.82)}
-.horizon-events .horizon-visitor-button:disabled{opacity:.54;cursor:default}
+.horizon-events .horizon-visitor-button{width:100%;text-align:right;
+  margin:0 0 5px;padding:0;border:0;background:transparent;
+  font:400 9px/1.55 ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;
+  letter-spacing:.055em;color:rgba(156,178,202,.57)}
+.horizon-events .horizon-visitor-button:disabled{opacity:1;cursor:default}
+.horizon-events .horizon-visitor-button:hover:not(:disabled){color:rgba(205,225,238,.9)}
+.horizon-event-line.active-transit{color:#e66d69}
+@media(max-width:480px){.horizon-events .horizon-visitor-button{font-size:8px;letter-spacing:.015em}}
 .horizon-dev-panel .horizon-encounter-actions label{color:#94afc9;font-size:9px}
 .horizon-dev-panel .horizon-encounter-actions button{flex:1 1 auto;min-width:68px}
 @media(max-width:480px){.horizon-dev-panel .horizon-encounter-actions button{min-width:60px;font-size:8px}}
@@ -355,10 +360,10 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
   <section id="halcyonConsole" class="halcyon-console" aria-label="Halcyon observation console" hidden>
     <div id="consoleLog" class="console-log" aria-live="polite" aria-relevant="additions"></div>
     <div class="console-hints" aria-hidden="true">
-      <span>HELP / COMMAND INDEX</span>
+      <span>CHANGE FEED</span>
+      <span>DEV</span>
       <span>PROJECTS / EXPERIMENTS</span>
       <span>FILES / ARCHIVE</span>
-      <span>DEV / OPERATOR ACCESS</span>
     </div>
     <label class="console-prompt"><span>&gt;</span><span class="console-field"><input id="consoleInput" type="text" aria-label="Terminal command" placeholder=" " autocomplete="off" autocapitalize="off" autocorrect="off" enterkeyhint="go" spellcheck="false"></span></label>
   </section>
@@ -376,7 +381,7 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
 <script src="./event-horizon/renderer.js?v=20261121e"></script>
 <script src="./event-horizon/scene-clock.js?v=20261121"></script>
 <script src="./event-horizon/phenomena.js?v=20261121b"></script>
-<script src="./event-horizon/event-forecast.js?v=20261121"></script>
+<script src="./event-horizon/event-forecast.js?v=20261124a"></script>
 <script src="./event-horizon/planet-interaction.js?v=2026112102"></script>
 <script src="./ecosystem.js"></script>
 <script src="./senses.js"></script>
@@ -1567,24 +1572,50 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
       encounter?.jet>.08?'DISC ACTIVITY: TEST JET':
       encounter?.flare>.08?'DISC ACTIVITY: OUTBURST':
       'DISC ACTIVITY: QUIET';
-    const disc=forecastCache?.disc;
-    const dDate=disc&&horizonForecast?.wallDate?.(disc.visualTime,now);
-    eventNode('horizonEventAccretion').textContent='NEXT DISC VIEW PASS: '+
-      (disc===undefined?'SEARCHING':
-        disc===null?'NOT FORECAST (365 SIM DAYS)':
-        disc.name+', '+(dDate?eventUKDate(dDate):snap.paused?'PAUSED':'NOT FORECAST'));
+    const active=forecastCache?.activeDisc;
+    const isActive=Boolean(active&&
+      (active.exitVisualTime===null||active.exitVisualTime>snap.visualTime));
+    const discLine=eventNode('horizonEventAccretion');
+    discLine.classList.toggle('active-transit',isActive);
+    if(isActive){
+      const remaining=active.exitVisualTime===null?null:
+        Math.max(0,(active.exitVisualTime-snap.visualTime)/
+          snap.orbitToPhysicalRatio/Math.max(.001,snap.rate));
+      discLine.textContent='ACTIVE DISC TRANSIT: '+active.name+' - '+
+        (remaining===null?'TIME UNKNOWN':discTransitCountdown(remaining))+
+        (snap.paused?' (PAUSED)':'');
+    }else{
+      const disc=forecastCache?.disc;
+      const dDate=disc&&horizonForecast?.wallDate?.(disc.visualTime,now);
+      discLine.textContent='NEXT DISC VIEW PASS: '+
+        (disc===undefined?'SEARCHING':
+          disc===null?'NOT FORECAST (365 SIM DAYS)':
+          disc.name+', '+(dDate?eventUKDate(dDate):snap.paused?'PAUSED':'NOT FORECAST'));
+    }
+  }
+  function discTransitCountdown(seconds){
+    const total=Math.max(0,Math.ceil(seconds));
+    const days=Math.floor(total/86400);
+    const hours=Math.floor(total%86400/3600);
+    const minutes=Math.floor(total%3600/60);
+    const secs=total%60;
+    const two=n=>String(n).padStart(2,'0');
+    return days+'d, '+two(hours)+':'+two(minutes)+':'+two(secs);
   }
   function beginHorizonForecast(){
     if(!horizonEventOpen||currentScene!=='event-horizon'||!horizonClock)return;
     if(forecastCancel)forecastCancel();
     const snap=horizonClock.snapshot(),widthNow=width,heightNow=height;
     forecastCache={origin:snap.visualTime,width:widthNow,height:heightNow,
-      disc:undefined,alignment:undefined};
+      disc:undefined,activeDisc:undefined,alignment:undefined};
     showHorizonEvents();
-    if(!horizonForecast){forecastCache.disc=null;forecastCache.alignment=null;
-      showHorizonEvents();return;}
+    if(!horizonForecast){forecastCache.disc=null;forecastCache.activeDisc=null;
+      forecastCache.alignment=null;showHorizonEvents();return;}
     const active=forecastCache;
-    // A foreground-disc crossing is a screen-space entry event.
+    // The active transit and upcoming entry share the same projected
+    // foreground/disc geometry; the countdown uses the actual clock rate.
+    active.activeDisc=horizonForecast.activeAccretionVisual?.(
+      snap.visualTime,widthNow,heightNow)??null;
     active.disc=horizonForecast.nextAccretionVisual(snap.visualTime,widthNow,heightNow);
     showHorizonEvents();
     // The all-eight screen-centre alignment was not an astronomical
@@ -1622,6 +1653,8 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
       const snap=horizonClock?.snapshot?.(now);
       if(!forecastCache||forecastCache.width!==width||forecastCache.height!==height||
          (forecastCache.disc&&forecastCache.disc.visualTime<=snap.visualTime)||
+         (forecastCache.activeDisc&&forecastCache.activeDisc.exitVisualTime!==null&&
+           forecastCache.activeDisc.exitVisualTime<=snap.visualTime)||
          (forecastCache.alignment&&forecastCache.alignment.visualTime<=snap.visualTime)||
          snap.visualTime<forecastCache.origin-1)
         beginHorizonForecast();
@@ -2056,25 +2089,26 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     const visibleHeight=viewport?.height||window.innerHeight;
     const visibleTop=viewport?.offsetTop||0;
     consoleDock.style.setProperty('--console-visible-height',Math.round(visibleHeight)+'px');
-    const footer=consolePane.hidden?48:22;
-    const top=Math.max(8,visibleTop+visibleHeight-consoleDock.offsetHeight-footer);
+    // Anchor above the real lower-right status (two lines), not merely a
+    // fixed distance from the viewport bottom. This also works after the
+    // iOS keyboard is dismissed without closing the console.
+    const statusTop=document.querySelector('.hud.bottom-right').getBoundingClientRect().top;
+    const dockBottom=Math.min(visibleTop+visibleHeight-18,statusTop-12);
+    const top=Math.max(8,dockBottom-consoleDock.offsetHeight);
     consoleDock.style.top=Math.round(top)+'px';
   }
   window.visualViewport?.addEventListener('resize',positionConsole,{passive:true});
   window.visualViewport?.addEventListener('scroll',positionConsole,{passive:true});
   window.addEventListener('orientationchange',positionConsole,{passive:true});
   window.addEventListener('resize',positionConsole,{passive:true});
-  const operatorKeyName='halcyon.operator.key.sha256';
-  let operatorUnlocked=false,secretIntent=null,greenwoodUnsealed=false;
-  const savedOperatorKey=()=>{try{return localStorage.getItem(operatorKeyName);}catch(_){return null;}};
-  const fingerprint=async(value)=>{
-    const bytes=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(value));
-    return [...new Uint8Array(bytes)].map(x=>x.toString(16).padStart(2,'0')).join('');
-  };
+  // For this prototype, only two commands are routed. Archive labels
+  // deliberately remain inaccessible until the lore system is finished.
   function terminalLine(message,operator=false){
-    const item=document.createElement('div');item.className='console-entry'+(operator?' operator':'');
-    item.textContent=message;consoleLog.appendChild(item);
-    while(consoleLog.children.length>36)consoleLog.firstChild.remove();
+    const item=document.createElement('div');
+    item.className='console-entry'+(operator?' operator':'');
+    item.textContent=message;
+    consoleLog.appendChild(item);
+    while(consoleLog.children.length>12)consoleLog.firstChild.remove();
     consoleLog.scrollTop=consoleLog.scrollHeight;
     positionConsole();
   }
@@ -2083,81 +2117,45 @@ body { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation
     consoleLaunch.setAttribute('aria-expanded',String(show));
     consoleLaunch.textContent=show?'− CONSOLE':'+ CONSOLE';
     if(show){
-      if(!consoleLog.children.length)terminalLine('HALCYON TERMINAL / READY');
       closeHorizonPlanets();
       positionConsole();
-      // Synchronous focus from the user's tap opens the iOS keyboard.
       consoleInput.focus({preventScroll:true});
       positionConsole();
     }else{
-      secretIntent=null;
       consoleInput.blur();
-      consoleInput.type='text';
       consoleInput.value='';
-      consoleInput.placeholder=' ';
       positionConsole();
     }
   }
   function requestDeveloper(){
-    if(operatorUnlocked){showConsole(false);toggleInstallation(false);toggleDeveloper(true);}
-    else {showConsole(true);terminalLine(savedOperatorKey()?'DEV CHANNEL REQUIRES AUTH. TYPE AUTH.':'DEV CHANNEL UNCONFIGURED. TYPE KEY SET TO CREATE A LOCAL OPERATOR KEY.');}
-  }
-  function beginSecret(mode){
-    secretIntent=mode;consoleInput.type='password';consoleInput.value='';
-    consoleInput.placeholder=' ';consoleInput.focus({preventScroll:true});
-  }
-  async function acceptSecret(secret){
-    const mode=secretIntent;secretIntent=null;consoleInput.type='text';consoleInput.placeholder=' ';
-    if(secret.length<4){terminalLine('PASSPHRASE MUST CONTAIN AT LEAST FOUR CHARACTERS.');return;}
-    try{
-      const hash=await fingerprint(secret);
-      if(mode==='set'){localStorage.setItem(operatorKeyName,hash);operatorUnlocked=true;terminalLine('LOCAL OPERATOR KEY CONFIGURED. DEV CHANNEL UNLOCKED.');}
-      else if(hash===savedOperatorKey()){operatorUnlocked=true;terminalLine('OPERATOR AUTHENTICATED. TYPE DEV.');}
-      else terminalLine('AUTHENTICATION FAILED.');
-    }catch(_){terminalLine('LOCAL OPERATOR AUTHENTICATION UNAVAILABLE ON THIS DEVICE.');}
+    showConsole(false);
+    toggleInstallation(false);
+    toggleDeveloper(true);
   }
   function terminalCommand(raw){
-    const command=raw.trim(),upper=command.toUpperCase();
+    const command=raw.trim().replace(/\s+/g,' ').toUpperCase();
     if(!command)return;
-    if(upper==='HELP'||upper==='?'){terminalLine('AVAILABLE COMMANDS\nPROJECTS  / LIST EXPERIMENTS\nSTATUS    / CURRENT SIGNAL\nSCENE ID  / CHANGE FEED\nFILES     / ARCHIVE INDEX\nFILE ID   / READ RECORD\nAUTH      / OPERATOR LOGIN\nKEY SET   / CREATE LOCAL KEY\nDEV       / DEVELOPER PANEL\nVIEW      / STANDARD CONTROLS\nINSTALL   / FULL ART\nCLEAR     / CLEAR LOG\nCLOSE     / CLOSE CONSOLE');return;}
-    if(upper==='CLEAR'){consoleLog.replaceChildren();return;}
-    if(upper==='CLOSE'){showConsole(false);return;}
-    if(upper==='STATUS'){terminalLine('HALCYON / OBSERVATION ARRAY\nACTIVE: '+(currentScene==='pelagic'?'PL-002':currentScene==='greenwood'?'GW-003':'EH-001')+'\nFEED: '+(currentScene==='greenwood'?'OFFLINE':'LIVE')+'\nOPERATOR: '+(operatorUnlocked?'AUTHORISED':'RESTRICTED'));return;}
-    if(upper==='PROJECTS'){terminalLine('EH-001 / EVENT HORIZON / ACTIVE\nPL-002 / PELAGIC / ACTIVE\nGW-003 / GREENWOOD / OFFLINE\nUse SCENE <ID> to select a feed.');return;}
-    if(upper.startsWith('SCENE ')){
-      const scene=upper.slice(6).trim();
-      const dest=/^(PL-002|PELAGIC)$/.test(scene)?'pelagic':/^(EH-001|HORIZON|EVENT HORIZON|EVENT-HORIZON)$/.test(scene)?'event-horizon':/^(GW-003|GREENWOOD)$/.test(scene)?'greenwood':null;
-      if(!dest){terminalLine('UNKNOWN PROJECT ID. TYPE PROJECTS.');return;}
-      switchScene(dest);terminalLine('OBSERVATION FEED SELECTED: '+scene);showConsole(false);return;
+    if(command==='CHANGE FEED'){
+      switchScene();
+      showConsole(false);
+      return;
     }
-    if(upper==='FILE'||upper==='FILES'){terminalLine('ARCHIVE INDEX\nFILE EH-001\nFILE PL-002\nFILE GW-003');return;}
-    if(upper==='FILE EH-001'){terminalLine('EH-001 / FIELD MEMO\nSpacetime boundary remains nominal.\nTelemetry reproduces a signal present in PL-002.\nOrigin classification: UNRESOLVED.');return;}
-    if(upper==='FILE PL-002'){terminalLine('PL-002 / COGNITIVE OBSERVATION\nThe entity has never been instructed to adopt a marine form.\nRepeated unsolicited reference: UNDERSTORY.\nCross-reference: GW-003.');return;}
-    if(upper==='FILE GW-003'){terminalLine(greenwoodUnsealed?'GW-003 / RECOVERED FRAGMENT\nThe canopy continues responding to observers after disconnect.\nOrigin of the observers: REDACTED.':'GW-003 / ARCHIVED\nNo verified transmission available.\nRESTRICTED. RECOVERY FORMAT: UNSEAL GW-003 <KEYWORD>.');return;}
-    if(upper==='UNSEAL GW-003 UNDERSTORY'){greenwoodUnsealed=true;terminalLine('GW-003 / ARCHIVE SEAL RELEASED. TYPE FILE GW-003.');return;}
-    if(upper.startsWith('UNSEAL ')){terminalLine('ARCHIVE KEY NOT RECOGNISED.');return;}
-    if(upper==='KEY SET'){
-      if(savedOperatorKey()&&!operatorUnlocked){terminalLine('OPERATOR KEY EXISTS. AUTHENTICATE BEFORE REPLACING.');return;}
-      terminalLine('ENTER NEW LOCAL OPERATOR PASSPHRASE:');beginSecret('set');return;
+    if(command==='DEV'){
+      requestDeveloper();
+      return;
     }
-    if(upper==='AUTH'){
-      if(!savedOperatorKey()){terminalLine('NO OPERATOR KEY CONFIGURED. TYPE KEY SET.');return;}
-      terminalLine('ENTER OPERATOR PASSPHRASE:');beginSecret('auth');return;
-    }
-    if(upper==='DEV'){requestDeveloper();return;}
-    if(upper==='VIEW'){showConsole(false);toggleInstallation(false);return;}
-    if(upper==='INSTALL'){showConsole(false);toggleInstallation(true);return;}
-    terminalLine('UNRECOGNISED INPUT. TYPE HELP.');
+    terminalLine('Unauthorised access, admin only');
   }
   consoleLaunch.addEventListener('click',()=>showConsole(consolePane.hidden));
   consoleInput.addEventListener('focus',positionConsole);
-  consoleInput.addEventListener('keydown',async e=>{
+  consoleInput.addEventListener('blur',positionConsole);
+  consoleInput.addEventListener('keydown',e=>{
     e.stopPropagation();
     if(e.key==='Escape'){showConsole(false);return;}
     if(e.key!=='Enter')return;
     e.preventDefault();
     const command=consoleInput.value;consoleInput.value='';
-    if(secretIntent){await acceptSecret(command);return;}
+    if(!command.trim())return;
     terminalLine('> '+command,true);
     terminalCommand(command);
   });
